@@ -1,0 +1,71 @@
+import { getCurrentUser, type AppUser, type Project } from '@/lib/helpers'
+import { createAdminClient } from '@/lib/supabase/admin'
+import SubcontractorListClient from './SubcontractorListClient'
+
+export type SubcontractorWithStats = AppUser & {
+  ytdPaid: number
+  activeJobs: number
+}
+
+export default async function SubcontractorsPage() {
+  const { appUser, tenant } = await getCurrentUser()
+
+  const adminClient = createAdminClient()
+
+  // Fetch all subcontractors for this tenant
+  const { data: subs } = await adminClient
+    .from('users')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'subcontractor')
+    .order('first_name', { ascending: true })
+
+  const subcontractors = (subs ?? []) as AppUser[]
+
+  // Get start of current year in ISO format
+  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString()
+
+  // Fetch YTD paid projects (status='paid', paid_at >= start of year)
+  const { data: paidProjects } = await adminClient
+    .from('projects')
+    .select('accepted_by, payout_amount')
+    .eq('tenant_id', tenant.id)
+    .eq('status', 'paid')
+    .gte('paid_at', yearStart)
+
+  // Fetch active jobs (status in 'accepted','completed')
+  const { data: activeProjects } = await adminClient
+    .from('projects')
+    .select('accepted_by')
+    .eq('tenant_id', tenant.id)
+    .in('status', ['accepted', 'completed'])
+
+  // Build lookup maps
+  const ytdPaidMap = new Map<string, number>()
+  for (const p of paidProjects ?? []) {
+    if (p.accepted_by) {
+      ytdPaidMap.set(p.accepted_by, (ytdPaidMap.get(p.accepted_by) ?? 0) + (p.payout_amount ?? 0))
+    }
+  }
+
+  const activeJobsMap = new Map<string, number>()
+  for (const p of activeProjects ?? []) {
+    if (p.accepted_by) {
+      activeJobsMap.set(p.accepted_by, (activeJobsMap.get(p.accepted_by) ?? 0) + 1)
+    }
+  }
+
+  // Merge stats into subcontractors
+  const subsWithStats: SubcontractorWithStats[] = subcontractors.map((sub) => ({
+    ...sub,
+    ytdPaid: ytdPaidMap.get(sub.id) ?? 0,
+    activeJobs: activeJobsMap.get(sub.id) ?? 0,
+  }))
+
+  return (
+    <SubcontractorListClient
+      subcontractors={subsWithStats}
+      tenantName={tenant.name}
+    />
+  )
+}
