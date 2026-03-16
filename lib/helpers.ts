@@ -1,57 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import type { AppUser, Tenant } from '@/lib/types'
 
-export type AppUser = {
-  id: string
-  supabase_auth_id: string
-  tenant_id: string
-  email: string
-  first_name: string
-  last_name: string
-  phone: string | null
-  role: 'admin' | 'subcontractor'
-  status: 'active' | 'deleted'
-  created_at: string
-}
-
-export type Tenant = {
-  id: string
-  name: string
-  slug: string
-  owner_user_id: string | null
-  timezone: string
-  created_at: string
-}
-
-export type Project = {
-  id: string
-  tenant_id: string
-  created_by: string
-  job_number: string | null
-  customer_name: string
-  address: string
-  start_date: string | null
-  payout_amount: number
-  status: 'available' | 'accepted' | 'completed' | 'paid' | 'cancelled'
-  companycam_link: string | null
-  notes: string | null
-  admin_notes: string | null
-  accepted_by: string | null
-  accepted_at: string | null
-  paid_at: string | null
-  version: number
-  created_at: string
-}
-
-export type ProjectInvitation = {
-  id: string
-  tenant_id: string
-  project_id: string
-  subcontractor_id: string
-  status: 'invited' | 'accepted' | 'declined'
-  invited_at: string
-}
+export type { AppUser, Tenant } from '@/lib/types'
+export type { Project, ProjectInvitation } from '@/lib/types'
 
 // Get the current authenticated user and their app user record
 export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant }> {
@@ -124,7 +77,6 @@ export async function getCurrentSub(slug: string): Promise<{ authUser: any; appU
 
 // Extract city from full address
 export function extractCity(address: string): string {
-  // Try to get city from typical US address format: "123 Main St, City, ST 12345"
   const parts = address.split(',').map(p => p.trim())
   if (parts.length >= 2) {
     return parts[1].replace(/\s+\w{2}\s+\d{5}(-\d{4})?$/, '').trim()

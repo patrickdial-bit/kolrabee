@@ -3,9 +3,9 @@
 import { useState, useTransition, useMemo } from 'react'
 import Link from 'next/link'
 import AdminNav from '@/components/AdminNav'
-import { formatCurrency } from '@/lib/helpers'
+import { formatCurrency } from '@/lib/utils'
 import { softDeleteSub, reactivateSub } from './actions'
-import type { SubcontractorWithStats } from './page'
+import type { SubcontractorWithStats } from '@/lib/types'
 
 interface Props {
   subcontractors: SubcontractorWithStats[]

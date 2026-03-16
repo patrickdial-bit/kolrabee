@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import AdminNav from '@/components/AdminNav'
 import StatusTabs from '@/components/StatusTabs'
-import { formatCurrency, formatDate, type Project } from '@/lib/helpers'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import type { Project } from '@/lib/types'
 
 interface AdminDashboardClientProps {
   projects: Project[]

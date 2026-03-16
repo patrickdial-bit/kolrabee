@@ -1,11 +1,7 @@
-import { getCurrentUser, type AppUser, type Project } from '@/lib/helpers'
+import { getCurrentUser } from '@/lib/helpers'
+import type { AppUser, SubcontractorWithStats } from '@/lib/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import SubcontractorListClient from './SubcontractorListClient'
-
-export type SubcontractorWithStats = AppUser & {
-  ytdPaid: number
-  activeJobs: number
-}
 
 export default async function SubcontractorsPage() {
   const { appUser, tenant } = await getCurrentUser()

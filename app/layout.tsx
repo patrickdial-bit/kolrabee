@@ -1,26 +1,20 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "TradeTap - Construction Subcontractor Management",
+  title: 'TradeTap - Construction Subcontractor Management',
   description:
-    "Streamline your construction trade management with TradeTap. Manage subcontractors, projects, and compliance in one platform.",
-};
+    'Post jobs, invite subcontractors, track who accepted, and record when they are paid.',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className={inter.className}>{children}</body>
+    <html lang="en">
+      <body className="font-sans antialiased">{children}</body>
     </html>
-  );
+  )
 }
