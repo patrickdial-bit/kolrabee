@@ -56,10 +56,21 @@ export async function signupAction(
 
   const slug = generateSlug(companyName)
 
-  // Create tenant
+  // Create tenant with 14-day trial
+  const trialEndsAt = new Date()
+  trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+
   const { data: tenant, error: tenantError } = await adminClient
     .from('tenants')
-    .insert({ name: companyName, slug })
+    .insert({
+      name: companyName,
+      slug,
+      plan: 'trial',
+      trial_ends_at: trialEndsAt.toISOString(),
+      billing_email: email,
+      max_projects: 10,
+      max_subcontractors: 5,
+    })
     .select('id')
     .single()
 
@@ -91,5 +102,5 @@ export async function signupAction(
     .update({ owner_user_id: appUser.id })
     .eq('id', tenant.id)
 
-  redirect('/admin/dashboard')
+  redirect('/admin/billing')
 }

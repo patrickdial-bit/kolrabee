@@ -12,6 +12,7 @@ interface AdminNavProps {
 const navLinks = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/subcontractors", label: "Subcontractors" },
+  { href: "/admin/billing", label: "Billing" },
 ];
 
 export default function AdminNav({ companyName }: AdminNavProps) {
