@@ -9,19 +9,28 @@ export async function joinAction(
   formData: FormData
 ) {
   const slug = formData.get('slug') as string
+  const companyName = formData.get('companyName') as string
   const firstName = formData.get('firstName') as string
   const lastName = formData.get('lastName') as string
   const email = formData.get('email') as string
   const phone = (formData.get('phone') as string) || null
   const password = formData.get('password') as string
+  const address = (formData.get('address') as string) || null
+  const crewSizeRaw = formData.get('crewSize') as string
+  const yearsInBusinessRaw = formData.get('yearsInBusiness') as string
+  const insuranceProvider = (formData.get('insuranceProvider') as string) || null
+  const insuranceExpiration = (formData.get('insuranceExpiration') as string) || null
 
-  if (!slug || !firstName || !lastName || !email || !password) {
+  if (!slug || !companyName || !firstName || !lastName || !email || !password) {
     return { error: 'All required fields must be filled out.' }
   }
 
   if (password.length < 8) {
     return { error: 'Password must be at least 8 characters.' }
   }
+
+  const crewSize = crewSizeRaw ? parseInt(crewSizeRaw) : 1
+  const yearsInBusiness = yearsInBusinessRaw ? parseInt(yearsInBusinessRaw) : null
 
   const adminClient = createAdminClient()
 
@@ -70,7 +79,7 @@ export async function joinAction(
     return { error: 'Failed to create user account.' }
   }
 
-  // Create users record
+  // Create users record with all profile fields
   const { error: userError } = await adminClient
     .from('users')
     .insert({
@@ -81,6 +90,12 @@ export async function joinAction(
       last_name: lastName,
       phone,
       role: 'subcontractor',
+      company_name: companyName.trim(),
+      crew_size: crewSize,
+      address: address?.trim() || null,
+      years_in_business: yearsInBusiness,
+      insurance_provider: insuranceProvider?.trim() || null,
+      insurance_expiration: insuranceExpiration || null,
     })
 
   if (userError) {
@@ -90,5 +105,5 @@ export async function joinAction(
   // Sign in the user
   await supabase.auth.signInWithPassword({ email: email.toLowerCase(), password })
 
-  redirect(`/${slug}/dashboard`)
+  redirect(`/${slug}/profile`)
 }

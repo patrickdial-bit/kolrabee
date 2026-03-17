@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import SubNav from '@/components/SubNav'
 import StatusTabs from '@/components/StatusTabs'
-import { extractCity, formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
+import { acceptProject, cancelAcceptedProject } from '@/app/[slug]/projects/[id]/actions'
 
 interface SubDashboardClientProps {
   slug: string
@@ -17,13 +19,6 @@ interface SubDashboardClientProps {
   subName: string
 }
 
-const statusBadgeClasses: Record<string, string> = {
-  accepted: 'bg-blue-100 text-blue-700',
-  completed: 'bg-green-100 text-green-700',
-  paid: 'bg-emerald-100 text-emerald-700',
-  available: 'bg-yellow-100 text-yellow-700',
-}
-
 export default function SubDashboardClient({
   slug,
   tenantName,
@@ -33,138 +28,306 @@ export default function SubDashboardClient({
   paidProjects,
   subName,
 }: SubDashboardClientProps) {
-  const tabs = ['Available', 'My Jobs', 'Paid']
-  const [activeTab, setActiveTab] = useState('Available')
+  const tabs = ['Paid YTD', 'Available Projects', 'Accepted Projects', 'Paid Projects']
+  const [activeTab, setActiveTab] = useState('Available Projects')
+  const [showAcceptModal, setShowAcceptModal] = useState<Project | null>(null)
+  const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const counts: Record<string, number> = {
-    Available: availableProjects.length,
-    'My Jobs': myJobs.length,
-    Paid: paidProjects.length,
+  const handleAccept = async (project: Project) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await acceptProject(project.id, project.version, slug)
+      if (result?.error) {
+        setError(result.error)
+        setShowAcceptModal(null)
+      }
+    } catch {
+      setError('An unexpected error occurred.')
+      setShowAcceptModal(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const currentProjects =
-    activeTab === 'Available'
-      ? availableProjects
-      : activeTab === 'My Jobs'
-        ? myJobs
-        : paidProjects
+  const handleCancel = async (project: Project) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await cancelAcceptedProject(project.id, project.version, slug)
+      if (result?.error) {
+        setError(result.error)
+      }
+      setShowCancelConfirm(null)
+    } catch {
+      setError('An unexpected error occurred.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <SubNav slug={slug} tenantName={tenantName} subName={subName} />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* YTD Earnings Card */}
-        <div className="mb-8 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 p-6 text-white shadow-lg">
-          <p className="text-sm font-medium text-indigo-200">Year-to-Date Earnings</p>
-          <p className="mt-2 text-4xl font-bold">{formatCurrency(ytdEarnings)}</p>
-        </div>
+      <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Subcontractor Dashboard</h1>
+
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-4">
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
 
         {/* Tabs */}
         <StatusTabs
           tabs={tabs}
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          counts={counts}
         />
 
-        {/* Project Cards */}
         <div className="mt-6">
-          {currentProjects.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0"
-                />
-              </svg>
-              <h3 className="mt-4 text-sm font-semibold text-gray-900">
-                {activeTab === 'Available'
-                  ? 'No available projects'
-                  : activeTab === 'My Jobs'
-                    ? 'No active jobs'
-                    : 'No paid projects yet'}
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {activeTab === 'Available'
-                  ? 'New projects will appear here when you are invited.'
-                  : activeTab === 'My Jobs'
-                    ? 'Accept an available project to see it here.'
-                    : 'Completed and paid projects will appear here.'}
-              </p>
+          {/* Paid YTD Tab */}
+          {activeTab === 'Paid YTD' && (
+            <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white shadow-lg">
+              <p className="text-lg font-medium text-indigo-200">Year-to-Date Earnings</p>
+              <p className="mt-3 text-5xl font-bold">{formatCurrency(ytdEarnings)}</p>
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {currentProjects.map((project) => (
-                <Link
-                  key={project.id}
-                  href={`/${slug}/projects/${project.id}`}
-                  className="block rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      {project.job_number && (
-                        <p className="text-xs font-medium text-indigo-600">#{project.job_number}</p>
-                      )}
-                      <h3 className="mt-1 text-sm font-semibold text-gray-900 truncate">
-                        {project.customer_name}
-                      </h3>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        {activeTab === 'Available'
-                          ? extractCity(project.address)
-                          : project.address}
-                      </p>
-                    </div>
-                    {activeTab !== 'Available' && (
-                      <span
-                        className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClasses[project.status] || 'bg-gray-100 text-gray-700'}`}
-                      >
-                        {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                      </span>
-                    )}
-                  </div>
+          )}
 
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-gray-500">
-                      {activeTab === 'Paid' && project.paid_at
-                        ? `Paid ${formatDate(project.paid_at)}`
-                        : project.start_date
-                          ? formatDate(project.start_date)
-                          : 'No date set'}
-                    </span>
-                    <span className="font-semibold text-gray-900">
-                      {formatCurrency(project.payout_amount)}
-                    </span>
-                  </div>
+          {/* Available Projects Tab */}
+          {activeTab === 'Available Projects' && (
+            <>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subcontractor Available Projects</h2>
+              {availableProjects.length === 0 ? (
+                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+                  <p className="text-sm text-gray-500">No available projects. New projects will appear here when you are invited.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-amber-500">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project ID</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order Link</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start Date/Time</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Street City State Zip</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {availableProjects.map((project) => (
+                        <tr key={project.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            {project.work_order_link ? (
+                              <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                            ) : '—'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                            {formatDateTime(project.start_date, project.start_time)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
+                            {project.estimated_labor_hours ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                            {formatCurrency(project.payout_amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <button
+                              onClick={() => setShowAcceptModal(project)}
+                              className="inline-flex items-center rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
+                            >
+                              Accept Project
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
 
-                  {activeTab === 'Available' && project.notes && (
-                    <p className="mt-2 text-xs text-gray-500 line-clamp-2">{project.notes}</p>
-                  )}
+          {/* Accepted Projects Tab */}
+          {activeTab === 'Accepted Projects' && (
+            <>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subcontractor Accepted Projects</h2>
+              {myJobs.length === 0 ? (
+                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+                  <p className="text-sm text-gray-500">No active jobs. Accept an available project to see it here.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-amber-500">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project ID</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order Link</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start Date/Time</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Street City State Zip</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Status</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {myJobs.map((project) => (
+                        <tr key={project.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            {project.work_order_link ? (
+                              <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                            ) : '—'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                            {formatDateTime(project.start_date, project.start_time)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
+                            {project.estimated_labor_hours ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                            {formatCurrency(project.payout_amount)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                              {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            {project.status === 'accepted' && (
+                              showCancelConfirm === project.id ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <button onClick={() => handleCancel(project)} disabled={loading}
+                                    className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50">
+                                    {loading ? '...' : 'Confirm'}
+                                  </button>
+                                  <button onClick={() => setShowCancelConfirm(null)}
+                                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200">
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button onClick={() => setShowCancelConfirm(project.id)}
+                                  className="inline-flex items-center rounded-md bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors">
+                                  Cancel
+                                </button>
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
 
-                  {activeTab !== 'Available' && project.companycam_link && (
-                    <div className="mt-2">
-                      <span className="inline-flex items-center gap-1 text-xs text-indigo-600">
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
-                        </svg>
-                        CompanyCam
-                      </span>
-                    </div>
-                  )}
-                </Link>
-              ))}
-            </div>
+          {/* Paid Projects Tab */}
+          {activeTab === 'Paid Projects' && (
+            <>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">All Paid Projects</h2>
+              {paidProjects.length === 0 ? (
+                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
+                  <p className="text-sm text-gray-500">No paid projects yet. Completed and paid projects will appear here.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-700">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project ID</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start</th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Address</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">CompanyCam</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {paidProjects.map((project) => (
+                        <tr key={project.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                            {formatDateTime(project.start_date, project.start_time)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                            {formatCurrency(project.payout_amount)}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
+                            {project.estimated_labor_hours ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            {project.work_order_link ? (
+                              <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                            ) : '—'}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                            {project.companycam_link ? (
+                              <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
+                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                            ) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>
+
+      {/* Accept Project Modal */}
+      {showAcceptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowAcceptModal(null)} />
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Accept Project</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              I accept the WO as written and agree to produce the full scope of the project for the payment listed, and will return after walk through for touch ups on the work that I performed, as necessary. I also agree that my required insurance is up to date.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => setShowAcceptModal(null)}
+                className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleAccept(showAcceptModal)}
+                disabled={loading}
+                className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
+              >
+                {loading ? 'Accepting...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

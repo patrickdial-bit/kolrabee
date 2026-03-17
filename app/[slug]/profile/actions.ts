@@ -12,10 +12,19 @@ export async function updateProfile(
   const firstName = formData.get('firstName') as string
   const lastName = formData.get('lastName') as string
   const phone = (formData.get('phone') as string) || null
+  const companyName = (formData.get('companyName') as string) || null
+  const address = (formData.get('address') as string) || null
+  const crewSizeRaw = formData.get('crewSize') as string
+  const yearsInBusinessRaw = formData.get('yearsInBusiness') as string
+  const insuranceProvider = (formData.get('insuranceProvider') as string) || null
+  const insuranceExpiration = (formData.get('insuranceExpiration') as string) || null
 
   if (!firstName || !lastName) {
     return { error: 'First name and last name are required.' }
   }
+
+  const crewSize = crewSizeRaw ? parseInt(crewSizeRaw) : 1
+  const yearsInBusiness = yearsInBusinessRaw ? parseInt(yearsInBusinessRaw) : null
 
   const { appUser } = await getCurrentSub(slug)
   const adminClient = createAdminClient()
@@ -26,19 +35,17 @@ export async function updateProfile(
       first_name: firstName,
       last_name: lastName,
       phone,
+      company_name: companyName?.trim() || null,
+      address: address?.trim() || null,
+      crew_size: crewSize,
+      years_in_business: yearsInBusiness,
+      insurance_provider: insuranceProvider?.trim() || null,
+      insurance_expiration: insuranceExpiration || null,
     })
     .eq('id', appUser.id)
 
   if (error) {
-    return {
-      error: 'Failed to update profile. Please try again.',
-      values: {
-        firstName: appUser.first_name,
-        lastName: appUser.last_name,
-        email: appUser.email,
-        phone: appUser.phone || '',
-      },
-    }
+    return { error: 'Failed to update profile. Please try again.' }
   }
 
   return {
@@ -48,8 +55,41 @@ export async function updateProfile(
       lastName,
       email: appUser.email,
       phone: phone || '',
+      companyName: companyName || '',
+      address: address || '',
+      crewSize: crewSize.toString(),
+      yearsInBusiness: yearsInBusiness?.toString() || '',
+      insuranceProvider: insuranceProvider || '',
+      insuranceExpiration: insuranceExpiration || '',
+      w9FileUrl: appUser.w9_file_url || '',
+      coiFileUrl: appUser.coi_file_url || '',
     },
   }
+}
+
+export async function uploadDocument(slug: string, docType: 'w9' | 'coi', fileUrl: string) {
+  const { appUser } = await getCurrentSub(slug)
+  const adminClient = createAdminClient()
+
+  const updateData: Record<string, string> = {}
+  if (docType === 'w9') {
+    updateData.w9_file_url = fileUrl
+    updateData.w9_uploaded_at = new Date().toISOString()
+  } else {
+    updateData.coi_file_url = fileUrl
+    updateData.coi_uploaded_at = new Date().toISOString()
+  }
+
+  const { error } = await adminClient
+    .from('users')
+    .update(updateData)
+    .eq('id', appUser.id)
+
+  if (error) {
+    return { error: 'Failed to save document reference.' }
+  }
+
+  return { success: true }
 }
 
 export async function changePassword(
@@ -72,14 +112,10 @@ export async function changePassword(
     return { error: 'Passwords do not match.' }
   }
 
-  // Verify the user is authenticated
   await getCurrentSub(slug)
-
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.updateUser({
-    password: newPassword,
-  })
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
 
   if (error) {
     return { error: error.message }

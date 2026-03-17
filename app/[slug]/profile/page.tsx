@@ -19,6 +19,14 @@ export default async function SubProfilePage({
         lastName: appUser.last_name,
         email: appUser.email,
         phone: appUser.phone || '',
+        companyName: appUser.company_name || '',
+        address: appUser.address || '',
+        crewSize: appUser.crew_size?.toString() || '1',
+        yearsInBusiness: appUser.years_in_business?.toString() || '',
+        insuranceProvider: appUser.insurance_provider || '',
+        insuranceExpiration: appUser.insurance_expiration || '',
+        w9FileUrl: appUser.w9_file_url || '',
+        coiFileUrl: appUser.coi_file_url || '',
       }}
     />
   )
