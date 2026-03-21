@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { Tenant } from '@/lib/types'
 import { isTenantActive } from '@/lib/types'
-import { PLANS } from '@/lib/stripe'
+import { PLANS, ALL_PLANS } from '@/lib/stripe'
 import type { PlanId } from '@/lib/stripe'
 
 interface Props {
@@ -19,6 +19,7 @@ export default function BillingClient({ tenant }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const isActive = isTenantActive(tenant)
+  const isFree = tenant.plan === 'free'
   const isTrial = tenant.plan === 'trial'
   const hasSubscription = tenant.plan === 'starter' || tenant.plan === 'pro'
   const trialDaysLeft = tenant.trial_ends_at
@@ -97,11 +98,13 @@ export default function BillingClient({ tenant }: Props) {
               <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                 hasSubscription
                   ? 'bg-green-100 text-green-700'
-                  : isTrial && isActive
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-red-100 text-red-700'
+                  : isFree
+                    ? 'bg-gray-100 text-gray-700'
+                    : isTrial && isActive
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-red-100 text-red-700'
               }`}>
-                {hasSubscription ? 'Active' : isTrial && isActive ? `Trial (${trialDaysLeft} days left)` : isTrial ? 'Trial Expired' : 'Cancelled'}
+                {hasSubscription ? 'Active' : isFree ? 'Free Plan' : isTrial && isActive ? `Trial (${trialDaysLeft} days left)` : isTrial ? 'Trial Expired' : 'Cancelled'}
               </span>
             </div>
           </div>
@@ -143,8 +146,17 @@ export default function BillingClient({ tenant }: Props) {
           </div>
         )}
 
+        {/* Free Plan Upsell */}
+        {isFree && (
+          <div className="mt-4 rounded-md bg-indigo-50 border border-indigo-200 p-3">
+            <p className="text-sm text-indigo-800">
+              You&apos;re on the Free plan. Upgrade to unlock more projects, subcontractors, and features.
+            </p>
+          </div>
+        )}
+
         {/* Expired State */}
-        {!isActive && (
+        {!isActive && !isFree && (
           <div className="mt-4 rounded-md bg-red-50 border border-red-200 p-3">
             <p className="text-sm text-red-800">
               Your subscription is inactive. You cannot create new projects until you subscribe to a plan.
@@ -156,8 +168,46 @@ export default function BillingClient({ tenant }: Props) {
       {/* Plan Cards */}
       {!hasSubscription && (
         <>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose a Plan</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            {isFree ? 'Upgrade Your Plan' : 'Choose a Plan'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Free Plan Card */}
+            <div className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
+              isFree ? 'border-green-500' : 'border-gray-200'
+            }`}>
+              {isFree && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  Current Plan
+                </span>
+              )}
+
+              <h3 className="text-xl font-bold text-gray-900">{ALL_PLANS.free.name}</h3>
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-gray-900">$0</span>
+                <span className="text-sm text-gray-500">/month</span>
+              </div>
+
+              <ul className="mt-6 space-y-3">
+                {ALL_PLANS.free.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <svg className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    <span className="text-sm text-gray-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                disabled
+                className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
+              >
+                {isFree ? 'Current Plan' : 'Free'}
+              </button>
+            </div>
+
+            {/* Paid Plan Cards */}
             {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([planId, plan]) => (
               <div
                 key={planId}
@@ -197,7 +247,7 @@ export default function BillingClient({ tenant }: Props) {
                       : 'bg-white text-indigo-700 border-2 border-indigo-600 hover:bg-indigo-50'
                   }`}
                 >
-                  {loading === planId ? 'Redirecting...' : `Subscribe to ${plan.name}`}
+                  {loading === planId ? 'Redirecting...' : `Upgrade to ${plan.name}`}
                 </button>
               </div>
             ))}

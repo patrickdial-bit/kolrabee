@@ -29,7 +29,7 @@ export type Tenant = {
   timezone: string
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
-  plan: 'trial' | 'starter' | 'pro' | 'cancelled'
+  plan: 'free' | 'trial' | 'starter' | 'pro' | 'cancelled'
   trial_ends_at: string | null
   billing_email: string | null
   max_projects: number
@@ -39,7 +39,7 @@ export type Tenant = {
 
 // Check if a tenant has an active subscription or is within trial period
 export function isTenantActive(tenant: Tenant): boolean {
-  if (tenant.plan === 'starter' || tenant.plan === 'pro') return true
+  if (tenant.plan === 'free' || tenant.plan === 'starter' || tenant.plan === 'pro') return true
   if (tenant.plan === 'trial' && tenant.trial_ends_at) {
     return new Date(tenant.trial_ends_at) > new Date()
   }
@@ -48,6 +48,7 @@ export function isTenantActive(tenant: Tenant): boolean {
 
 // Plan limits lookup
 export const PLAN_LIMITS: Record<string, { max_projects: number; max_subcontractors: number }> = {
+  free: { max_projects: 3, max_subcontractors: 1 },
   trial: { max_projects: 10, max_subcontractors: 5 },
   starter: { max_projects: 50, max_subcontractors: 20 },
   pro: { max_projects: 999999, max_subcontractors: 999999 },

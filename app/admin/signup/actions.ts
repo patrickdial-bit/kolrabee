@@ -56,20 +56,16 @@ export async function signupAction(
 
   const slug = generateSlug(companyName)
 
-  // Create tenant with 14-day trial
-  const trialEndsAt = new Date()
-  trialEndsAt.setDate(trialEndsAt.getDate() + 14)
-
+  // Create tenant on the free plan
   const { data: tenant, error: tenantError } = await adminClient
     .from('tenants')
     .insert({
       name: companyName,
       slug,
-      plan: 'trial',
-      trial_ends_at: trialEndsAt.toISOString(),
+      plan: 'free',
       billing_email: email,
-      max_projects: 10,
-      max_subcontractors: 5,
+      max_projects: 3,
+      max_subcontractors: 1,
     })
     .select('id')
     .single()

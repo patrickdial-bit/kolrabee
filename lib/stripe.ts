@@ -13,7 +13,16 @@ export const PLAN_PRICES = {
 
 export type PlanId = 'starter' | 'pro'
 
-export const PLANS: Record<PlanId, { name: string; price: number; features: string[] }> = {
+export const ALL_PLANS: Record<string, { name: string; price: number; features: string[] }> = {
+  free: {
+    name: 'Free',
+    price: 0,
+    features: [
+      'Up to 3 projects',
+      '1 subcontractor',
+      '1 admin user',
+    ],
+  },
   starter: {
     name: 'Starter',
     price: 49,
@@ -35,4 +44,10 @@ export const PLANS: Record<PlanId, { name: string; price: number; features: stri
       'Priority support',
     ],
   },
+}
+
+// Paid plans only (used for Stripe checkout)
+export const PLANS: Record<PlanId, { name: string; price: number; features: string[] }> = {
+  starter: ALL_PLANS.starter,
+  pro: ALL_PLANS.pro,
 }
