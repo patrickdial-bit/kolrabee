@@ -9,18 +9,30 @@ export default function AboutPage() {
         <Link href="/">
           <KolrabeeLogo size="lg" />
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
+          <Link
+            href="/about"
+            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
+          >
+            About
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
+          >
+            Pricing
+          </Link>
           <Link
             href="/admin/login"
             className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
           >
-            Admin Login
+            Login
           </Link>
           <Link
             href="/admin/signup"
             className="inline-flex items-center rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
           >
-            Get Started
+            Get Started Free
           </Link>
         </div>
       </nav>
