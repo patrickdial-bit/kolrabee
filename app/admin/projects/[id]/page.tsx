@@ -49,6 +49,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     subcontractor_id: inv.subcontractor_id,
     status: inv.status as 'invited' | 'accepted' | 'declined',
     invited_at: inv.invited_at,
+    expires_at: inv.expires_at ?? null,
     subcontractor_name: inv.subcontractor
       ? `${inv.subcontractor.first_name} ${inv.subcontractor.last_name}`
       : 'Unknown',

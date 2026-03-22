@@ -27,6 +27,7 @@ export default function InviteSubsModal({
 }: InviteSubsModalProps) {
   const [subs, setSubs] = useState<Sub[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [expiresInDays, setExpiresInDays] = useState(7)
   const [loading, setLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -72,7 +73,7 @@ export default function InviteSubsModal({
   const handleSend = () => {
     setError(null)
     startTransition(async () => {
-      const result = await sendInvitations(projectId, Array.from(selected))
+      const result = await sendInvitations(projectId, Array.from(selected), expiresInDays)
       if (result?.error) {
         setError(result.error)
       } else {
@@ -167,6 +168,25 @@ export default function InviteSubsModal({
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Expiration picker */}
+              {availableSubs.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                    Invitation Expires In
+                  </label>
+                  <select
+                    value={expiresInDays}
+                    onChange={(e) => setExpiresInDays(Number(e.target.value))}
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember"
+                  >
+                    <option value={3}>3 days</option>
+                    <option value={7}>7 days (default)</option>
+                    <option value={14}>14 days</option>
+                    <option value={30}>30 days</option>
+                  </select>
                 </div>
               )}
 

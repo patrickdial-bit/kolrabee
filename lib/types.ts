@@ -18,7 +18,31 @@ export type AppUser = {
   w9_uploaded_at: string | null
   coi_file_url: string | null
   coi_uploaded_at: string | null
+  notification_preferences: {
+    project_invites: boolean
+    project_updates: boolean
+    project_accepted: boolean
+    project_cancelled: boolean
+  } | null
   created_at: string
+}
+
+export type NotificationPreferences = {
+  project_invites: boolean
+  project_updates: boolean
+  project_accepted: boolean
+  project_cancelled: boolean
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
+  project_invites: true,
+  project_updates: true,
+  project_accepted: true,
+  project_cancelled: true,
+}
+
+export function getNotificationPrefs(user: { notification_preferences: NotificationPreferences | null }): NotificationPreferences {
+  return { ...DEFAULT_NOTIFICATION_PREFS, ...user.notification_preferences }
 }
 
 export type Tenant = {
@@ -86,6 +110,12 @@ export type ProjectInvitation = {
   subcontractor_id: string
   status: 'invited' | 'accepted' | 'declined'
   invited_at: string
+  expires_at: string | null
+}
+
+export function isInvitationExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) return false
+  return new Date(expiresAt) < new Date()
 }
 
 export type SubcontractorWithStats = AppUser & {

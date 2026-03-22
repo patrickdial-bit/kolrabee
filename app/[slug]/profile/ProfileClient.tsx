@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import SubNav from '@/components/SubNav'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
-import { updateProfile, changePassword, uploadDocument } from './actions'
+import { updateProfile, changePassword, uploadDocument, updateNotificationPreferences } from './actions'
 import { createBrowserClient } from '@supabase/ssr'
 
 function SaveButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
@@ -26,6 +26,12 @@ interface Props {
   slug: string
   tenantName: string
   subName: string
+  notificationPreferences: {
+    project_invites: boolean
+    project_updates: boolean
+    project_accepted: boolean
+    project_cancelled: boolean
+  }
   initialValues: {
     firstName: string
     lastName: string
@@ -42,13 +48,17 @@ interface Props {
   }
 }
 
-export default function ProfileClient({ slug, tenantName, subName, initialValues }: Props) {
+export default function ProfileClient({ slug, tenantName, subName, notificationPreferences, initialValues }: Props) {
   const { t } = useI18n()
   const [profileState, profileAction] = useFormState(updateProfile, null as any)
   const [passwordState, passwordAction] = useFormState(changePassword, null)
   const [uploading, setUploading] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
+  const [notifInvites, setNotifInvites] = useState(notificationPreferences.project_invites)
+  const [notifUpdates, setNotifUpdates] = useState(notificationPreferences.project_updates)
+  const [notifSaving, setNotifSaving] = useState(false)
+  const [notifMsg, setNotifMsg] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -314,6 +324,71 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               <SaveButton label={t('profile.save')} pendingLabel={t('profile.saving')} />
             </div>
           </form>
+        </div>
+
+        {/* Notification Preferences */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Notification Preferences</h2>
+            <p className="mt-1 text-sm text-gray-500">Choose which email notifications you receive.</p>
+          </div>
+          <div className="px-6 py-5 space-y-4">
+            {notifMsg && (
+              <div className={`rounded-lg p-3 ${notifMsg.includes('Failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                <p className={`text-sm ${notifMsg.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>{notifMsg}</p>
+              </div>
+            )}
+
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Project Invitations</p>
+                <p className="text-xs text-gray-500">Get notified when you&apos;re invited to a new project</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notifInvites}
+                onClick={async () => {
+                  const newVal = !notifInvites
+                  setNotifInvites(newVal)
+                  setNotifSaving(true)
+                  setNotifMsg(null)
+                  const result = await updateNotificationPreferences(slug, { project_invites: newVal, project_updates: notifUpdates })
+                  setNotifSaving(false)
+                  setNotifMsg(result.error || 'Preferences saved.')
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifInvites ? 'bg-ember' : 'bg-gray-200'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifInvites ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </label>
+
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Project Updates</p>
+                <p className="text-xs text-gray-500">Get notified about updates to your accepted projects</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notifUpdates}
+                onClick={async () => {
+                  const newVal = !notifUpdates
+                  setNotifUpdates(newVal)
+                  setNotifSaving(true)
+                  setNotifMsg(null)
+                  const result = await updateNotificationPreferences(slug, { project_invites: notifInvites, project_updates: newVal })
+                  setNotifSaving(false)
+                  setNotifMsg(result.error || 'Preferences saved.')
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifUpdates ? 'bg-ember' : 'bg-gray-200'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifUpdates ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </label>
+
+            {notifSaving && <p className="text-xs text-gray-400">Saving...</p>}
+          </div>
         </div>
 
         {/* Password Change */}
