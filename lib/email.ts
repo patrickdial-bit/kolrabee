@@ -2,11 +2,11 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const DEFAULT_FROM = 'Kolrabee <onboarding@resend.dev>'
+const DEFAULT_FROM = 'Kolrabee <notifications@contact.kolrabee.com>'
 
 function getFrom(tenantName: string, notificationEmail: string | null) {
   if (notificationEmail) {
-    return `${tenantName} via Kolrabee <onboarding@resend.dev>`
+    return `${tenantName} via Kolrabee <notifications@contact.kolrabee.com>`
   }
   return DEFAULT_FROM
 }
