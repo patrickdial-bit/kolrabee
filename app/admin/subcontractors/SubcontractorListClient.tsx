@@ -5,18 +5,24 @@ import Link from 'next/link'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant } from '@/lib/types'
-import { softDeleteSub, reactivateSub } from './actions'
+import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
 import type { SubcontractorWithStats } from '@/lib/types'
 
 interface Props {
   subcontractors: SubcontractorWithStats[]
   tenantName: string
+  tenantSlug: string
 }
 
-export default function SubcontractorListClient({ subcontractors, tenantName }: Props) {
+export default function SubcontractorListClient({ subcontractors, tenantName, tenantSlug }: Props) {
   const [search, setSearch] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
+  const [inviteError, setInviteError] = useState('')
+  const [inviteSuccess, setInviteSuccess] = useState(false)
 
   const filtered = useMemo(() => {
     if (!search.trim()) return subcontractors
@@ -45,6 +51,32 @@ export default function SubcontractorListClient({ subcontractors, tenantName }: 
     })
   }
 
+  function handleInvite() {
+    setInviteError('')
+    if (!inviteEmail.trim()) {
+      setInviteError('Email is required.')
+      return
+    }
+    startTransition(async () => {
+      const result = await inviteSubToJoin(inviteEmail, inviteName)
+      if (result.error) {
+        setInviteError(result.error)
+      } else {
+        setInviteSuccess(true)
+        setInviteEmail('')
+        setInviteName('')
+      }
+    })
+  }
+
+  function closeInviteModal() {
+    setShowInviteModal(false)
+    setInviteEmail('')
+    setInviteName('')
+    setInviteError('')
+    setInviteSuccess(false)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminNav companyName={tenantName} />
@@ -56,6 +88,17 @@ export default function SubcontractorListClient({ subcontractors, tenantName }: 
             <p className="mt-1 text-sm text-gray-500">
               {subcontractors.filter(s => s.status === 'active').length} active subcontractor{subcontractors.filter(s => s.status === 'active').length !== 1 ? 's' : ''}
             </p>
+          </div>
+          <div className="mt-4 sm:mt-0 flex items-center gap-3">
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+              </svg>
+              Invite Subcontractor
+            </button>
           </div>
           <div className="mt-4 sm:mt-0 relative max-w-md">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -195,6 +238,89 @@ export default function SubcontractorListClient({ subcontractors, tenantName }: 
           </div>
         )}
       </div>
+
+      {/* Invite Subcontractor Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeInviteModal}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            {inviteSuccess ? (
+              <>
+                <div className="text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
+                    <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Invitation Sent!</h3>
+                  <p className="text-sm text-gray-500 mb-6">They'll receive an email with a link to create their account.</p>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => { setInviteSuccess(false); setInviteEmail(''); setInviteName('') }}
+                      className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
+                    >
+                      Invite Another
+                    </button>
+                    <button
+                      onClick={closeInviteModal}
+                      className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Invite Subcontractor</h3>
+                <p className="text-sm text-gray-500 mb-5">Send an email inviting them to create a TradeTap account.</p>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-gray-400">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={inviteName}
+                      onChange={(e) => setInviteName(e.target.value)}
+                      placeholder="e.g. John Smith"
+                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => { setInviteEmail(e.target.value); setInviteError('') }}
+                      placeholder="sub@example.com"
+                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+                    />
+                  </div>
+
+                  {inviteError && (
+                    <p className="text-sm text-red-600">{inviteError}</p>
+                  )}
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    onClick={closeInviteModal}
+                    className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleInvite}
+                    disabled={isPending}
+                    className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+                  >
+                    {isPending ? 'Sending...' : 'Send Invitation'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

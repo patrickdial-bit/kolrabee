@@ -62,6 +62,7 @@ export default async function SubcontractorsPage() {
     <SubcontractorListClient
       subcontractors={subsWithStats}
       tenantName={tenant.name}
+      tenantSlug={tenant.slug}
     />
   )
 }

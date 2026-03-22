@@ -54,6 +54,38 @@ function formatDate(date: string | null): string {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+/** Email 0: Invite subcontractor to join the platform */
+export async function sendPlatformInviteEmail(params: {
+  to: string
+  name: string
+  tenantName: string
+  notificationEmail: string | null
+  joinUrl: string
+}) {
+  const { to, name, tenantName, notificationEmail, joinUrl } = params
+  const greeting = name ? `Hi ${name},` : 'Hi,'
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `${tenantName} has invited you to join TradeTap`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">You're Invited!</h2>
+          <p style="color: #666; margin-top: 0;">${greeting} <strong>${tenantName}</strong> has invited you to join TradeTap to receive and accept job opportunities.</p>
+          <p style="color: #666;">Click the button below to create your account and get started.</p>
+          <a href="${joinUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">Create Your Account</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Once you sign up, you'll be able to view available jobs, accept projects, and track your earnings.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send platform invite email:', err)
+  }
+}
+
 /** Email 1: Sub invited to a project */
 export async function sendInviteEmail(params: InviteEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, city, startDate, payout, loginUrl } = params
