@@ -47,18 +47,6 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
 
   const adminClient = createAdminClient()
 
-  // Check subcontractor limit
-  const { count: subCount } = await adminClient
-    .from('users')
-    .select('*', { count: 'exact', head: true })
-    .eq('tenant_id', tenant.id)
-    .eq('role', 'subcontractor')
-    .eq('status', 'active')
-
-  if (subCount !== null && subCount >= tenant.max_subcontractors) {
-    return { error: `You've reached your plan limit of ${tenant.max_subcontractors} subcontractors. Please upgrade your plan.` }
-  }
-
   // Verify all selected subs are compliant
   const { data: subs } = await adminClient
     .from('users')
