@@ -267,8 +267,10 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                   <tbody className="divide-y divide-gray-200">
                     {projects.map((project) => (
                       <tr key={project.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {project.job_number ?? '—'}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <Link href={`/admin/projects/${project.id}`} className="text-indigo-600 hover:text-indigo-800 hover:underline">
+                            {project.job_number ?? project.id.slice(0, 8)}
+                          </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {project.customer_name}
@@ -296,9 +298,9 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                   <div key={project.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {project.job_number ?? 'No Job #'}
-                        </p>
+                        <Link href={`/admin/projects/${project.id}`} className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline">
+                          {project.job_number ?? project.id.slice(0, 8)}
+                        </Link>
                         <p className="mt-0.5 text-sm text-gray-600">{project.customer_name}</p>
                       </div>
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ring-inset ${statusColors[project.status] ?? ''}`}>
