@@ -48,6 +48,7 @@ export default async function AdminDashboardPage() {
       projects={(projects ?? []) as Project[]}
       tenantName={tenant.name ?? ''}
       tenantId={tenant.id}
+      tenantSlug={tenant.slug ?? ''}
       tenantPlan={tenant.plan ?? 'free'}
       trialEndsAt={tenant.trial_ends_at ?? null}
       maxProjects={tenant.max_projects ?? 3}

@@ -42,11 +42,10 @@ export default function PricingPage() {
       <nav>
         <Link href="/" className="nav-logo"><span className="k">kol</span><span className="r">ra</span><span className="b">bee</span></Link>
         <div className="nav-links">
-          <Link href="/">Home</Link>
           <Link href="/about">About</Link>
           <Link href="/pricing">Pricing</Link>
-          <a href="https://www.kolrabee.com/admin/login">Login</a>
-          <a href="https://www.kolrabee.com/admin/signup" className="nav-cta">Get Started Free</a>
+          <Link href="/admin/login">Login</Link>
+          <Link href="/admin/signup" className="nav-cta">Get Started Free</Link>
         </div>
       </nav>
 
