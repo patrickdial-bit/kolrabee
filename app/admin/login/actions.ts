@@ -26,8 +26,20 @@ export async function loginAction(
     return { error: 'Invalid email or password.' }
   }
 
-  // Verify admin role
   const adminClient = createAdminClient()
+
+  // Check if super admin first (no tenant/appUser required)
+  const { data: superAdmin } = await adminClient
+    .from('super_admins')
+    .select('id')
+    .eq('supabase_auth_id', data.user.id)
+    .single()
+
+  if (superAdmin) {
+    redirect('/super-admin')
+  }
+
+  // Verify admin role for regular users
   const { data: appUser } = await adminClient
     .from('users')
     .select('role, status')
@@ -42,17 +54,6 @@ export async function loginAction(
   if (appUser.status === 'deleted') {
     await supabase.auth.signOut()
     return { error: 'This account has been deactivated.' }
-  }
-
-  // Check if super admin
-  const { data: superAdmin } = await adminClient
-    .from('super_admins')
-    .select('id')
-    .eq('supabase_auth_id', data.user.id)
-    .single()
-
-  if (superAdmin) {
-    redirect('/super-admin')
   }
 
   if (appUser.role !== 'admin') {

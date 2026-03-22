@@ -35,8 +35,11 @@ export async function middleware(request: NextRequest) {
   // Admin public routes
   const publicAdminRoutes = ['/admin/login', '/admin/signup', '/admin/forgot-password']
 
-  // Protect super-admin routes
+  // Protect super-admin routes (setup page is public, protected by secret key)
   if (pathname.startsWith('/super-admin')) {
+    if (pathname === '/super-admin/setup') {
+      return supabaseResponse
+    }
     if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin/login'
