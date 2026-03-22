@@ -18,7 +18,7 @@ export default function SuperAdminNav() {
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/super-admin">
-              <KolrabeeLogo size="md" className="[&>span]:!text-white [&>span:nth-child(2)]:!text-ember [&>span:nth-child(3)]:!text-green-400" />
+              <KolrabeeLogo size="md" variant="dark" />
             </Link>
             <span className="rounded-full bg-ember px-2 py-0.5 text-xs font-semibold text-white">
               Super Admin

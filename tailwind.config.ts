@@ -23,6 +23,7 @@ const config: Config = {
         },
         ember: {
           DEFAULT: "#E8780A",
+          dark: "#1C1208",
           light: "#fdebd3",
         },
         forest: {

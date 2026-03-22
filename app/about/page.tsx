@@ -107,7 +107,7 @@ export default function AboutPage() {
           <h2 className="text-2xl font-black font-display text-forge mb-6">
             Our colors
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <div>
               <div className="h-16 rounded-lg bg-ember mb-2" />
               <p className="text-sm font-semibold text-forge">Ember</p>
@@ -127,6 +127,11 @@ export default function AboutPage() {
               <div className="h-16 rounded-lg bg-canvas border border-gray-200 mb-2" />
               <p className="text-sm font-semibold text-forge">Canvas</p>
               <p className="text-xs text-forge/50">#F5F0E8</p>
+            </div>
+            <div>
+              <div className="h-16 rounded-lg bg-ember-dark mb-2" />
+              <p className="text-sm font-semibold text-forge">Ember Dark</p>
+              <p className="text-xs text-forge/50">#1C1208</p>
             </div>
           </div>
         </section>
