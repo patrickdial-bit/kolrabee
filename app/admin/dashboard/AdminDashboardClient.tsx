@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
@@ -9,6 +9,9 @@ import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import type { PlatformInvite } from './page'
+
+type SortKey = 'customer_name' | 'start_date' | 'payout_amount' | 'estimated_labor_hours' | 'address'
+type SortDir = 'asc' | 'desc'
 
 interface AdminDashboardClientProps {
   projects: Project[]
@@ -39,8 +42,19 @@ export default function AdminDashboardClient({
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState('Available')
   const [search, setSearch] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('start_date')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [inviteProjectId, setInviteProjectId] = useState<string | null>(null)
   const router = useRouter()
+
+  const toggleSort = useCallback((key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }, [sortKey])
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {}
@@ -71,14 +85,29 @@ export default function AdminDashboardClient({
     }
 
     result.sort((a, b) => {
-      if (!a.start_date && !b.start_date) return 0
-      if (!a.start_date) return 1
-      if (!b.start_date) return -1
-      return new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+      const dir = sortDir === 'asc' ? 1 : -1
+      switch (sortKey) {
+        case 'customer_name':
+          return dir * a.customer_name.localeCompare(b.customer_name)
+        case 'start_date': {
+          if (!a.start_date && !b.start_date) return 0
+          if (!a.start_date) return 1
+          if (!b.start_date) return -1
+          return dir * (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+        }
+        case 'payout_amount':
+          return dir * ((a.payout_amount ?? 0) - (b.payout_amount ?? 0))
+        case 'estimated_labor_hours':
+          return dir * ((a.estimated_labor_hours ?? 0) - (b.estimated_labor_hours ?? 0))
+        case 'address':
+          return dir * a.address.localeCompare(b.address)
+        default:
+          return 0
+      }
     })
 
     return result
-  }, [projects, activeTab, search])
+  }, [projects, activeTab, search, sortKey, sortDir])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -207,14 +236,14 @@ export default function AdminDashboardClient({
                     {activeTab === 'Available' && (
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Invite</th>
                     )}
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Number / ID</th>
+                    <SortTh label="Project Number / ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                     {activeTab === 'Accepted' && (
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Accepted by</th>
                     )}
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Est. Hours</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Address</th>
+                    <SortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
+                    <SortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
+                    <SortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
+                    <SortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Notes</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">CompanyCam</th>
@@ -334,5 +363,27 @@ export default function AdminDashboardClient({
         />
       )}
     </div>
+  )
+}
+
+function SortTh({ label, sortKey: key, currentKey, dir, onSort, align }: {
+  label: string; sortKey: SortKey; currentKey: SortKey; dir: SortDir
+  onSort: (k: SortKey) => void; align: 'left' | 'right'
+}) {
+  const active = key === currentKey
+  return (
+    <th
+      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-red-800 transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
+      onClick={() => onSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <svg className={`h-3.5 w-3.5 ${active ? 'opacity-100' : 'opacity-40'}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          {active && dir === 'desc'
+            ? <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+            : <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />}
+        </svg>
+      </span>
+    </th>
   )
 }

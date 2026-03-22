@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
 import type { SubcontractorWithStats } from '@/lib/types'
+
+type SubSortKey = 'company_name' | 'first_name' | 'last_name' | 'email' | 'crew_size' | 'insurance_expiration' | 'insurance_provider' | 'phone' | 'years_in_business'
+type SortDir = 'asc' | 'desc'
 
 interface Props {
   subcontractors: SubcontractorWithStats[]
@@ -16,8 +19,21 @@ interface Props {
 
 export default function SubcontractorListClient({ subcontractors, tenantName, tenantSlug }: Props) {
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('active')
+  const [complianceFilter, setComplianceFilter] = useState<'all' | 'compliant' | 'not_compliant'>('all')
+  const [sortKey, setSortKey] = useState<SubSortKey>('last_name')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const toggleSort = useCallback((key: SubSortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }, [sortKey])
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
@@ -25,18 +41,58 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
   const [inviteSuccess, setInviteSuccess] = useState(false)
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return subcontractors
-    const q = search.toLowerCase()
-    return subcontractors.filter((s) => {
-      const fullName = `${s.first_name} ${s.last_name}`.toLowerCase()
-      return (
-        fullName.includes(q) ||
-        s.email.toLowerCase().includes(q) ||
-        (s.phone && s.phone.toLowerCase().includes(q)) ||
-        (s.company_name && s.company_name.toLowerCase().includes(q))
-      )
+    let result = subcontractors
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      result = result.filter((s) => s.status === statusFilter)
+    }
+
+    // Compliance filter
+    if (complianceFilter === 'compliant') {
+      result = result.filter((s) => isSubCompliant(s))
+    } else if (complianceFilter === 'not_compliant') {
+      result = result.filter((s) => !isSubCompliant(s))
+    }
+
+    // Search
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter((s) => {
+        const fullName = `${s.first_name} ${s.last_name}`.toLowerCase()
+        return (
+          fullName.includes(q) ||
+          s.email.toLowerCase().includes(q) ||
+          (s.phone && s.phone.toLowerCase().includes(q)) ||
+          (s.company_name && s.company_name.toLowerCase().includes(q))
+        )
+      })
+    }
+
+    // Sort
+    result = [...result].sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      const strCmp = (x: string | null | undefined, y: string | null | undefined) =>
+        dir * (x ?? '').localeCompare(y ?? '')
+      const numCmp = (x: number | null | undefined, y: number | null | undefined) =>
+        dir * ((x ?? 0) - (y ?? 0))
+
+      switch (sortKey) {
+        case 'company_name': return strCmp(a.company_name, b.company_name)
+        case 'first_name': return strCmp(a.first_name, b.first_name)
+        case 'last_name': return strCmp(a.last_name, b.last_name)
+        case 'email': return strCmp(a.email, b.email)
+        case 'crew_size': return numCmp(a.crew_size, b.crew_size)
+        case 'insurance_expiration': return strCmp(a.insurance_expiration, b.insurance_expiration)
+        case 'insurance_provider': return strCmp(a.insurance_provider, b.insurance_provider)
+        case 'phone': return strCmp(a.phone, b.phone)
+        case 'years_in_business': return numCmp(a.years_in_business, b.years_in_business)
+        default: return 0
+      }
     })
-  }, [subcontractors, search])
+
+    return result
+  }, [subcontractors, search, statusFilter, complianceFilter, sortKey, sortDir])
 
   function handleDelete(userId: string) {
     startTransition(async () => {
@@ -82,37 +138,62 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
       <AdminNav companyName={tenantName} />
 
       <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="sm:flex sm:items-center sm:justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">All Subcontractors</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {subcontractors.filter(s => s.status === 'active').length} active subcontractor{subcontractors.filter(s => s.status === 'active').length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="mt-4 sm:mt-0 flex items-center gap-3">
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-              </svg>
-              Invite Subcontractor
-            </button>
-          </div>
-          <div className="mt-4 sm:mt-0 relative max-w-md">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+        <div className="mb-6">
+          <div className="sm:flex sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">All Subcontractors</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                {subcontractors.filter(s => s.status === 'active').length} active subcontractor{subcontractors.filter(s => s.status === 'active').length !== 1 ? 's' : ''}
+              </p>
             </div>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="block w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
-            />
+            <div className="mt-4 sm:mt-0 flex items-center gap-3">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                </svg>
+                Invite Subcontractor
+              </button>
+            </div>
+          </div>
+
+          {/* Filters row */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="block w-48 sm:w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="deleted">Deleted</option>
+            </select>
+            <select
+              value={complianceFilter}
+              onChange={(e) => setComplianceFilter(e.target.value as any)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+            >
+              <option value="all">All Compliance</option>
+              <option value="compliant">Compliant</option>
+              <option value="not_compliant">Not Compliant</option>
+            </select>
+            <span className="text-xs text-gray-500">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
 
@@ -130,16 +211,16 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-red-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Company Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">First Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Last Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Email</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Crew</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Insurance Exp.</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Insurance Provider</th>
+                  <SubSortTh label="Company Name" sortKey="company_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
+                  <SubSortTh label="First Name" sortKey="first_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
+                  <SubSortTh label="Last Name" sortKey="last_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
+                  <SubSortTh label="Email" sortKey="email" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
+                  <SubSortTh label="Crew" sortKey="crew_size" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SubSortTh label="Insurance Exp." sortKey="insurance_expiration" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SubSortTh label="Insurance Provider" sortKey="insurance_provider" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Address</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Phone</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Years</th>
+                  <SubSortTh label="Phone" sortKey="phone" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
+                  <SubSortTh label="Years" sortKey="years_in_business" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">COI</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">W-9</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Edit</th>
@@ -322,5 +403,29 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
         </div>
       )}
     </div>
+  )
+}
+
+function SubSortTh({ label, sortKey: key, currentKey, dir, onSort, align }: {
+  label: string; sortKey: SubSortKey; currentKey: SubSortKey; dir: SortDir
+  onSort: (k: SubSortKey) => void; align: 'left' | 'right' | 'center'
+}) {
+  const active = key === currentKey
+  return (
+    <th
+      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-red-800 transition-colors ${
+        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+      }`}
+      onClick={() => onSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <svg className={`h-3.5 w-3.5 ${active ? 'opacity-100' : 'opacity-40'}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          {active && dir === 'desc'
+            ? <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+            : <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />}
+        </svg>
+      </span>
+    </th>
   )
 }
