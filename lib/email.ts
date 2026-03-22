@@ -2,11 +2,11 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const DEFAULT_FROM = 'TradeTap <notifications@tradetap.com>'
+const DEFAULT_FROM = 'TradeTap <onboarding@resend.dev>'
 
 function getFrom(tenantName: string, notificationEmail: string | null) {
   if (notificationEmail) {
-    return `${tenantName} via TradeTap <notifications@tradetap.com>`
+    return `${tenantName} via TradeTap <onboarding@resend.dev>`
   }
   return DEFAULT_FROM
 }
