@@ -1,12 +1,13 @@
 :root {
-  --orange: #E8780A;
-  --green: #1B4D2E;
+  --accent: #00A896;
+  --accent-hover: #008F7E;
+  --hero-bg: #0D1B2A;
   --dark: #111111;
-  --cream: #F5F0E8;
-  --cream2: #EDE8DF;
+  --cream: #F0F5F5;
+  --cream2: #E4EEEE;
   --white: #ffffff;
   --muted: #888880;
-  --green-light: #4BBF6B;
+  --green-light: #33BFB0;
 }
 
 /* NAV */
@@ -14,42 +15,42 @@
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   padding: 20px 48px;
   display: flex; align-items: center; justify-content: space-between;
-  background: rgba(245,240,232,0.92);
+  background: rgba(240,245,245,0.92);
   backdrop-filter: blur(12px);
   border-bottom: 0.5px solid rgba(0,0,0,0.06);
 }
 .pricing-page .nav-logo { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: 28px; letter-spacing: -0.02em; text-decoration: none; }
 .pricing-page .nav-logo .k { color: var(--dark); }
-.pricing-page .nav-logo .r { color: var(--orange); }
-.pricing-page .nav-logo .b { color: var(--green); }
+.pricing-page .nav-logo .r { color: var(--accent); }
+.pricing-page .nav-logo .b { color: var(--hero-bg); }
 .pricing-page .nav-links { display: flex; align-items: center; gap: 32px; }
 .pricing-page .nav-links a { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color 0.2s; }
 .pricing-page .nav-links a:hover { color: var(--dark); }
 .pricing-page .nav-cta { background: var(--dark) !important; color: var(--white) !important; padding: 10px 20px !important; border-radius: 8px !important; font-weight: 600 !important; }
-.pricing-page .nav-cta:hover { background: var(--orange) !important; }
+.pricing-page .nav-cta:hover { background: var(--accent) !important; }
 
 /* HERO */
 .pricing-page .hero {
-  background: var(--green);
+  background: var(--hero-bg);
   padding: 160px 32px 100px;
   text-align: center;
   position: relative; overflow: hidden;
 }
 .pricing-page .hero::before {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 70% 30%, rgba(232,120,10,0.15) 0%, transparent 55%);
+  background: radial-gradient(ellipse at 70% 30%, rgba(0,168,150,0.15) 0%, transparent 55%);
   pointer-events: none;
 }
 .pricing-page .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.6s ease forwards 0.2s; }
 .pricing-page .hero-headline { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: clamp(52px, 8vw, 96px); line-height: 0.95; letter-spacing: -0.02em; color: var(--white); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.35s; }
-.pricing-page .hero-headline span { color: var(--orange); }
+.pricing-page .hero-headline span { color: var(--accent); }
 .pricing-page .hero-sub { font-size: clamp(16px, 1.8vw, 19px); color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto; line-height: 1.7; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.5s; }
 .pricing-page .hero-sub strong { color: rgba(255,255,255,0.9); font-weight: 600; }
 
 /* SECTIONS */
 .pricing-page section { padding: 100px 32px; }
 .pricing-page .container { max-width: 1080px; margin: 0 auto; }
-.pricing-page .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; }
+.pricing-page .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
 .pricing-page .section-title { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: clamp(36px, 5vw, 64px); line-height: 0.95; letter-spacing: -0.02em; margin-bottom: 24px; }
 .pricing-page .section-body { font-size: 17px; color: #555; line-height: 1.7; max-width: 520px; }
 
@@ -66,7 +67,7 @@
   transition: transform 0.2s;
 }
 .pricing-page .plan-card:hover { transform: translateY(-4px); }
-.pricing-page .plan-card.featured { border-color: var(--orange); }
+.pricing-page .plan-card.featured { border-color: var(--accent); }
 .pricing-page .plan-card.dark-card { background: var(--dark); }
 .pricing-page .plan-badge {
   display: inline-block; font-size: 11px; font-weight: 600;
@@ -74,7 +75,7 @@
   padding: 4px 12px; border-radius: 20px; margin-bottom: 24px;
 }
 .pricing-page .badge-free     { background: var(--cream); color: var(--muted); }
-.pricing-page .badge-featured { background: rgba(232,120,10,0.15); color: var(--orange); }
+.pricing-page .badge-featured { background: rgba(0,168,150,0.15); color: var(--accent); }
 .pricing-page .badge-dark     { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
 .pricing-page .plan-name {
   font-family: 'Rajdhani', sans-serif; font-weight: 900;
@@ -88,7 +89,7 @@
   color: var(--dark); margin-bottom: 4px;
 }
 .pricing-page .plan-price sup { font-size: 28px; vertical-align: super; }
-.pricing-page .featured .plan-price { color: var(--orange); }
+.pricing-page .featured .plan-price { color: var(--accent); }
 .pricing-page .dark-card .plan-price { color: var(--white); }
 .pricing-page .plan-period { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .pricing-page .dark-card .plan-period { color: rgba(255,255,255,0.4); }
@@ -99,8 +100,8 @@
 .pricing-page .plan-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
 .pricing-page .plan-features li { font-size: 14px; color: #444; display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
 .pricing-page .dark-card .plan-features li { color: rgba(255,255,255,0.6); }
-.pricing-page .plan-features li::before { content: '\2713'; color: var(--green); font-weight: 700; flex-shrink: 0; font-size: 13px; margin-top: 1px; }
-.pricing-page .featured .plan-features li::before { color: var(--orange); }
+.pricing-page .plan-features li::before { content: '\2713'; color: var(--hero-bg); font-weight: 700; flex-shrink: 0; font-size: 13px; margin-top: 1px; }
+.pricing-page .featured .plan-features li::before { color: var(--accent); }
 .pricing-page .dark-card .plan-features li::before { color: var(--green-light); }
 .pricing-page .plan-cta {
   display: block; text-align: center; padding: 14px 24px;
@@ -110,8 +111,8 @@
 .pricing-page .plan-cta:hover { transform: translateY(-2px); }
 .pricing-page .cta-outline { border: 1.5px solid #ddd; color: var(--dark); background: transparent; }
 .pricing-page .cta-outline:hover { border-color: var(--dark); }
-.pricing-page .cta-orange { background: var(--orange); color: var(--white); border: none; }
-.pricing-page .cta-orange:hover { background: #d06c08; }
+.pricing-page .cta-orange { background: var(--accent); color: var(--white); border: none; }
+.pricing-page .cta-orange:hover { background: var(--accent-hover); }
 .pricing-page .cta-white { background: var(--white); color: var(--dark); border: none; }
 .pricing-page .cta-white:hover { background: var(--cream); }
 .pricing-page .plans-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 24px; }
@@ -127,7 +128,7 @@
   border-bottom: 2px solid var(--cream2);
 }
 .pricing-page .compare-table th:first-child { text-align: left; }
-.pricing-page .compare-table th.col-featured { color: var(--orange); }
+.pricing-page .compare-table th.col-featured { color: var(--accent); }
 .pricing-page .compare-table th.col-dark { color: var(--dark); }
 .pricing-page .compare-table td {
   padding: 14px 20px; font-size: 14px;
@@ -137,8 +138,8 @@
 .pricing-page .compare-table td:first-child { text-align: left; font-weight: 500; color: var(--dark); }
 .pricing-page .compare-table tr:last-child td { border-bottom: none; }
 .pricing-page .compare-table tr:hover td { background: var(--cream); }
-.pricing-page .check { color: var(--green); font-weight: 700; font-size: 16px; }
-.pricing-page .check-orange { color: var(--orange); font-weight: 700; font-size: 16px; }
+.pricing-page .check { color: var(--hero-bg); font-weight: 700; font-size: 16px; }
+.pricing-page .check-orange { color: var(--accent); font-weight: 700; font-size: 16px; }
 .pricing-page .dash { color: #ddd; font-size: 18px; }
 .pricing-page .compare-table .row-group td,
 .pricing-page .compare-table .row-group th {
@@ -163,9 +164,9 @@
   font-weight: 600; color: var(--dark); text-align: left;
   transition: color 0.2s;
 }
-.pricing-page .faq-q:hover { color: var(--orange); }
+.pricing-page .faq-q:hover { color: var(--accent); }
 .pricing-page .faq-icon { font-size: 20px; color: var(--muted); flex-shrink: 0; transition: transform 0.25s; }
-.pricing-page .faq-item.open .faq-icon { transform: rotate(45deg); color: var(--orange); }
+.pricing-page .faq-item.open .faq-icon { transform: rotate(45deg); color: var(--accent); }
 .pricing-page .faq-a {
   max-height: 0; overflow: hidden;
   transition: max-height 0.35s ease, padding 0.25s ease;
@@ -177,18 +178,18 @@
 /* CTA */
 .pricing-page .cta-section { background: var(--dark); text-align: center; padding: 120px 32px; }
 .pricing-page .cta-title { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: clamp(48px, 7vw, 88px); line-height: 0.95; color: var(--white); margin-bottom: 20px; }
-.pricing-page .cta-title span { color: var(--orange); }
+.pricing-page .cta-title span { color: var(--accent); }
 .pricing-page .cta-sub { font-size: 17px; color: rgba(255,255,255,0.4); margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.6; }
-.pricing-page .btn-big { background: var(--orange); color: var(--white); padding: 20px 48px; border-radius: 12px; font-size: 18px; font-weight: 700; text-decoration: none; transition: transform 0.15s, background 0.2s; display: inline-block; margin-bottom: 16px; }
-.pricing-page .btn-big:hover { background: #d06c08; transform: translateY(-2px); }
+.pricing-page .btn-big { background: var(--accent); color: var(--white); padding: 20px 48px; border-radius: 12px; font-size: 18px; font-weight: 700; text-decoration: none; transition: transform 0.15s, background 0.2s; display: inline-block; margin-bottom: 16px; }
+.pricing-page .btn-big:hover { background: var(--accent-hover); transform: translateY(-2px); }
 .pricing-page .cta-note { font-size: 13px; color: rgba(255,255,255,0.2); }
 
 /* FOOTER */
 .pricing-page footer { background: var(--dark); border-top: 0.5px solid rgba(255,255,255,0.06); padding: 40px 48px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
 .pricing-page .footer-logo { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: -0.02em; text-decoration: none; }
 .pricing-page .footer-logo .k { color: var(--white); }
-.pricing-page .footer-logo .r { color: var(--orange); }
-.pricing-page .footer-logo .b { color: var(--green); }
+.pricing-page .footer-logo .r { color: var(--accent); }
+.pricing-page .footer-logo .b { color: var(--green-light); }
 .pricing-page footer p { font-size: 13px; color: rgba(255,255,255,0.2); }
 
 @keyframes pricingFadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
