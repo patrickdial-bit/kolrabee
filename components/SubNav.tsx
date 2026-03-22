@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/[slug]/dashboard/actions'
 import { useTooltips } from '@/lib/tooltip-context'
+import { useI18n } from '@/lib/i18n'
 
 interface SubNavProps {
   slug: string
@@ -16,10 +17,11 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
   const { enabled: tooltipsOn, toggle: toggleTooltips } = useTooltips()
+  const { locale, setLocale, t } = useI18n()
 
   const navLinks = [
-    { href: `/${slug}/dashboard`, label: 'Dashboard' },
-    { href: `/${slug}/profile`, label: 'Profile' },
+    { href: `/${slug}/dashboard`, label: t('nav.dashboard') },
+    { href: `/${slug}/profile`, label: t('nav.profile') },
   ]
 
   const logoutWithSlug = logout.bind(null, slug)
@@ -66,11 +68,21 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
             })}
           </div>
 
-          {/* Right: name + tooltips + logout + hamburger */}
+          {/* Right: name + lang + tooltips + logout + hamburger */}
           <div className="flex items-center gap-2">
             {subName && (
-              <span className="hidden md:inline text-sm text-gray-600 mr-2">{subName}</span>
+              <span className="hidden md:inline text-sm text-gray-600 mr-1">{subName}</span>
             )}
+            {/* Language toggle */}
+            <button
+              type="button"
+              onClick={() => setLocale(locale === 'en' ? 'es' : 'en')}
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              title={locale === 'en' ? 'Cambiar a Espanol' : 'Switch to English'}
+            >
+              {locale === 'en' ? 'ES' : 'EN'}
+            </button>
+            {/* Tooltips toggle */}
             <button
               type="button"
               onClick={toggleTooltips}
@@ -84,21 +96,21 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
-              Tips {tooltipsOn ? 'On' : 'Off'}
+              {t(tooltipsOn ? 'nav.tips_on' : 'nav.tips_off')}
             </button>
             <form action={logoutWithSlug}>
               <button
                 type="submit"
                 className="hidden md:inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
               >
-                Log out
+                {t('nav.logout')}
               </button>
             </form>
             <button
               type="button"
               className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle menu"
+              aria-label={t('nav.toggle_menu')}
             >
               {mobileOpen ? (
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -145,12 +157,28 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
                 </Link>
               )
             })}
+            {/* Mobile language toggle */}
+            <button
+              type="button"
+              onClick={() => { setLocale(locale === 'en' ? 'es' : 'en'); setMobileOpen(false) }}
+              className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            >
+              {locale === 'en' ? 'Espanol' : 'English'}
+            </button>
+            {/* Mobile tooltips toggle */}
+            <button
+              type="button"
+              onClick={() => { toggleTooltips(); setMobileOpen(false) }}
+              className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            >
+              {t(tooltipsOn ? 'nav.tips_on' : 'nav.tips_off')}
+            </button>
             <form action={logoutWithSlug}>
               <button
                 type="submit"
                 className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               >
-                Log out
+                {t('nav.logout')}
               </button>
             </form>
           </div>

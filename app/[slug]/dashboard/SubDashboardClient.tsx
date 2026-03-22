@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SubNav from '@/components/SubNav'
 import StatusTabs from '@/components/StatusTabs'
+import Tooltip from '@/components/Tooltip'
+import { useI18n } from '@/lib/i18n'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import { acceptProject, cancelAcceptedProject } from '@/app/[slug]/projects/[id]/actions'
@@ -33,8 +35,10 @@ export default function SubDashboardClient({
   paidProjects,
   subName,
 }: SubDashboardClientProps) {
-  const tabs = ['Available Projects', 'Accepted Projects', 'Paid Projects']
-  const [activeTab, setActiveTab] = useState('Available Projects')
+  const { t } = useI18n()
+  const tabs = [t('dash.available'), t('dash.accepted'), t('dash.paid')]
+  const [activeIdx, setActiveIdx] = useState(0)
+  const activeTab = tabs[activeIdx]
   const [showAcceptModal, setShowAcceptModal] = useState<Project | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -122,18 +126,22 @@ export default function SubDashboardClient({
       <SubNav slug={slug} tenantName={tenantName} subName={subName} />
 
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Subcontractor Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('dash.title')}</h1>
 
         {/* Earnings — always visible */}
         <div className="mb-6 flex flex-wrap items-center gap-4">
-          <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
-            <span className="text-sm font-medium text-gray-500">Paid YTD</span>
-            <span className="text-lg font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</span>
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
-            <span className="text-sm font-medium text-gray-500">All-Time</span>
-            <span className="text-lg font-bold text-gray-700">{formatCurrency(allTimeEarnings)}</span>
-          </div>
+          <Tooltip text={t('tip.paid_ytd')} position="bottom">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+              <span className="text-sm font-medium text-gray-500">{t('dash.paid_ytd')}</span>
+              <span className="text-lg font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</span>
+            </div>
+          </Tooltip>
+          <Tooltip text={t('tip.all_time')} position="bottom">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+              <span className="text-sm font-medium text-gray-500">{t('dash.all_time')}</span>
+              <span className="text-lg font-bold text-gray-700">{formatCurrency(allTimeEarnings)}</span>
+            </div>
+          </Tooltip>
         </div>
 
         {error && (
@@ -146,32 +154,32 @@ export default function SubDashboardClient({
         <StatusTabs
           tabs={tabs}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => setActiveIdx(tabs.indexOf(tab))}
         />
 
         <div className="mt-6">
 
 
           {/* Available Projects Tab */}
-          {activeTab === 'Available Projects' && (
+          {activeTab === t('dash.available') && (
             <>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subcontractor Available Projects</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dash.sub_available')}</h2>
               {availableProjects.length === 0 ? (
                 <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-                  <p className="text-sm text-gray-500">No available projects. New projects will appear here when you are invited.</p>
+                  <p className="text-sm text-gray-500">{t('dash.no_available')}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-amber-500">
                       <tr>
-                        <SubSortTh label="Project ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order Link</th>
-                        <SubSortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <SubSortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
-                        <SubSortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
-                        <SubSortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
+                        <SubSortTh label={t('th.project_id')} sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.work_order')}</th>
+                        <SubSortTh label={t('th.project_start')} sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <SubSortTh label={t('th.est_hours')} sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
+                        <SubSortTh label={t('th.payout')} sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
+                        <SubSortTh label={t('th.address')} sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.action')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -180,8 +188,10 @@ export default function SubDashboardClient({
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                             {project.work_order_link ? (
-                              <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                              <Tooltip text={t('tip.work_order')} position="top">
+                                <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                              </Tooltip>
                             ) : '—'}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
@@ -195,12 +205,14 @@ export default function SubDashboardClient({
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <button
-                              onClick={() => setShowAcceptModal(project)}
-                              className="inline-flex items-center rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
-                            >
-                              Accept Project
-                            </button>
+                            <Tooltip text={t('tip.accept_project')} position="left">
+                              <button
+                                onClick={() => setShowAcceptModal(project)}
+                                className="inline-flex items-center rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
+                              >
+                                {t('action.accept')}
+                              </button>
+                            </Tooltip>
                           </td>
                         </tr>
                       ))}
@@ -212,26 +224,26 @@ export default function SubDashboardClient({
           )}
 
           {/* Accepted Projects Tab */}
-          {activeTab === 'Accepted Projects' && (
+          {activeIdx === 1 && (
             <>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subcontractor Accepted Projects</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dash.sub_accepted')}</h2>
               {myJobs.length === 0 ? (
                 <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-                  <p className="text-sm text-gray-500">No active jobs. Accept an available project to see it here.</p>
+                  <p className="text-sm text-gray-500">{t('dash.no_accepted')}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-amber-500">
                       <tr>
-                        <SubSortTh label="Project ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order Link</th>
-                        <SubSortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <SubSortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
-                        <SubSortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
-                        <SubSortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Status</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
+                        <SubSortTh label={t('th.project_id')} sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.work_order')}</th>
+                        <SubSortTh label={t('th.project_start')} sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <SubSortTh label={t('th.est_hours')} sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
+                        <SubSortTh label={t('th.payout')} sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
+                        <SubSortTh label={t('th.address')} sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.status')}</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.action')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -240,8 +252,10 @@ export default function SubDashboardClient({
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                             {project.work_order_link ? (
-                              <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                              <Tooltip text={t('tip.work_order')} position="top">
+                                <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                              </Tooltip>
                             ) : '—'}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
@@ -265,18 +279,20 @@ export default function SubDashboardClient({
                                 <div className="flex items-center justify-center gap-1">
                                   <button onClick={() => handleCancel(project)} disabled={loading}
                                     className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50">
-                                    {loading ? '...' : 'Confirm'}
+                                    {loading ? '...' : t('action.confirm')}
                                   </button>
                                   <button onClick={() => setShowCancelConfirm(null)}
                                     className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200">
-                                    No
+                                    {t('action.no')}
                                   </button>
                                 </div>
                               ) : (
-                                <button onClick={() => setShowCancelConfirm(project.id)}
-                                  className="inline-flex items-center rounded-md bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors">
-                                  Cancel
-                                </button>
+                                <Tooltip text={t('tip.cancel_project')} position="left">
+                                  <button onClick={() => setShowCancelConfirm(project.id)}
+                                    className="inline-flex items-center rounded-md bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors">
+                                    {t('action.cancel')}
+                                  </button>
+                                </Tooltip>
                               )
                             )}
                           </td>
@@ -290,25 +306,25 @@ export default function SubDashboardClient({
           )}
 
           {/* Paid Projects Tab */}
-          {activeTab === 'Paid Projects' && (
+          {activeIdx === 2 && (
             <>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">All Paid Projects</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dash.all_paid')}</h2>
               {paidProjects.length === 0 ? (
                 <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-                  <p className="text-sm text-gray-500">No paid projects yet. Completed and paid projects will appear here.</p>
+                  <p className="text-sm text-gray-500">{t('dash.no_paid')}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-700">
                       <tr>
-                        <SubSortTh label="Project ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
-                        <SubSortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
-                        <SubSortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="gray" />
-                        <SubSortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="gray" />
-                        <SubSortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
+                        <SubSortTh label={t('th.project_id')} sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
+                        <SubSortTh label={t('th.project_start')} sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
+                        <SubSortTh label={t('th.payout')} sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="gray" />
+                        <SubSortTh label={t('th.est_hours')} sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="gray" />
+                        <SubSortTh label={t('th.address')} sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.work_order')}</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.photos')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -327,14 +343,18 @@ export default function SubDashboardClient({
                           <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                             {project.work_order_link ? (
-                              <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                              <Tooltip text={t('tip.work_order')} position="top">
+                                <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                              </Tooltip>
                             ) : '—'}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                             {project.companycam_link ? (
-                              <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
-                                className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                              <Tooltip text={t('tip.photos_link')} position="top">
+                                <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
+                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                              </Tooltip>
                             ) : '—'}
                           </td>
                         </tr>
@@ -360,23 +380,23 @@ export default function SubDashboardClient({
                 </svg>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Accept Project</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('modal.accept_title')}</h3>
             <p className="text-sm text-gray-600 mb-6">
-              I accept the WO as written and agree to produce the full scope of the project for the payment listed, and will return after walk through for touch ups on the work that I performed, as necessary. I also agree that my required insurance is up to date.
+              {t('modal.accept_body')}
             </p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setShowAcceptModal(null)}
                 className="rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t('modal.cancel')}
               </button>
               <button
                 onClick={() => handleAccept(showAcceptModal)}
                 disabled={loading}
                 className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Accepting...' : 'Confirm'}
+                {loading ? t('action.accepting') : t('modal.confirm')}
               </button>
             </div>
           </div>
