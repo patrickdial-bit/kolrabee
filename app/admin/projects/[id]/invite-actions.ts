@@ -1,10 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getCurrentUser } from '@/lib/helpers'
+import { getCurrentUser, extractCity } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSubCompliant, isTenantActive } from '@/lib/types'
-import type { AppUser } from '@/lib/types'
+import { sendInviteEmail } from '@/lib/email'
+import type { AppUser, Project } from '@/lib/types'
 
 export async function getSubcontractors(tenantId: string) {
   const adminClient = createAdminClient()
@@ -90,6 +91,34 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
 
   if (error) {
     return { error: 'Failed to send invitations.' }
+  }
+
+  // Fetch project details for the email
+  const { data: project } = await adminClient
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single()
+
+  // Send invitation emails (fire-and-forget — don't block on email failures)
+  if (project && subs) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradetap-seven.vercel.app'
+    const loginUrl = `${siteUrl}/${tenant.slug}/login`
+    const city = extractCity(project.address)
+
+    for (const sub of subs.filter((s: AppUser) => subcontractorIds.includes(s.id))) {
+      sendInviteEmail({
+        to: sub.email,
+        subName: sub.first_name,
+        tenantName: tenant.name,
+        jobNumber: project.job_number,
+        customerName: project.customer_name,
+        city,
+        startDate: project.start_date,
+        payout: project.payout_amount,
+        loginUrl,
+      })
+    }
   }
 
   revalidatePath(`/admin/projects/${projectId}`)

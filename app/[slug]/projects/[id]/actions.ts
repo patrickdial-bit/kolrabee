@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendAcceptEmail, sendCancelEmail } from '@/lib/email'
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
@@ -37,6 +38,37 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
     .update({ status: 'accepted' })
     .eq('project_id', projectId)
     .eq('subcontractor_id', appUser.id)
+
+  // Notify admin via email (fire-and-forget)
+  const { data: project } = await adminClient
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single()
+
+  if (project) {
+    // Find tenant admin(s) to notify
+    const { data: admins } = await adminClient
+      .from('users')
+      .select('email')
+      .eq('tenant_id', tenant.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+
+    const subName = `${appUser.first_name} ${appUser.last_name}`
+    for (const admin of admins ?? []) {
+      sendAcceptEmail({
+        to: admin.email,
+        subName,
+        tenantName: tenant.name,
+        jobNumber: project.job_number,
+        customerName: project.customer_name,
+        address: project.address,
+        startDate: project.start_date,
+        payout: project.payout_amount,
+      })
+    }
+  }
 
   redirect(`/${slug}/dashboard`)
 }
@@ -74,6 +106,33 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
     .update({ status: 'invited' })
     .eq('project_id', projectId)
     .eq('subcontractor_id', appUser.id)
+
+  // Notify admin via email (fire-and-forget)
+  const { data: cancelledProject } = await adminClient
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single()
+
+  if (cancelledProject) {
+    const { data: admins } = await adminClient
+      .from('users')
+      .select('email')
+      .eq('tenant_id', tenant.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+
+    const subName = `${appUser.first_name} ${appUser.last_name}`
+    for (const admin of admins ?? []) {
+      sendCancelEmail({
+        to: admin.email,
+        subName,
+        tenantName: tenant.name,
+        jobNumber: cancelledProject.job_number,
+        customerName: cancelledProject.customer_name,
+      })
+    }
+  }
 
   redirect(`/${slug}/dashboard`)
 }
