@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import SuperAdminNav from '@/components/SuperAdminNav'
 import { updateTenantPlan, suspendTenant, deleteTenant } from './actions'
+import { startImpersonation } from '@/app/super-admin/impersonate/actions'
 import { useState, useTransition } from 'react'
 
 interface Props {
@@ -86,8 +87,15 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
           </div>
           <p className="text-sm text-gray-500">/{tenant.slug}</p>
 
-          {/* Suspend / Delete actions */}
+          {/* Actions */}
           <div className="mt-4 flex items-center gap-3">
+            <button
+              onClick={() => startTransition(() => startImpersonation(tenant.id))}
+              disabled={isPending}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+            >
+              Log in as
+            </button>
             <button
               onClick={handleSuspend}
               disabled={isPending}

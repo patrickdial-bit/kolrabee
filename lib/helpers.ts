@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
@@ -6,8 +7,29 @@ import type { AppUser, Tenant } from '@/lib/types'
 export type { AppUser, Tenant } from '@/lib/types'
 export type { Project, ProjectInvitation } from '@/lib/types'
 
+// Check if the current user is a super admin impersonating a tenant
+export async function getImpersonation(): Promise<{ isSuperAdmin: boolean; impersonatingTenantId: string | null }> {
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  if (!authUser) return { isSuperAdmin: false, impersonatingTenantId: null }
+
+  const adminClient = createAdminClient()
+  const { data: superAdmin } = await adminClient
+    .from('super_admins')
+    .select('id')
+    .eq('supabase_auth_id', authUser.id)
+    .single()
+
+  if (!superAdmin) return { isSuperAdmin: false, impersonatingTenantId: null }
+
+  const cookieStore = await cookies()
+  const impersonatingTenantId = cookieStore.get('impersonate_tenant_id')?.value || null
+
+  return { isSuperAdmin: true, impersonatingTenantId }
+}
+
 // Get the current authenticated user and their app user record
-export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant }> {
+export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant; impersonating?: boolean }> {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
@@ -16,6 +38,39 @@ export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUse
   }
 
   const adminClient = createAdminClient()
+
+  // Check for super admin impersonation
+  const { isSuperAdmin, impersonatingTenantId } = await getImpersonation()
+
+  if (isSuperAdmin && impersonatingTenantId) {
+    // Load the impersonated tenant
+    const { data: tenant } = await adminClient
+      .from('tenants')
+      .select('*')
+      .eq('id', impersonatingTenantId)
+      .single()
+
+    if (!tenant) {
+      redirect('/super-admin')
+    }
+
+    // Get the tenant's admin user to impersonate
+    const { data: adminUser } = await adminClient
+      .from('users')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+      .limit(1)
+      .single()
+
+    if (!adminUser) {
+      redirect('/super-admin')
+    }
+
+    return { authUser, appUser: adminUser as AppUser, tenant: tenant as Tenant, impersonating: true }
+  }
+
   const { data: appUser, error } = await adminClient
     .from('users')
     .select('*')

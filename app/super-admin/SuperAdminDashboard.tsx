@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useTransition } from 'react'
 import Link from 'next/link'
 import SuperAdminNav from '@/components/SuperAdminNav'
+import { startImpersonation } from '@/app/super-admin/impersonate/actions'
 
 type TenantWithStats = {
   id: string
@@ -37,6 +38,7 @@ const planColors: Record<string, string> = {
 
 export default function SuperAdminDashboard({ tenants, stats }: Props) {
   const [search, setSearch] = useState('')
+  const [isPending, startTransition] = useTransition()
 
   const filtered = useMemo(() => {
     if (!search.trim()) return tenants
@@ -129,12 +131,21 @@ export default function SuperAdminDashboard({ tenants, stats }: Props) {
                     {new Date(tenant.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <Link
-                      href={`/super-admin/tenants/${tenant.id}`}
-                      className="inline-flex items-center rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-700 transition-colors"
-                    >
-                      View
-                    </Link>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => startTransition(() => startImpersonation(tenant.id))}
+                        disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                      >
+                        Log in as
+                      </button>
+                      <Link
+                        href={`/super-admin/tenants/${tenant.id}`}
+                        className="inline-flex items-center rounded-md bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-700 transition-colors"
+                      >
+                        View
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
