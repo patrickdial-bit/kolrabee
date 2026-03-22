@@ -1,12 +1,14 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
+import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
+import { getDocumentUrl } from './doc-actions'
 
 const statusColors: Record<string, string> = {
   available: 'bg-blue-50 text-blue-700 ring-blue-600/20',
@@ -21,11 +23,26 @@ interface Props {
   projects: Project[]
   ytdEarnings: number
   tenantName: string
+  tenantSlug: string
 }
 
-export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName }: Props) {
+export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName, tenantSlug }: Props) {
   const [isPending, startTransition] = useTransition()
+  const [docLoading, setDocLoading] = useState<string | null>(null)
+  const [docError, setDocError] = useState<string | null>(null)
   const router = useRouter()
+
+  async function handleViewDoc(docType: 'w9' | 'coi') {
+    setDocError(null)
+    setDocLoading(docType)
+    const result = await getDocumentUrl(sub.id, docType)
+    setDocLoading(null)
+    if (result.error) {
+      setDocError(result.error)
+    } else if (result.url) {
+      window.open(result.url, '_blank')
+    }
+  }
 
   function handleStatusToggle() {
     startTransition(async () => {
@@ -109,6 +126,118 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm mb-8">
           <p className="text-sm font-medium text-gray-500">YTD Earnings</p>
           <p className="mt-1 text-3xl font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</p>
+        </div>
+
+        {/* Compliance & Documents */}
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Compliance &amp; Documents</h2>
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                isSubCompliant(sub)
+                  ? 'bg-green-50 text-green-700 ring-green-600/20'
+                  : 'bg-red-50 text-red-700 ring-red-600/20'
+              }`}
+            >
+              {isSubCompliant(sub) ? 'Compliant' : 'Not Compliant'}
+            </span>
+          </div>
+
+          {docError && (
+            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{docError}</div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {/* W-9 */}
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">W-9</p>
+                {sub.w9_file_url ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                    Uploaded
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
+                    Missing
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mb-3">
+                {sub.w9_uploaded_at ? `Uploaded ${formatDate(sub.w9_uploaded_at)}` : 'Not yet uploaded'}
+              </p>
+              {sub.w9_file_url && (
+                <button
+                  onClick={() => handleViewDoc('w9')}
+                  disabled={docLoading === 'w9'}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                  {docLoading === 'w9' ? 'Loading...' : 'View / Download'}
+                </button>
+              )}
+            </div>
+
+            {/* COI */}
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">Certificate of Insurance</p>
+                {sub.coi_file_url ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                    Uploaded
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
+                    Missing
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mb-3">
+                {sub.coi_uploaded_at ? `Uploaded ${formatDate(sub.coi_uploaded_at)}` : 'Not yet uploaded'}
+              </p>
+              {sub.coi_file_url && (
+                <button
+                  onClick={() => handleViewDoc('coi')}
+                  disabled={docLoading === 'coi'}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                  {docLoading === 'coi' ? 'Loading...' : 'View / Download'}
+                </button>
+              )}
+            </div>
+
+            {/* Insurance */}
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-gray-900">Insurance</p>
+                {sub.insurance_expiration && new Date(sub.insurance_expiration) >= new Date() ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.06l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                    Valid
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600">
+                    <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" /></svg>
+                    {sub.insurance_expiration ? 'Expired' : 'Missing'}
+                  </span>
+                )}
+              </div>
+              <dl className="text-xs text-gray-500 space-y-1">
+                <div>
+                  <dt className="inline">Provider: </dt>
+                  <dd className="inline font-medium text-gray-700">{sub.insurance_provider ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="inline">Expires: </dt>
+                  <dd className="inline font-medium text-gray-700">{sub.insurance_expiration ? formatDate(sub.insurance_expiration) : '—'}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
         </div>
 
         {/* Project history */}

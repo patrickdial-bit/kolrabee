@@ -40,6 +40,7 @@ export default async function SubDetailPage({ params }: { params: { id: string }
       projects={(projects ?? []) as Project[]}
       ytdEarnings={ytdEarnings}
       tenantName={tenant.name}
+      tenantSlug={tenant.slug}
     />
   )
 }
