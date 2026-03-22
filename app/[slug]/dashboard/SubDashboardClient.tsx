@@ -28,7 +28,7 @@ export default function SubDashboardClient({
   paidProjects,
   subName,
 }: SubDashboardClientProps) {
-  const tabs = ['Paid YTD', 'Available Projects', 'Accepted Projects', 'Paid Projects']
+  const tabs = ['Available Projects', 'Accepted Projects', 'Paid Projects']
   const [activeTab, setActiveTab] = useState('Available Projects')
   const [showAcceptModal, setShowAcceptModal] = useState<Project | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
@@ -80,6 +80,12 @@ export default function SubDashboardClient({
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Subcontractor Dashboard</h1>
 
+        {/* Paid YTD — always visible */}
+        <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+          <span className="text-sm font-medium text-gray-500">Paid YTD</span>
+          <span className="text-lg font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</span>
+        </div>
+
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-4">
             <p className="text-sm text-red-700">{error}</p>
@@ -94,13 +100,7 @@ export default function SubDashboardClient({
         />
 
         <div className="mt-6">
-          {/* Paid YTD Tab */}
-          {activeTab === 'Paid YTD' && (
-            <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-white shadow-lg">
-              <p className="text-lg font-medium text-indigo-200">Year-to-Date Earnings</p>
-              <p className="mt-3 text-5xl font-bold">{formatCurrency(ytdEarnings)}</p>
-            </div>
-          )}
+
 
           {/* Available Projects Tab */}
           {activeTab === 'Available Projects' && (
