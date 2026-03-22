@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, PLAN_PRICES } from '@/lib/stripe'
+import { getStripe, PLAN_PRICES } from '@/lib/stripe'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PlanId } from '@/lib/stripe'
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Create or reuse Stripe customer
     let customerId = tenant.stripe_customer_id
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: tenant.billing_email || appUser.email,
         name: tenant.name,
         metadata: { tenant_id: tenant.id },
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         .eq('id', tenant.id)
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
