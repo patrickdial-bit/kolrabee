@@ -44,6 +44,17 @@ export async function loginAction(
     return { error: 'This account has been deactivated.' }
   }
 
+  // Check if super admin
+  const { data: superAdmin } = await adminClient
+    .from('super_admins')
+    .select('id')
+    .eq('supabase_auth_id', data.user.id)
+    .single()
+
+  if (superAdmin) {
+    redirect('/super-admin')
+  }
+
   if (appUser.role !== 'admin') {
     await supabase.auth.signOut()
     return { error: 'Access denied. This portal is for admin users only.' }
