@@ -29,12 +29,12 @@ export default function HomePage() {
       <main className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-3xl pt-20 pb-32 text-center sm:pt-32 sm:pb-40">
           <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
-            Post Jobs. Invite Subs.
-            <span className="block text-indigo-400">Get Paid.</span>
+            Grow Your Crews.
+            <span className="block text-indigo-400">Simply. Trusted.</span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-300">
-            Kolrabee is the simplest way for home services companies to post jobs,
-            invite subcontractors, track who accepted, and record when they&apos;re paid.
+            The simple way to build trust with every sub. Post jobs,
+            invite crews, track who accepted, and get everyone paid.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link
