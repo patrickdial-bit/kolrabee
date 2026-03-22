@@ -61,6 +61,7 @@ export default function HomePage() {
         <div className="nav-links">
           <a href="#how">How it works</a>
           <a href="#features">Features</a>
+          <Link href="/pricing">Pricing</Link>
           <Link href="/admin/login">Login</Link>
           <Link href="/admin/signup" className="nav-cta">
             Get Started Free
