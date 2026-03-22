@@ -51,7 +51,7 @@ const config: Config = {
       },
       fontFamily: {
         display: [
-          '"Barlow Condensed"',
+          '"Rajdhani"',
           "system-ui",
           "sans-serif",
         ],
