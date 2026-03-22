@@ -296,3 +296,17 @@ DROP POLICY IF EXISTS "Users can update own documents" ON storage.objects;
 CREATE POLICY "Users can update own documents"
   ON storage.objects FOR UPDATE
   USING (bucket_id = 'documents' AND auth.role() = 'authenticated');
+
+-- =============================================================================
+-- RPC FUNCTIONS
+-- =============================================================================
+
+-- YTD earnings for a subcontractor
+CREATE OR REPLACE FUNCTION get_ytd_earnings(sub_id UUID)
+RETURNS NUMERIC AS $$
+  SELECT COALESCE(SUM(payout_amount), 0)
+  FROM projects
+  WHERE accepted_by = sub_id
+    AND status = 'paid'
+    AND paid_at >= date_trunc('year', CURRENT_DATE);
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
