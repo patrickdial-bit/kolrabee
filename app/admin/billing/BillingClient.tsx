@@ -173,7 +173,7 @@ export default function BillingClient({ tenant }: Props) {
         <h2 className="text-lg font-semibold text-gray-900">Notification Email</h2>
         <p className="text-sm text-gray-500 mt-1 mb-4">
           Set a reply-to email for notifications sent to your subcontractors. Emails will show as
-          &ldquo;{tenant.name} via TradeTap&rdquo; and replies will go to this address.
+          &ldquo;{tenant.name} via Kolrabee&rdquo; and replies will go to this address.
         </p>
         <form
           onSubmit={async (e) => {
@@ -214,7 +214,7 @@ export default function BillingClient({ tenant }: Props) {
             <span className="text-sm text-green-600 font-medium">Saved</span>
           )}
         </form>
-        <p className="text-xs text-gray-400 mt-2">Leave blank to send from the default TradeTap address.</p>
+        <p className="text-xs text-gray-400 mt-2">Leave blank to send from the default Kolrabee address.</p>
       </div>
 
       {/* Plan Cards */}

@@ -2,11 +2,11 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const DEFAULT_FROM = 'TradeTap <onboarding@resend.dev>'
+const DEFAULT_FROM = 'Kolrabee <onboarding@resend.dev>'
 
 function getFrom(tenantName: string, notificationEmail: string | null) {
   if (notificationEmail) {
-    return `${tenantName} via TradeTap <onboarding@resend.dev>`
+    return `${tenantName} via Kolrabee <onboarding@resend.dev>`
   }
   return DEFAULT_FROM
 }
@@ -70,11 +70,11 @@ export async function sendPlatformInviteEmail(params: {
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
-      subject: `${tenantName} has invited you to join TradeTap`,
+      subject: `${tenantName} has invited you to join Kolrabee`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #1a1a1a; margin-bottom: 4px;">You're Invited!</h2>
-          <p style="color: #666; margin-top: 0;">${greeting} <strong>${tenantName}</strong> has invited you to join TradeTap to receive and accept job opportunities.</p>
+          <p style="color: #666; margin-top: 0;">${greeting} <strong>${tenantName}</strong> has invited you to join Kolrabee to receive and accept job opportunities.</p>
           <p style="color: #666;">Click the button below to create your account and get started.</p>
           <a href="${joinUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">Create Your Account</a>
           <p style="color: #999; font-size: 13px; margin-top: 24px;">Once you sign up, you'll be able to view available jobs, accept projects, and track your earnings.</p>
@@ -108,7 +108,7 @@ export async function sendInviteEmail(params: InviteEmailParams) {
             <tr><td style="padding: 8px 0; color: #666;">Payout</td><td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${formatCurrency(payout)}</td></tr>
           </table>
           <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View &amp; Accept</a>
-          <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your TradeTap account to accept or decline this job.</p>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee account to accept or decline this job.</p>
         </div>
       `,
     })
@@ -139,7 +139,7 @@ export async function sendAcceptEmail(params: AcceptEmailParams) {
             <tr><td style="padding: 8px 0; color: #666;">Payout</td><td style="padding: 8px 0; font-weight: 600;">${formatCurrency(payout)}</td></tr>
             <tr><td style="padding: 8px 0; color: #666;">Subcontractor</td><td style="padding: 8px 0;">${subName}</td></tr>
           </table>
-          <p style="color: #999; font-size: 13px;">Log in to your TradeTap admin dashboard for details.</p>
+          <p style="color: #999; font-size: 13px;">Log in to your Kolrabee admin dashboard for details.</p>
         </div>
       `,
     })
@@ -164,7 +164,7 @@ export async function sendCancelEmail(params: CancelEmailParams) {
           <h2 style="color: #dc2626; margin-bottom: 4px;">Project Cancelled</h2>
           <p style="color: #666; margin-top: 0;"><strong>${subName}</strong> has cancelled their acceptance of <strong>${jobLabel}${customerName}</strong>.</p>
           <p style="color: #666;">The project has been returned to <strong>Available</strong> status and can be reassigned.</p>
-          <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your TradeTap admin dashboard to reassign this project.</p>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee admin dashboard to reassign this project.</p>
         </div>
       `,
     })

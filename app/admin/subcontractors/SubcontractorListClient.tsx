@@ -272,7 +272,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             ) : (
               <>
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Invite Subcontractor</h3>
-                <p className="text-sm text-gray-500 mb-5">Send an email inviting them to create a TradeTap account.</p>
+                <p className="text-sm text-gray-500 mb-5">Send an email inviting them to create a Kolrabee account.</p>
 
                 <div className="space-y-4">
                   <div>

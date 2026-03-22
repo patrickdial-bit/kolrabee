@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'TradeTap - Construction Subcontractor Management',
+  title: 'Kolrabee - Construction Subcontractor Management',
   description:
     'Post jobs, invite subcontractors, track who accepted, and record when they are paid.',
 }

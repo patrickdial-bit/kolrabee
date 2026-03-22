@@ -32,7 +32,7 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
               href={`/${slug}/dashboard`}
               className="text-xl font-bold text-indigo-600"
             >
-              TradeTap
+              Kolrabee
             </Link>
             {tenantName && (
               <>

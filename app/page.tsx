@@ -6,9 +6,9 @@ export default function HomePage() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500">
-            <span className="text-lg font-bold text-white">T</span>
+            <span className="text-lg font-bold text-white">K</span>
           </div>
-          <span className="text-xl font-bold text-white">TradeTap</span>
+          <span className="text-xl font-bold text-white">Kolrabee</span>
         </div>
         <div className="flex items-center gap-4">
           <Link
@@ -33,7 +33,7 @@ export default function HomePage() {
             <span className="block text-indigo-400">Get Paid.</span>
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-300">
-            TradeTap is the simplest way for home services companies to post jobs,
+            Kolrabee is the simplest way for home services companies to post jobs,
             invite subcontractors, track who accepted, and record when they&apos;re paid.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
@@ -89,7 +89,7 @@ export default function HomePage() {
       <footer className="border-t border-white/10 py-8">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} TradeTap. All rights reserved.
+            &copy; {new Date().getFullYear()} Kolrabee. All rights reserved.
           </p>
         </div>
       </footer>

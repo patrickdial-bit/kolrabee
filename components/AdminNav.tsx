@@ -29,7 +29,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
               href="/admin/dashboard"
               className="text-xl font-bold text-primary-600"
             >
-              TradeTap
+              Kolrabee
             </Link>
             <span className="hidden sm:inline text-sm text-gray-400">|</span>
             <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[200px]">

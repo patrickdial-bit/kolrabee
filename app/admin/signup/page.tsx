@@ -51,7 +51,7 @@ export default function AdminSignupPage() {
     <div className="min-h-screen bg-indigo-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
-          TradeTap
+          Kolrabee
         </h1>
         <h2 className="mt-2 text-center text-lg text-gray-600">
           Create your admin account
