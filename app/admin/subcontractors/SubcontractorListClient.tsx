@@ -3,6 +3,8 @@
 import { useState, useTransition, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import AdminNav from '@/components/AdminNav'
+import GuidedTour, { type TourStep } from '@/components/GuidedTour'
+import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
@@ -133,6 +135,27 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
     setInviteSuccess(false)
   }
 
+  const subsTourSteps: TourStep[] = [
+    {
+      target: '#tour-invite-sub',
+      title: 'Invite a Subcontractor',
+      content: 'Send an email invitation to a subcontractor. They\'ll create an account, upload their W-9 and COI, and then be available for project invites.',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-sub-filters',
+      title: 'Search & Filter',
+      content: 'Search by name, email, or company. Filter by status (Active/Deleted) or compliance (Compliant/Not Compliant).',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-sub-table',
+      title: 'Subcontractor List',
+      content: 'Click column headers to sort. Green checkmarks mean W-9 or COI is on file. Click Edit to see their full profile, documents, and project history.',
+      placement: 'top',
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminNav companyName={tenantName} />
@@ -148,6 +171,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             </div>
             <div className="mt-4 sm:mt-0 flex items-center gap-3">
               <button
+                id="tour-invite-sub"
                 onClick={() => setShowInviteModal(true)}
                 className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
               >
@@ -160,7 +184,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
           </div>
 
           {/* Filters row */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div id="tour-sub-filters" className="mt-4 flex flex-wrap items-center gap-3">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -207,7 +231,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div id="tour-sub-table" className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-red-700">
                 <tr>
@@ -402,6 +426,9 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
           </div>
         </div>
       )}
+
+      {/* Guided tour for first-time users */}
+      <GuidedTour steps={subsTourSteps} tourKey="admin-subcontractors" />
     </div>
   )
 }

@@ -258,7 +258,7 @@ export default function SubDashboardClient({
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Address</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">CompanyCam</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">

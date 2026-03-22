@@ -184,7 +184,7 @@ export default function ProjectDetailClient({
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">CompanyCam Link</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Photo Repository Link</label>
                 <input type="text" name="companycam_link" defaultValue={project.companycam_link ?? ''}
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
               </div>
@@ -238,7 +238,7 @@ export default function ProjectDetailClient({
                 )}
                 {project.companycam_link && (
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">CompanyCam</dt>
+                    <dt className="text-sm font-medium text-gray-500">Photos</dt>
                     <dd className="mt-1 text-sm">
                       <a href={project.companycam_link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline">View Photos</a>
                     </dd>

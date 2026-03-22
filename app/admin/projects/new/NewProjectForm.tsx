@@ -3,6 +3,7 @@
 import { useTransition, useState } from 'react'
 import Link from 'next/link'
 import { createProject } from './actions'
+import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 
 export default function NewProjectForm() {
   const [isPending, startTransition] = useTransition()
@@ -17,6 +18,45 @@ export default function NewProjectForm() {
       }
     })
   }
+
+  const newProjectTourSteps: TourStep[] = [
+    {
+      target: '#customer_name',
+      title: 'Customer Name',
+      content: 'Enter the customer or property name. This is how the project will appear in your dashboard.',
+      placement: 'bottom',
+    },
+    {
+      target: '#payout_amount',
+      title: 'Payout Amount',
+      content: 'The dollar amount you\'ll pay the subcontractor for this project. They\'ll see this when they receive the invite.',
+      placement: 'bottom',
+    },
+    {
+      target: '#work_order_link',
+      title: 'Work Order Link',
+      content: 'Paste a link to the work order from any system — your CRM, Slack, Google Docs, or any website. Subs can click it to view details.',
+      placement: 'bottom',
+    },
+    {
+      target: '#companycam_link',
+      title: 'Photo Repository',
+      content: 'Link to project photos — Google Drive, Dropbox, CompanyCam, or any photo sharing service.',
+      placement: 'bottom',
+    },
+    {
+      target: '#notes',
+      title: 'Notes for Subcontractor',
+      content: 'These notes are visible to the subcontractor. Use them for job-specific instructions or details.',
+      placement: 'top',
+    },
+    {
+      target: '#admin_notes',
+      title: 'Internal Admin Notes',
+      content: 'These notes are only visible to you (the admin). Use them for internal tracking info that subs shouldn\'t see.',
+      placement: 'top',
+    },
+  ]
 
   return (
     <>
@@ -123,11 +163,11 @@ export default function NewProjectForm() {
 
           <div>
             <label htmlFor="companycam_link" className="block text-sm font-medium text-gray-700 mb-1">
-              CompanyCam
+              Photo Repository Link
             </label>
             <input type="text" id="companycam_link" name="companycam_link"
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter CompanyCam Link" />
+              placeholder="Paste any link — Google Drive, Dropbox, CompanyCam, etc." />
           </div>
 
           <div>
@@ -160,6 +200,9 @@ export default function NewProjectForm() {
           </div>
         </form>
       </div>
+
+      {/* Guided tour for first-time users */}
+      <GuidedTour steps={newProjectTourSteps} tourKey="admin-project-new" />
     </>
   )
 }

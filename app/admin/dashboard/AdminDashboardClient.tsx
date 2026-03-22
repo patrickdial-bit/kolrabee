@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
 import StatusTabs from '@/components/StatusTabs'
 import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
+import GuidedTour, { type TourStep } from '@/components/GuidedTour'
+import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import type { PlatformInvite } from './page'
@@ -109,6 +111,39 @@ export default function AdminDashboardClient({
     return result
   }, [projects, activeTab, search, sortKey, sortDir])
 
+  const dashboardTourSteps: TourStep[] = [
+    {
+      target: '#tour-add-project',
+      title: 'Create a New Project',
+      content: 'Click here to add a new project. Fill in the job details, payout, and any links to work orders or photos.',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-search-projects',
+      title: 'Search Projects',
+      content: 'Quickly find projects by customer name, job number, or address.',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-usage-stats',
+      title: 'Plan Usage',
+      content: 'Track how many projects and subcontractors you\'re using against your plan limits.',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-status-tabs',
+      title: 'Filter by Status',
+      content: 'Switch between Available, Accepted, and Paid tabs to see projects at each stage.',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-project-table',
+      title: 'Your Projects',
+      content: 'Click any column header to sort. Use the Invite button to send projects to subcontractors. Edit, cancel, or mark projects as paid from here.',
+      placement: 'top',
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminNav companyName={tenantName} />
@@ -118,7 +153,7 @@ export default function AdminDashboardClient({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
-            <div className="relative">
+            <div id="tour-search-projects" className="relative">
               <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
@@ -130,12 +165,15 @@ export default function AdminDashboardClient({
                 className="block w-48 sm:w-64 rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
-            <Link
-              href="/admin/projects/new"
-              className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
-            >
-              Add Project
-            </Link>
+            <Tooltip text="Create a new project with job details, payout, and links">
+              <Link
+                id="tour-add-project"
+                href="/admin/projects/new"
+                className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+              >
+                Add Project
+              </Link>
+            </Tooltip>
           </div>
         </div>
 
@@ -160,7 +198,7 @@ export default function AdminDashboardClient({
         })()}
 
         {/* Usage Display */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div id="tour-usage-stats" className="grid grid-cols-2 gap-4 mb-6">
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Used</p>
             <p className="mt-1 text-lg font-bold text-gray-900">
@@ -217,10 +255,12 @@ export default function AdminDashboardClient({
         )}
 
         {/* Tabs */}
-        <StatusTabs tabs={STATUS_TABS} activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+        <div id="tour-status-tabs">
+          <StatusTabs tabs={STATUS_TABS} activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+        </div>
 
         {/* Table */}
-        <div className="mt-6">
+        <div id="tour-project-table" className="mt-6">
           {filtered.length === 0 ? (
             <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
               <h3 className="text-sm font-semibold text-gray-900">No {activeTab.toLowerCase()} projects</h3>
@@ -246,7 +286,7 @@ export default function AdminDashboardClient({
                     <SortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Notes</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">CompanyCam</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
                     {activeTab === 'Accepted' && (
                       <>
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
@@ -362,6 +402,9 @@ export default function AdminDashboardClient({
           }}
         />
       )}
+
+      {/* Guided tour for first-time users */}
+      <GuidedTour steps={dashboardTourSteps} tourKey="admin-dashboard" />
     </div>
   )
 }
