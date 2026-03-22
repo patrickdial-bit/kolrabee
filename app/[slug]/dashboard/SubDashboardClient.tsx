@@ -16,6 +16,7 @@ interface SubDashboardClientProps {
   slug: string
   tenantName: string
   ytdEarnings: number
+  allTimeEarnings: number
   availableProjects: Project[]
   myJobs: Project[]
   paidProjects: Project[]
@@ -26,6 +27,7 @@ export default function SubDashboardClient({
   slug,
   tenantName,
   ytdEarnings,
+  allTimeEarnings,
   availableProjects,
   myJobs,
   paidProjects,
@@ -122,10 +124,16 @@ export default function SubDashboardClient({
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Subcontractor Dashboard</h1>
 
-        {/* Paid YTD — always visible */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
-          <span className="text-sm font-medium text-gray-500">Paid YTD</span>
-          <span className="text-lg font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</span>
+        {/* Earnings — always visible */}
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+            <span className="text-sm font-medium text-gray-500">Paid YTD</span>
+            <span className="text-lg font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</span>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+            <span className="text-sm font-medium text-gray-500">All-Time</span>
+            <span className="text-lg font-bold text-gray-700">{formatCurrency(allTimeEarnings)}</span>
+          </div>
         </div>
 
         {error && (

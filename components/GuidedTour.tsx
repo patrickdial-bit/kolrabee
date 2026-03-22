@@ -79,27 +79,39 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
   const placement = step.placement ?? 'bottom'
   const pad = 8
 
-  // Calculate popover position
-  let popTop = 0, popLeft = 0
+  // Calculate popover position — clamped to viewport
+  const popW = 320 // w-80 = 20rem = 320px
+  const margin = 16
+  let popStyle: React.CSSProperties = {}
+
   if (rect) {
+    let top = 0, left = 0
+
     switch (placement) {
       case 'bottom':
-        popTop = rect.bottom + pad + 8
-        popLeft = rect.left + rect.width / 2
+        top = rect.bottom + pad + 8
+        left = rect.left + rect.width / 2 - popW / 2
         break
       case 'top':
-        popTop = rect.top - pad - 8
-        popLeft = rect.left + rect.width / 2
+        top = rect.top - pad - 8
+        left = rect.left + rect.width / 2 - popW / 2
         break
       case 'left':
-        popTop = rect.top + rect.height / 2
-        popLeft = rect.left - pad - 8
+        top = rect.top + rect.height / 2
+        left = rect.left - pad - 8 - popW
         break
       case 'right':
-        popTop = rect.top + rect.height / 2
-        popLeft = rect.right + pad + 8
+        top = rect.top + rect.height / 2
+        left = rect.right + pad + 8
         break
     }
+
+    // Clamp left to stay within viewport
+    left = Math.max(margin, Math.min(left, window.innerWidth - popW - margin))
+    // Clamp top
+    top = Math.max(margin, Math.min(top, window.innerHeight - 200))
+
+    popStyle = { top, left }
   }
 
   return (
@@ -147,13 +159,7 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
       <div
         ref={popoverRef}
         className="fixed z-[9999] w-80 rounded-xl bg-white shadow-2xl border border-gray-200 p-5"
-        style={{
-          top: placement === 'top' ? 'auto' : popTop,
-          bottom: placement === 'top' && rect ? `${window.innerHeight - rect.top + pad + 8}px` : 'auto',
-          left: ['top', 'bottom'].includes(placement) ? popLeft : 'auto',
-          right: placement === 'left' && rect ? `${window.innerWidth - rect.left + pad + 8}px` : 'auto',
-          transform: ['top', 'bottom'].includes(placement) ? 'translateX(-50%)' : placement === 'right' ? '' : '',
-        }}
+        style={popStyle}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Step counter */}

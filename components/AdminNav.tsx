@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/admin/dashboard/actions";
 import { resetTour } from "@/components/GuidedTour";
+import { useTooltips } from "@/lib/tooltip-context";
 
 interface AdminNavProps {
   companyName: string;
@@ -19,6 +20,7 @@ const navLinks = [
 export default function AdminNav({ companyName }: AdminNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { enabled: tooltipsOn, toggle: toggleTooltips } = useTooltips();
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -58,13 +60,26 @@ export default function AdminNav({ companyName }: AdminNavProps) {
             })}
           </div>
 
-          {/* Right: help + logout + hamburger */}
+          {/* Right: tooltips toggle + help + logout + hamburger */}
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={toggleTooltips}
+              className={`hidden md:inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                tooltipsOn
+                  ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+              title={tooltipsOn ? 'Turn off tooltips' : 'Turn on tooltips'}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              </svg>
+              Tips {tooltipsOn ? 'On' : 'Off'}
+            </button>
+            <button
+              type="button"
               onClick={() => {
-                // Reset all tours for the current page
-                const tourKeys = ['admin-dashboard', 'admin-subcontractors', 'admin-billing', 'admin-project-new']
                 const current = pathname.includes('/subcontractors') ? 'admin-subcontractors'
                   : pathname.includes('/billing') ? 'admin-billing'
                   : pathname.includes('/projects/new') ? 'admin-project-new'

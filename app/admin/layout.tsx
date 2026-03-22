@@ -1,6 +1,7 @@
 import { getImpersonation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
+import { TooltipProvider } from '@/lib/tooltip-context'
 
 export default async function AdminLayout({
   children,
@@ -21,11 +22,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <>
+    <TooltipProvider>
       {isSuperAdmin && impersonatingTenantId && (
         <ImpersonationBanner tenantName={tenantName} />
       )}
       {children}
-    </>
+    </TooltipProvider>
   )
 }

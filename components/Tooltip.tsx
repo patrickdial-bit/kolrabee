@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useTooltips } from '@/lib/tooltip-context'
 
 interface TooltipProps {
   text: string
@@ -9,6 +10,7 @@ interface TooltipProps {
 }
 
 export default function Tooltip({ text, children, position = 'top' }: TooltipProps) {
+  const { enabled } = useTooltips()
   const [visible, setVisible] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0 })
   const triggerRef = useRef<HTMLDivElement>(null)
@@ -54,7 +56,7 @@ export default function Tooltip({ text, children, position = 'top' }: TooltipPro
       onMouseLeave={() => setVisible(false)}
     >
       {children}
-      {visible && (
+      {enabled && visible && (
         <div
           ref={tooltipRef}
           className="fixed z-[100] max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg pointer-events-none"

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/[slug]/dashboard/actions'
+import { useTooltips } from '@/lib/tooltip-context'
 
 interface SubNavProps {
   slug: string
@@ -14,6 +15,7 @@ interface SubNavProps {
 export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
+  const { enabled: tooltipsOn, toggle: toggleTooltips } = useTooltips()
 
   const navLinks = [
     { href: `/${slug}/dashboard`, label: 'Dashboard' },
@@ -64,11 +66,26 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
             })}
           </div>
 
-          {/* Right: name + logout + hamburger */}
+          {/* Right: name + tooltips + logout + hamburger */}
           <div className="flex items-center gap-2">
             {subName && (
               <span className="hidden md:inline text-sm text-gray-600 mr-2">{subName}</span>
             )}
+            <button
+              type="button"
+              onClick={toggleTooltips}
+              className={`hidden md:inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                tooltipsOn
+                  ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+              title={tooltipsOn ? 'Turn off tooltips' : 'Turn on tooltips'}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+              </svg>
+              Tips {tooltipsOn ? 'On' : 'Off'}
+            </button>
             <form action={logoutWithSlug}>
               <button
                 type="submit"

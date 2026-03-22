@@ -73,11 +73,15 @@ export default async function SubDashboardPage({
 
   const paidProjects = (paidData ?? []) as Project[]
 
+  // All-time earnings
+  const allTimeEarnings = paidProjects.reduce((sum, p) => sum + (p.payout_amount || 0), 0)
+
   return (
     <SubDashboardClient
       slug={slug}
       tenantName={tenant.name}
       ytdEarnings={ytdEarnings}
+      allTimeEarnings={allTimeEarnings}
       availableProjects={availableProjects}
       myJobs={myJobs}
       paidProjects={paidProjects}
