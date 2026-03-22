@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { getCurrentUser } from '@/lib/helpers'
+import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTenantActive } from '@/lib/types'
 
@@ -66,9 +66,9 @@ export async function createProject(formData: FormData) {
       start_time: startTime || null,
       payout_amount: payoutAmount,
       estimated_labor_hours: estimatedLaborHours,
-      work_order_link: workOrderLink?.trim() || null,
+      work_order_link: normalizeUrl(workOrderLink),
       status: 'available',
-      companycam_link: companycamLink?.trim() || null,
+      companycam_link: normalizeUrl(companycamLink),
       notes: notes?.trim() || null,
       admin_notes: adminNotes?.trim() || null,
       version: 1,

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/helpers'
+import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function updateProject(projectId: string, formData: FormData) {
@@ -46,8 +46,8 @@ export async function updateProject(projectId: string, formData: FormData) {
       start_time: startTime || null,
       payout_amount: payoutAmount,
       estimated_labor_hours: estimatedLaborHours,
-      work_order_link: workOrderLink?.trim() || null,
-      companycam_link: companycamLink?.trim() || null,
+      work_order_link: normalizeUrl(workOrderLink),
+      companycam_link: normalizeUrl(companycamLink),
       notes: notes?.trim() || null,
       admin_notes: adminNotes?.trim() || null,
     })

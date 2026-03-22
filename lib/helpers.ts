@@ -164,6 +164,14 @@ export async function requireSuperAdmin(): Promise<{ authUser: any }> {
   return { authUser }
 }
 
+// Normalize a URL: prepend https:// if no protocol is present
+export function normalizeUrl(url: string | null | undefined): string | null {
+  const trimmed = url?.trim()
+  if (!trimmed) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 // Extract city from full address
 export function extractCity(address: string): string {
   const parts = address.split(',').map(p => p.trim())

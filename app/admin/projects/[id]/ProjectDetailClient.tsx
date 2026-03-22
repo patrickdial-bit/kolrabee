@@ -180,12 +180,12 @@ export default function ProjectDetailClient({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Work Order Link</label>
-                <input type="url" name="work_order_link" defaultValue={project.work_order_link ?? ''}
+                <input type="text" name="work_order_link" defaultValue={project.work_order_link ?? ''}
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">CompanyCam Link</label>
-                <input type="url" name="companycam_link" defaultValue={project.companycam_link ?? ''}
+                <input type="text" name="companycam_link" defaultValue={project.companycam_link ?? ''}
                   className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
               </div>
               <div>

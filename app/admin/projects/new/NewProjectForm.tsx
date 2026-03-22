@@ -116,16 +116,16 @@ export default function NewProjectForm() {
             <label htmlFor="work_order_link" className="block text-sm font-medium text-gray-700 mb-1">
               Work Order
             </label>
-            <input type="url" id="work_order_link" name="work_order_link"
+            <input type="text" id="work_order_link" name="work_order_link"
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter Public Work Order Link for Reference" />
+              placeholder="e.g. www.paintscout.com or https://paintscout.com" />
           </div>
 
           <div>
             <label htmlFor="companycam_link" className="block text-sm font-medium text-gray-700 mb-1">
               CompanyCam
             </label>
-            <input type="url" id="companycam_link" name="companycam_link"
+            <input type="text" id="companycam_link" name="companycam_link"
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm"
               placeholder="Enter CompanyCam Link" />
           </div>
