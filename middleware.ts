@@ -35,6 +35,16 @@ export async function middleware(request: NextRequest) {
   // Admin public routes
   const publicAdminRoutes = ['/admin/login', '/admin/signup', '/admin/forgot-password']
 
+  // Protect super-admin routes
+  if (pathname.startsWith('/super-admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
   // Protect admin routes
   if (pathname.startsWith('/admin')) {
     const isPublic = publicAdminRoutes.some(
@@ -49,7 +59,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Skip internal routes for tenant matching
-  const skipPrefixes = ['/_next', '/api', '/admin', '/favicon.ico']
+  const skipPrefixes = ['/_next', '/api', '/admin', '/super-admin', '/favicon.ico']
   const shouldSkip = skipPrefixes.some((p) => pathname.startsWith(p)) || pathname === '/'
 
   if (!shouldSkip) {

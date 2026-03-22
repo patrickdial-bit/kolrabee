@@ -75,6 +75,29 @@ export async function getCurrentSub(slug: string): Promise<{ authUser: any; appU
   return { authUser, appUser: appUser as AppUser, tenant: tenant as Tenant }
 }
 
+// Check if the current authenticated user is a super admin
+export async function requireSuperAdmin(): Promise<{ authUser: any }> {
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+
+  if (!authUser) {
+    redirect('/admin/login')
+  }
+
+  const adminClient = createAdminClient()
+  const { data: superAdmin } = await adminClient
+    .from('super_admins')
+    .select('id')
+    .eq('supabase_auth_id', authUser.id)
+    .single()
+
+  if (!superAdmin) {
+    redirect('/admin/login')
+  }
+
+  return { authUser }
+}
+
 // Extract city from full address
 export function extractCity(address: string): string {
   const parts = address.split(',').map(p => p.trim())
