@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SubNav from '@/components/SubNav'
@@ -8,6 +8,9 @@ import StatusTabs from '@/components/StatusTabs'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import { acceptProject, cancelAcceptedProject } from '@/app/[slug]/projects/[id]/actions'
+
+type SubSortKey = 'customer_name' | 'start_date' | 'payout_amount' | 'estimated_labor_hours' | 'address'
+type SortDir = 'asc' | 'desc'
 
 interface SubDashboardClientProps {
   slug: string
@@ -34,7 +37,46 @@ export default function SubDashboardClient({
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SubSortKey>('start_date')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const router = useRouter()
+
+  const toggleSort = useCallback((key: SubSortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }, [sortKey])
+
+  const sortProjects = useCallback((projects: Project[]) => {
+    return [...projects].sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      switch (sortKey) {
+        case 'customer_name':
+          return dir * a.customer_name.localeCompare(b.customer_name)
+        case 'start_date': {
+          if (!a.start_date && !b.start_date) return 0
+          if (!a.start_date) return 1
+          if (!b.start_date) return -1
+          return dir * (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+        }
+        case 'payout_amount':
+          return dir * ((a.payout_amount ?? 0) - (b.payout_amount ?? 0))
+        case 'estimated_labor_hours':
+          return dir * ((a.estimated_labor_hours ?? 0) - (b.estimated_labor_hours ?? 0))
+        case 'address':
+          return dir * a.address.localeCompare(b.address)
+        default:
+          return 0
+      }
+    })
+  }, [sortKey, sortDir])
+
+  const sortedAvailable = useMemo(() => sortProjects(availableProjects), [availableProjects, sortProjects])
+  const sortedMyJobs = useMemo(() => sortProjects(myJobs), [myJobs, sortProjects])
+  const sortedPaid = useMemo(() => sortProjects(paidProjects), [paidProjects, sortProjects])
 
   const handleAccept = async (project: Project) => {
     setLoading(true)
@@ -115,17 +157,17 @@ export default function SubDashboardClient({
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-amber-500">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project ID</th>
+                        <SubSortTh label="Project ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order Link</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start Date/Time</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Street City State Zip</th>
+                        <SubSortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <SubSortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
+                        <SubSortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
+                        <SubSortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {availableProjects.map((project) => (
+                      {sortedAvailable.map((project) => (
                         <tr key={project.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
@@ -174,18 +216,18 @@ export default function SubDashboardClient({
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-amber-500">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project ID</th>
+                        <SubSortTh label="Project ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order Link</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start Date/Time</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Street City State Zip</th>
+                        <SubSortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
+                        <SubSortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
+                        <SubSortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
+                        <SubSortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Status</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {myJobs.map((project) => (
+                      {sortedMyJobs.map((project) => (
                         <tr key={project.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
@@ -252,17 +294,17 @@ export default function SubDashboardClient({
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-700">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project ID</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Project Start</th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white">Payout</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Estimated Hours</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Address</th>
+                        <SubSortTh label="Project ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
+                        <SubSortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
+                        <SubSortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="gray" />
+                        <SubSortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="gray" />
+                        <SubSortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {paidProjects.map((project) => (
+                      {sortedPaid.map((project) => (
                         <tr key={project.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
@@ -333,5 +375,30 @@ export default function SubDashboardClient({
         </div>
       )}
     </div>
+  )
+}
+
+function SubSortTh({ label, sortKey: key, currentKey, dir, onSort, align, bg }: {
+  label: string; sortKey: SubSortKey; currentKey: SubSortKey; dir: SortDir
+  onSort: (k: SubSortKey) => void; align: 'left' | 'right' | 'center'; bg: 'amber' | 'gray'
+}) {
+  const active = key === currentKey
+  const hoverBg = bg === 'amber' ? 'hover:bg-amber-600' : 'hover:bg-gray-800'
+  return (
+    <th
+      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none ${hoverBg} transition-colors ${
+        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+      }`}
+      onClick={() => onSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <svg className={`h-3.5 w-3.5 ${active ? 'opacity-100' : 'opacity-40'}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+          {active && dir === 'desc'
+            ? <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+            : <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />}
+        </svg>
+      </span>
+    </th>
   )
 }
