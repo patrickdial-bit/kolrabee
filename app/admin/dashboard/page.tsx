@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import AdminDashboardClient from './AdminDashboardClient'
 
 export default async function AdminDashboardPage() {
-  const { appUser, tenant } = await getCurrentUser()
+  const { tenant } = await getCurrentUser()
 
   const adminClient = createAdminClient()
   const { data: projects } = await adminClient
@@ -29,12 +29,12 @@ export default async function AdminDashboardPage() {
   return (
     <AdminDashboardClient
       projects={(projects ?? []) as Project[]}
-      tenantName={tenant.name}
+      tenantName={tenant.name ?? ''}
       tenantId={tenant.id}
-      tenantPlan={tenant.plan}
-      trialEndsAt={tenant.trial_ends_at}
-      maxProjects={tenant.max_projects}
-      maxSubcontractors={tenant.max_subcontractors}
+      tenantPlan={tenant.plan ?? 'free'}
+      trialEndsAt={tenant.trial_ends_at ?? null}
+      maxProjects={tenant.max_projects ?? 3}
+      maxSubcontractors={tenant.max_subcontractors ?? 1}
       projectCount={projectCount ?? 0}
       subCount={subCount ?? 0}
     />

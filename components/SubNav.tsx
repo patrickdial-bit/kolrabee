@@ -20,9 +20,7 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
     { href: `/${slug}/profile`, label: 'Profile' },
   ]
 
-  async function handleLogout() {
-    await logout(slug)
-  }
+  const logoutWithSlug = logout.bind(null, slug)
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -71,13 +69,14 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
             {subName && (
               <span className="hidden md:inline text-sm text-gray-600 mr-2">{subName}</span>
             )}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden md:inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-            >
-              Log out
-            </button>
+            <form action={logoutWithSlug}>
+              <button
+                type="submit"
+                className="hidden md:inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              >
+                Log out
+              </button>
+            </form>
             <button
               type="button"
               className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
@@ -129,13 +128,14 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
                 </Link>
               )
             })}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-            >
-              Log out
-            </button>
+            <form action={logoutWithSlug}>
+              <button
+                type="submit"
+                className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              >
+                Log out
+              </button>
+            </form>
           </div>
         </div>
       )}
