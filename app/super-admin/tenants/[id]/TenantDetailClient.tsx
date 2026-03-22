@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import SuperAdminNav from '@/components/SuperAdminNav'
-import { updateTenantPlan } from './actions'
+import { updateTenantPlan, suspendTenant, deleteTenant } from './actions'
 import { useState, useTransition } from 'react'
 
 interface Props {
@@ -17,6 +17,8 @@ const planOptions = ['free', 'trial', 'starter', 'pro', 'cancelled'] as const
 export default function TenantDetailClient({ tenant, users, projects, invites }: Props) {
   const [isPending, startTransition] = useTransition()
   const [planMessage, setPlanMessage] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const admins = users.filter((u) => u.role === 'admin')
   const subs = users.filter((u) => u.role === 'subcontractor')
@@ -40,6 +42,25 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
     })
   }
 
+  function handleSuspend() {
+    setActionMessage('')
+    startTransition(async () => {
+      const result = await suspendTenant(tenant.id)
+      if (result.error) {
+        setActionMessage(result.error)
+      } else {
+        setActionMessage(result.status === 'suspended' ? 'Tenant suspended.' : 'Tenant reactivated.')
+        setTimeout(() => setActionMessage(''), 3000)
+      }
+    })
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      await deleteTenant(tenant.id)
+    })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SuperAdminNav />
@@ -50,8 +71,68 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
           <Link href="/super-admin" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
             &larr; All Tenants
           </Link>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900">{tenant.name}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">{tenant.name}</h1>
+            {tenant.status === 'suspended' && (
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                Suspended
+              </span>
+            )}
+            {tenant.status === 'deleted' && (
+              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                Deleted
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-500">/{tenant.slug}</p>
+
+          {/* Suspend / Delete actions */}
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              onClick={handleSuspend}
+              disabled={isPending}
+              className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50 ${
+                tenant.status === 'suspended'
+                  ? 'bg-green-600 text-white hover:bg-green-500'
+                  : 'bg-amber-500 text-white hover:bg-amber-400'
+              }`}
+            >
+              {tenant.status === 'suspended' ? 'Reactivate' : 'Suspend'}
+            </button>
+
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={isPending}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 transition-colors disabled:opacity-50"
+              >
+                Delete
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2">
+                <span className="text-sm text-red-700">Delete this company and all its data?</span>
+                <button
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="rounded bg-red-600 px-3 py-1 text-xs font-bold text-white hover:bg-red-500 disabled:opacity-50"
+                >
+                  Yes, delete
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="rounded bg-gray-200 px-3 py-1 text-xs font-bold text-gray-700 hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+
+          {actionMessage && (
+            <p className={`mt-2 text-sm font-medium ${actionMessage.includes('error') ? 'text-red-600' : 'text-green-600'}`}>
+              {actionMessage}
+            </p>
+          )}
         </div>
 
         {/* Tenant Info */}

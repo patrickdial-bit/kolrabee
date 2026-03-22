@@ -29,6 +29,7 @@ export type Tenant = {
   timezone: string
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
+  status: 'active' | 'suspended' | 'deleted'
   plan: 'free' | 'trial' | 'starter' | 'pro' | 'cancelled'
   trial_ends_at: string | null
   billing_email: string | null

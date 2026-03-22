@@ -36,6 +36,12 @@ export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUse
     redirect('/admin/login')
   }
 
+  if (tenant.status === 'suspended' || tenant.status === 'deleted') {
+    const supabase2 = await createClient()
+    await supabase2.auth.signOut()
+    redirect('/admin/login?error=suspended')
+  }
+
   return { authUser, appUser: appUser as AppUser, tenant: tenant as Tenant }
 }
 
@@ -58,6 +64,11 @@ export async function getCurrentSub(slug: string): Promise<{ authUser: any; appU
 
   if (!tenant) {
     redirect('/')
+  }
+
+  if (tenant.status === 'suspended' || tenant.status === 'deleted') {
+    await supabase.auth.signOut()
+    redirect(`/${slug}/login?error=suspended`)
   }
 
   const { data: appUser } = await adminClient
