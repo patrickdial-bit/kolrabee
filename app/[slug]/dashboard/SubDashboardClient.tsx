@@ -43,8 +43,10 @@ export default function SubDashboardClient({
       const result = await acceptProject(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
-        setShowAcceptModal(null)
+      } else {
+        router.refresh()
       }
+      setShowAcceptModal(null)
     } catch {
       setError('An unexpected error occurred.')
       setShowAcceptModal(null)
@@ -60,6 +62,8 @@ export default function SubDashboardClient({
       const result = await cancelAcceptedProject(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
+      } else {
+        router.refresh()
       }
       setShowCancelConfirm(null)
     } catch {

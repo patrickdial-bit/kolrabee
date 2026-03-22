@@ -33,12 +33,17 @@ export default function InviteSubsModal({
 
   useEffect(() => {
     async function load() {
-      const result = await getSubcontractors(tenantId)
-      if (result.error) {
-        setError(result.error)
+      try {
+        const result = await getSubcontractors(tenantId)
+        if (result.error) {
+          setError(result.error)
+        }
+        setSubs(result.data ?? [])
+      } catch {
+        setError('Failed to load subcontractors.')
+      } finally {
+        setLoading(false)
       }
-      setSubs(result.data ?? [])
-      setLoading(false)
     }
     load()
   }, [tenantId])

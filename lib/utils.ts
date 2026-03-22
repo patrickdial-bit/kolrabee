@@ -33,7 +33,10 @@ export function formatDateTime(date: string | null, time: string | null): string
     year: 'numeric',
   })
   if (!time) return dateStr
-  const [h, m] = time.split(':').map(Number)
+  const parts = time.split(':').map(Number)
+  const h = parts[0]
+  const m = parts[1]
+  if (isNaN(h) || isNaN(m)) return dateStr
   const ampm = h >= 12 ? 'pm' : 'am'
   const h12 = h % 12 || 12
   const mStr = m.toString().padStart(2, '0')
