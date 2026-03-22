@@ -1,25 +1,46 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import KolrabeeLogo from '@/components/KolrabeeLogo'
+
+const taglines = [
+  { main: 'Run the business.', accent: 'Own the outcome.' },
+  { main: 'Your playbook.', accent: 'Their hands.' },
+  { main: 'Run the business. Set the standard.', accent: 'They deliver.' },
+]
 
 export default function HomePage() {
+  const [taglineIdx, setTaglineIdx] = useState(0)
+  const [fade, setFade] = useState(true)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false)
+      setTimeout(() => {
+        setTaglineIdx((i) => (i + 1) % taglines.length)
+        setFade(true)
+      }, 400)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const tagline = taglines[taglineIdx]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900">
+    <div className="min-h-screen bg-forge">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500">
-            <span className="text-lg font-bold text-white">K</span>
-          </div>
-          <span className="text-xl font-bold text-white">Kolrabee</span>
-        </div>
+        <KolrabeeLogo size="lg" className="!text-white [&>span]:!text-white [&>span:nth-child(2)]:!text-ember [&>span:nth-child(3)]:!text-forest" />
         <div className="flex items-center gap-4">
           <Link
             href="/admin/login"
-            className="text-sm font-medium text-indigo-200 transition-colors hover:text-white"
+            className="text-sm font-medium text-gray-400 transition-colors hover:text-white"
           >
             Admin Login
           </Link>
           <Link
             href="/admin/signup"
-            className="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors"
+            className="inline-flex items-center rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
           >
             Get Started
           </Link>
@@ -28,20 +49,33 @@ export default function HomePage() {
 
       <main className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-3xl pt-20 pb-32 text-center sm:pt-32 sm:pb-40">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl">
-            Grow Your Crews.
-            <span className="block text-indigo-400">Simply. Trusted.</span>
-          </h1>
-          <p className="mt-6 text-lg leading-8 text-gray-300">
+          <div className="mb-8">
+            <KolrabeeLogo size="xl" />
+          </div>
+          <div
+            className={`min-h-[120px] sm:min-h-[160px] flex flex-col items-center justify-center transition-opacity duration-400 ${fade ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl font-display">
+              {tagline.main}
+              <span className="block text-ember">{tagline.accent}</span>
+            </h1>
+          </div>
+          <p className="mt-6 text-lg leading-8 text-gray-400">
             The simple way to build trust with every sub. Post jobs,
             invite crews, track who accepted, and get everyone paid.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link
               href="/admin/signup"
-              className="inline-flex items-center rounded-lg bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-500 transition-colors"
+              className="inline-flex items-center rounded-lg bg-ember px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
             >
               Start Free
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm font-semibold leading-6 text-gray-400 hover:text-white transition-colors"
+            >
+              Learn more <span aria-hidden="true">&rarr;</span>
             </Link>
           </div>
         </div>
@@ -78,7 +112,7 @@ export default function HomePage() {
                 key={feature.title}
                 className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
               >
-                <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
+                <h3 className="text-lg font-bold text-white font-display">{feature.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-gray-400">{feature.description}</p>
               </div>
             ))}

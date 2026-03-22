@@ -133,7 +133,7 @@ export default function SubDashboardClient({
           <Tooltip text={t('tip.paid_ytd')} position="bottom">
             <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
               <span className="text-sm font-medium text-gray-500">{t('dash.paid_ytd')}</span>
-              <span className="text-lg font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</span>
+              <span className="text-lg font-bold text-ember">{formatCurrency(ytdEarnings)}</span>
             </div>
           </Tooltip>
           <Tooltip text={t('tip.all_time')} position="bottom">
@@ -190,7 +190,7 @@ export default function SubDashboardClient({
                             {project.work_order_link ? (
                               <Tooltip text={t('tip.work_order')} position="top">
                                 <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
                               </Tooltip>
                             ) : '—'}
                           </td>
@@ -254,7 +254,7 @@ export default function SubDashboardClient({
                             {project.work_order_link ? (
                               <Tooltip text={t('tip.work_order')} position="top">
                                 <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
                               </Tooltip>
                             ) : '—'}
                           </td>
@@ -345,7 +345,7 @@ export default function SubDashboardClient({
                             {project.work_order_link ? (
                               <Tooltip text={t('tip.work_order')} position="top">
                                 <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
                               </Tooltip>
                             ) : '—'}
                           </td>
@@ -353,7 +353,7 @@ export default function SubDashboardClient({
                             {project.companycam_link ? (
                               <Tooltip text={t('tip.photos_link')} position="top">
                                 <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-indigo-600 hover:text-indigo-800 font-medium">{t('action.link')}</a>
+                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
                               </Tooltip>
                             ) : '—'}
                           </td>
@@ -374,8 +374,8 @@ export default function SubDashboardClient({
           <div className="fixed inset-0 bg-black/50" onClick={() => setShowAcceptModal(null)} />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6 text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+              <div className="w-12 h-12 rounded-full bg-ember/15 flex items-center justify-center">
+                <svg className="w-6 h-6 text-ember" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>

@@ -3,6 +3,7 @@
 import { useFormState, useFormStatus } from 'react-dom'
 import Link from 'next/link'
 import { useParams, useSearchParams } from 'next/navigation'
+import KolrabeeLogo from '@/components/KolrabeeLogo'
 import { joinAction } from './actions'
 
 function SubmitButton() {
@@ -11,7 +12,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-ember hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ember disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       {pending ? (
         <span className="flex items-center gap-2">
@@ -40,9 +41,9 @@ export default function SubJoinPage() {
   const [state, formAction] = useFormState(joinAction, null)
 
   return (
-    <div className="min-h-screen bg-indigo-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-canvas flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">Kolrabee</h1>
+        <div className="text-center"><KolrabeeLogo size="lg" /></div>
         <h2 className="mt-2 text-center text-lg text-gray-600">Create your subcontractor account</h2>
       </div>
 
@@ -75,7 +76,7 @@ export default function SubJoinPage() {
                     name="companyName"
                     type="text"
                     required
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                     placeholder="Your company name"
                   />
                 </div>
@@ -87,7 +88,7 @@ export default function SubJoinPage() {
                     </label>
                     <input id="firstName" name="firstName" type="text" required
                       defaultValue={prefillFirst}
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                       placeholder="John" />
                   </div>
                   <div>
@@ -96,7 +97,7 @@ export default function SubJoinPage() {
                     </label>
                     <input id="lastName" name="lastName" type="text" required
                       defaultValue={prefillLast}
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                       placeholder="Doe" />
                   </div>
                 </div>
@@ -107,7 +108,7 @@ export default function SubJoinPage() {
                   </label>
                   <input id="email" name="email" type="email" required autoComplete="email"
                     defaultValue={prefillEmail}
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                     placeholder="john@example.com" />
                 </div>
 
@@ -116,7 +117,7 @@ export default function SubJoinPage() {
                     Phone number <span className="text-red-500">*</span>
                   </label>
                   <input id="phone" name="phone" type="tel" required
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                     placeholder="(555) 123-4567" />
                 </div>
 
@@ -125,7 +126,7 @@ export default function SubJoinPage() {
                     Business Address <span className="text-red-500">*</span>
                   </label>
                   <input id="address" name="address" type="text" required
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                     placeholder="123 Main St, Columbus, OH 43215" />
                 </div>
 
@@ -133,18 +134,18 @@ export default function SubJoinPage() {
                   <div>
                     <label htmlFor="crewSize" className="block text-sm font-medium text-gray-700">Crew Members</label>
                     <input id="crewSize" name="crewSize" type="number" min="1" defaultValue="1"
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm" />
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm" />
                   </div>
                   <div>
                     <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-gray-700">Years in Business</label>
                     <input id="yearsInBusiness" name="yearsInBusiness" type="number" min="0"
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                       placeholder="e.g. 5" />
                   </div>
                   <div>
                     <label htmlFor="insuranceProvider" className="block text-sm font-medium text-gray-700">Insurance Provider</label>
                     <input id="insuranceProvider" name="insuranceProvider" type="text"
-                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                      className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                       placeholder="e.g. Progressive" />
                   </div>
                 </div>
@@ -152,7 +153,7 @@ export default function SubJoinPage() {
                 <div>
                   <label htmlFor="insuranceExpiration" className="block text-sm font-medium text-gray-700">Insurance Expiration Date</label>
                   <input id="insuranceExpiration" name="insuranceExpiration" type="date"
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm" />
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm" />
                 </div>
 
                 <div>
@@ -160,7 +161,7 @@ export default function SubJoinPage() {
                     Password <span className="text-red-500">*</span>
                   </label>
                   <input id="password" name="password" type="password" required minLength={8} autoComplete="new-password"
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                     placeholder="Min. 8 characters" />
                 </div>
 
@@ -173,7 +174,7 @@ export default function SubJoinPage() {
 
               <p className="mt-6 text-center text-sm text-gray-500">
                 Already have an account?{' '}
-                <Link href={`/${slug}/login`} className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+                <Link href={`/${slug}/login`} className="font-semibold text-ember hover:text-primary-700 transition-colors">
                   Sign in
                 </Link>
               </p>

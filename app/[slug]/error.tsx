@@ -16,7 +16,7 @@ export default function TenantError({
         </p>
         <button
           onClick={reset}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+          className="rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
         >
           Try again
         </button>

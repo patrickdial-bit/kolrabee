@@ -2,6 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
+import KolrabeeLogo from "@/components/KolrabeeLogo";
 import { loginAction } from "./actions";
 
 function SubmitButton() {
@@ -11,7 +12,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-ember hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ember disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       {pending ? (
         <span className="flex items-center gap-2">
@@ -48,11 +49,11 @@ export default function AdminLoginPage() {
   const [state, formAction] = useFormState(loginAction, null);
 
   return (
-    <div className="min-h-screen bg-indigo-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-canvas flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
-          Kolrabee
-        </h1>
+        <div className="text-center">
+          <KolrabeeLogo size="lg" />
+        </div>
         <h2 className="mt-2 text-center text-lg text-gray-600">
           Admin sign in
         </h2>
@@ -80,7 +81,7 @@ export default function AdminLoginPage() {
                 type="email"
                 required
                 autoComplete="email"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                 placeholder="jane@acme.com"
               />
             </div>
@@ -95,7 +96,7 @@ export default function AdminLoginPage() {
                 </label>
                 <Link
                   href="/admin/forgot-password"
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                  className="text-sm font-medium text-ember hover:text-primary-700 transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -106,7 +107,7 @@ export default function AdminLoginPage() {
                 type="password"
                 required
                 autoComplete="current-password"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                 placeholder="Your password"
               />
             </div>
@@ -118,7 +119,7 @@ export default function AdminLoginPage() {
             Don&apos;t have an account?{" "}
             <Link
               href="/admin/signup"
-              className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+              className="font-semibold text-ember hover:text-primary-700 transition-colors"
             >
               Create one
             </Link>

@@ -11,7 +11,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-ember hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ember disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
       {pending ? (
         <span className="flex items-center gap-2">
@@ -48,7 +48,7 @@ export default function AdminForgotPasswordPage() {
   const [state, formAction] = useFormState(forgotPasswordAction, null);
 
   return (
-    <div className="min-h-screen bg-indigo-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-ember/10 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
           Kolrabee
@@ -86,7 +86,7 @@ export default function AdminForgotPasswordPage() {
               </p>
               <Link
                 href="/admin/login"
-                className="mt-6 inline-block text-sm font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+                className="mt-6 inline-block text-sm font-semibold text-ember hover:text-ember transition-colors"
               >
                 Back to sign in
               </Link>
@@ -118,7 +118,7 @@ export default function AdminForgotPasswordPage() {
                     type="email"
                     required
                     autoComplete="email"
-                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
                     placeholder="jane@acme.com"
                   />
                 </div>
@@ -130,7 +130,7 @@ export default function AdminForgotPasswordPage() {
                 Remember your password?{" "}
                 <Link
                   href="/admin/login"
-                  className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+                  className="font-semibold text-ember hover:text-ember transition-colors"
                 >
                   Sign in
                 </Link>

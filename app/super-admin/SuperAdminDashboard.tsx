@@ -32,7 +32,7 @@ const planColors: Record<string, string> = {
   free: 'bg-gray-100 text-gray-700',
   trial: 'bg-blue-100 text-blue-700',
   starter: 'bg-green-100 text-green-700',
-  pro: 'bg-indigo-100 text-indigo-700',
+  pro: 'bg-ember/15 text-ember',
   cancelled: 'bg-red-100 text-red-700',
 }
 
@@ -90,7 +90,7 @@ export default function SuperAdminDashboard({ tenants, stats }: Props) {
               placeholder="Search tenants..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+              className="block w-full rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
             />
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function SuperAdminDashboard({ tenants, stats }: Props) {
                       <button
                         onClick={() => startTransition(() => startImpersonation(tenant.id))}
                         disabled={isPending}
-                        className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                        className="inline-flex items-center rounded-md bg-ember px-3 py-1.5 text-xs font-semibold text-white hover:bg-ember transition-colors disabled:opacity-50"
                       >
                         Log in as
                       </button>

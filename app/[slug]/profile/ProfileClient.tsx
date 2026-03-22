@@ -15,7 +15,7 @@ function SaveButton({ label, pendingLabel }: { label: string; pendingLabel: stri
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+      className="rounded-lg bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
     >
       {pending ? pendingLabel : label}
     </button>
@@ -156,7 +156,7 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               <Tooltip text={t('tip.upload_w9')} position="left">
                 <label className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer transition-colors ${
                   uploading === 'w9' ? 'opacity-50 cursor-not-allowed' : ''
-                } ${hasW9 ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+                } ${hasW9 ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-ember text-white hover:bg-primary-700'}`}>
                   {uploading === 'w9' ? t('profile.uploading') : hasW9 ? t('profile.replace') : t('profile.upload_w9')}
                   <input
                     type="file"
@@ -195,7 +195,7 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               <Tooltip text={t('tip.upload_coi')} position="left">
                 <label className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium cursor-pointer transition-colors ${
                   uploading === 'coi' ? 'opacity-50 cursor-not-allowed' : ''
-                } ${hasCoi ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+                } ${hasCoi ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-ember text-white hover:bg-primary-700'}`}>
                   {uploading === 'coi' ? t('profile.uploading') : hasCoi ? t('profile.replace') : t('profile.upload_coi')}
                   <input
                     type="file"
@@ -237,7 +237,7 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">{t('profile.company_name')}</label>
               <input id="companyName" name="companyName" type="text"
                 defaultValue={values.companyName}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm" />
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm" />
             </div>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -245,13 +245,13 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">{t('profile.first_name')}</label>
                 <input id="firstName" name="firstName" type="text" required
                   defaultValue={values.firstName}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm" />
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm" />
               </div>
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">{t('profile.last_name')}</label>
                 <input id="lastName" name="lastName" type="text" required
                   defaultValue={values.lastName}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm" />
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm" />
               </div>
             </div>
 
@@ -267,7 +267,7 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">{t('profile.phone')}</label>
               <input id="phone" name="phone" type="tel"
                 defaultValue={values.phone}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm"
                 placeholder="(555) 123-4567" />
             </div>
 
@@ -275,7 +275,7 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               <label htmlFor="address" className="block text-sm font-medium text-gray-700">{t('profile.address')}</label>
               <input id="address" name="address" type="text"
                 defaultValue={values.address}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm"
                 placeholder="123 Main St, Columbus, OH 43215" />
             </div>
 
@@ -284,19 +284,19 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
                 <label htmlFor="crewSize" className="block text-sm font-medium text-gray-700">{t('profile.crew')}</label>
                 <input id="crewSize" name="crewSize" type="number" min="1"
                   defaultValue={values.crewSize}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm" />
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm" />
               </div>
               <div>
                 <label htmlFor="yearsInBusiness" className="block text-sm font-medium text-gray-700">{t('profile.years')}</label>
                 <input id="yearsInBusiness" name="yearsInBusiness" type="number" min="0"
                   defaultValue={values.yearsInBusiness}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm" />
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm" />
               </div>
               <div>
                 <label htmlFor="insuranceProvider" className="block text-sm font-medium text-gray-700">{t('profile.insurance_provider')}</label>
                 <input id="insuranceProvider" name="insuranceProvider" type="text"
                   defaultValue={values.insuranceProvider}
-                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm"
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm"
                   placeholder="e.g. Progressive" />
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
               </Tooltip>
               <input id="insuranceExpiration" name="insuranceExpiration" type="date"
                 defaultValue={values.insuranceExpiration}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm" />
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm" />
             </div>
 
             <div className="flex justify-end">
@@ -338,14 +338,14 @@ export default function ProfileClient({ slug, tenantName, subName, initialValues
             <div>
               <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">{t('profile.new_password')}</label>
               <input id="newPassword" name="newPassword" type="password" required minLength={8} autoComplete="new-password"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm"
                 placeholder="Min. 8 characters" />
             </div>
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">{t('profile.confirm_password')}</label>
               <input id="confirmPassword" name="confirmPassword" type="password" required minLength={8} autoComplete="new-password"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-ember focus:ring-2 focus:ring-ember sm:text-sm"
                 placeholder="Repeat new password" />
             </div>
 

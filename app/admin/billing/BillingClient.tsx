@@ -151,8 +151,8 @@ export default function BillingClient({ tenant }: Props) {
 
         {/* Free Plan Upsell */}
         {isFree && (
-          <div className="mt-4 rounded-md bg-indigo-50 border border-indigo-200 p-3">
-            <p className="text-sm text-indigo-800">
+          <div className="mt-4 rounded-md bg-ember/10 border border-ember/20 p-3">
+            <p className="text-sm text-primary-700">
               You&apos;re on the Free plan. Upgrade to unlock more projects, subcontractors, and features.
             </p>
           </div>
@@ -200,13 +200,13 @@ export default function BillingClient({ tenant }: Props) {
               placeholder="dispatch@yourcompany.com"
               value={notifEmail}
               onChange={(e) => setNotifEmail(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-ember focus:ring-ember"
             />
           </div>
           <button
             type="submit"
             disabled={loading === 'notif'}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="rounded-md bg-ember px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
             {loading === 'notif' ? 'Saving...' : 'Save'}
           </button>
@@ -264,11 +264,11 @@ export default function BillingClient({ tenant }: Props) {
               <div
                 key={planId}
                 className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
-                  planId === 'pro' ? 'border-indigo-500' : 'border-gray-200'
+                  planId === 'pro' ? 'border-ember' : 'border-gray-200'
                 }`}
               >
                 {planId === 'pro' && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-ember px-3 py-0.5 text-xs font-semibold text-white">
                     Most Popular
                   </span>
                 )}
@@ -295,8 +295,8 @@ export default function BillingClient({ tenant }: Props) {
                   disabled={loading !== null}
                   className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
                     planId === 'pro'
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-white text-indigo-700 border-2 border-indigo-600 hover:bg-indigo-50'
+                      ? 'bg-ember text-white hover:bg-primary-700'
+                      : 'bg-white text-ember border-2 border-ember hover:bg-ember/10'
                   }`}
                 >
                   {loading === planId ? 'Redirecting...' : `Upgrade to ${plan.name}`}

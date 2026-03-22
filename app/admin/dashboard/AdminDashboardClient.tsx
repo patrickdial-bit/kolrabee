@@ -162,14 +162,14 @@ export default function AdminDashboardClient({
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="block w-48 sm:w-64 rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="block w-48 sm:w-64 rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
               />
             </div>
             <Tooltip text="Create a new project with job details, payout, and links">
               <Link
                 id="tour-add-project"
                 href="/admin/projects/new"
-                className="inline-flex items-center justify-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center justify-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
               >
                 Add Project
               </Link>
@@ -189,7 +189,7 @@ export default function AdminDashboardClient({
                     ? 'Your free trial has expired. Subscribe to continue creating projects.'
                     : `Free trial: ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`}
                 </p>
-                <Link href="/admin/billing" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+                <Link href="/admin/billing" className="text-sm font-semibold text-ember hover:text-primary-700">
                   {expired ? 'Subscribe Now' : 'View Plans'}
                 </Link>
               </div>
@@ -335,12 +335,12 @@ export default function AdminDashboardClient({
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                         {project.work_order_link ? (
                           <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                            className="text-ember hover:text-primary-700 font-medium">Link</a>
                         ) : '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                         {project.notes ? (
-                          <Link href={`/admin/projects/${project.id}`} className="text-indigo-600 hover:text-indigo-800 font-medium">
+                          <Link href={`/admin/projects/${project.id}`} className="text-ember hover:text-primary-700 font-medium">
                             View Note
                           </Link>
                         ) : '—'}
@@ -348,7 +348,7 @@ export default function AdminDashboardClient({
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                         {project.companycam_link ? (
                           <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
-                            className="text-indigo-600 hover:text-indigo-800 font-medium">Link</a>
+                            className="text-ember hover:text-primary-700 font-medium">Link</a>
                         ) : '—'}
                       </td>
                       {activeTab === 'Accepted' && (

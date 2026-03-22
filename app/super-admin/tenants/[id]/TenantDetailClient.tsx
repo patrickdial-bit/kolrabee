@@ -92,7 +92,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
             <button
               onClick={() => startTransition(() => startImpersonation(tenant.id))}
               disabled={isPending}
-              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+              className="rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-ember transition-colors disabled:opacity-50"
             >
               Log in as
             </button>

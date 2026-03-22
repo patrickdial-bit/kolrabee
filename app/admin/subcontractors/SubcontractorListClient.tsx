@@ -196,13 +196,13 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                 placeholder="Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="block w-48 sm:w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+                className="block w-48 sm:w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-2 focus:ring-ember/20 focus:outline-none"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-ember focus:ring-2 focus:ring-ember/20 focus:outline-none"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -211,7 +211,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             <select
               value={complianceFilter}
               onChange={(e) => setComplianceFilter(e.target.value as any)}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-ember focus:ring-2 focus:ring-ember/20 focus:outline-none"
             >
               <option value="all">All Compliance</option>
               <option value="compliant">Compliant</option>
@@ -330,7 +330,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                           )
                         ) : (
                           <button onClick={() => handleReactivate(sub.id)} disabled={isPending}
-                            className="rounded bg-indigo-50 px-2 py-1 text-xs text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">
+                            className="rounded bg-ember/10 px-2 py-1 text-xs text-ember hover:bg-ember/15 disabled:opacity-50">
                             {isPending ? '...' : 'Reactivate'}
                           </button>
                         )}
@@ -387,7 +387,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       value={inviteName}
                       onChange={(e) => setInviteName(e.target.value)}
                       placeholder="e.g. John Smith"
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-2 focus:ring-ember/20 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -397,7 +397,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       value={inviteEmail}
                       onChange={(e) => { setInviteEmail(e.target.value); setInviteError('') }}
                       placeholder="sub@example.com"
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
+                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-2 focus:ring-ember/20 focus:outline-none"
                     />
                   </div>
 

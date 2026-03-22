@@ -144,7 +144,7 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
         {/* Highlight border */}
         {rect && (
           <div
-            className="absolute rounded-lg ring-2 ring-indigo-500 ring-offset-2 pointer-events-none"
+            className="absolute rounded-lg ring-2 ring-ember ring-offset-2 pointer-events-none"
             style={{
               top: rect.top - pad,
               left: rect.left - pad,
@@ -164,7 +164,7 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
       >
         {/* Step counter */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-indigo-600">
+          <span className="text-xs font-medium text-ember">
             Step {currentStep + 1} of {steps.length}
           </span>
           <button
@@ -188,7 +188,7 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === currentStep ? 'w-4 bg-indigo-600' : 'w-1.5 bg-gray-300'
+                  i === currentStep ? 'w-4 bg-ember' : 'w-1.5 bg-gray-300'
                 }`}
               />
             ))}
@@ -205,7 +205,7 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
             )}
             <button
               onClick={next}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors"
+              className="rounded-md bg-ember px-3 py-1.5 text-xs font-semibold text-white hover:bg-ember transition-colors"
             >
               {currentStep < steps.length - 1 ? 'Next' : 'Got it!'}
             </button>

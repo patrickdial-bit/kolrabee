@@ -13,7 +13,7 @@ import { getDocumentUrl } from './doc-actions'
 const statusColors: Record<string, string> = {
   available: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   accepted: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
-  completed: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
+  completed: 'bg-ember/10 text-ember ring-ember/20',
   paid: 'bg-green-50 text-green-700 ring-green-600/20',
   cancelled: 'bg-gray-50 text-gray-700 ring-gray-600/20',
 }
@@ -63,7 +63,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
         {/* Back link */}
         <Link
           href="/admin/subcontractors"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800 mb-6"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-ember hover:text-primary-700 mb-6"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -111,7 +111,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                 className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
                   sub.status === 'active'
                     ? 'bg-red-50 text-red-700 hover:bg-red-100'
-                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                    : 'bg-ember/10 text-ember hover:bg-ember/15'
                 }`}
               >
                 {isPending
@@ -125,7 +125,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
         {/* YTD Earnings */}
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm mb-8">
           <p className="text-sm font-medium text-gray-500">YTD Earnings</p>
-          <p className="mt-1 text-3xl font-bold text-indigo-600">{formatCurrency(ytdEarnings)}</p>
+          <p className="mt-1 text-3xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
         </div>
 
         {/* Compliance & Documents */}
@@ -171,7 +171,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                 <button
                   onClick={() => handleViewDoc('w9')}
                   disabled={docLoading === 'w9'}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15 transition-colors disabled:opacity-50"
                 >
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                   {docLoading === 'w9' ? 'Loading...' : 'View / Download'}
@@ -202,7 +202,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                 <button
                   onClick={() => handleViewDoc('coi')}
                   disabled={docLoading === 'coi'}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15 transition-colors disabled:opacity-50"
                 >
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                   {docLoading === 'coi' ? 'Loading...' : 'View / Download'}
@@ -268,7 +268,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                     {projects.map((project) => (
                       <tr key={project.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <Link href={`/admin/projects/${project.id}`} className="text-indigo-600 hover:text-indigo-800 hover:underline">
+                          <Link href={`/admin/projects/${project.id}`} className="text-ember hover:text-primary-700 hover:underline">
                             {project.job_number ?? project.id.slice(0, 8)}
                           </Link>
                         </td>
@@ -298,7 +298,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
                   <div key={project.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                     <div className="flex items-start justify-between">
                       <div>
-                        <Link href={`/admin/projects/${project.id}`} className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline">
+                        <Link href={`/admin/projects/${project.id}`} className="text-sm font-semibold text-ember hover:text-primary-700 hover:underline">
                           {project.job_number ?? project.id.slice(0, 8)}
                         </Link>
                         <p className="mt-0.5 text-sm text-gray-600">{project.customer_name}</p>

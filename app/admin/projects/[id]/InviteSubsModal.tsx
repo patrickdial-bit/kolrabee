@@ -103,7 +103,7 @@ export default function InviteSubsModal({
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-ember border-t-transparent" />
               <span className="ml-2 text-sm text-gray-500">Loading subcontractors...</span>
             </div>
           ) : availableSubs.length === 0 && nonCompliantSubs.length === 0 ? (
@@ -121,7 +121,7 @@ export default function InviteSubsModal({
                       type="checkbox"
                       checked={selected.size === availableSubs.length && availableSubs.length > 0}
                       onChange={toggleAll}
-                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
                     />
                     <span className="text-sm font-medium text-gray-700">Select All</span>
                   </label>
@@ -134,7 +134,7 @@ export default function InviteSubsModal({
                             type="checkbox"
                             checked={selected.has(sub.id)}
                             onChange={() => toggleSub(sub.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
                           />
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-gray-900 truncate">
@@ -196,7 +196,7 @@ export default function InviteSubsModal({
             Cancel
           </button>
           <button onClick={handleSend} disabled={isPending || selected.size === 0}
-            className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+            className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors">
             {isPending ? 'Sending...' : `Send Invites (${selected.size})`}
           </button>
         </div>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { logout } from "@/app/admin/dashboard/actions";
 import { resetTour } from "@/components/GuidedTour";
 import { useTooltips } from "@/lib/tooltip-context";
+import KolrabeeLogo from "@/components/KolrabeeLogo";
 
 interface AdminNavProps {
   companyName: string;
@@ -28,14 +29,11 @@ export default function AdminNav({ companyName }: AdminNavProps) {
         <div className="flex h-16 items-center justify-between">
           {/* Left: logo + company */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/admin/dashboard"
-              className="text-xl font-bold text-primary-600"
-            >
-              Kolrabee
+            <Link href="/admin/dashboard">
+              <KolrabeeLogo size="md" />
             </Link>
             <span className="hidden sm:inline text-sm text-gray-400">|</span>
-            <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[200px]">
+            <span className="hidden sm:inline text-sm font-medium text-forge truncate max-w-[200px]">
               {companyName}
             </span>
           </div>
@@ -50,8 +48,8 @@ export default function AdminNav({ companyName }: AdminNavProps) {
                   href={link.href}
                   className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-primary-50 text-primary-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-ember/10 text-ember"
+                      : "text-forge/60 hover:bg-gray-50 hover:text-forge"
                   }`}
                 >
                   {link.label}
@@ -67,7 +65,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
               onClick={toggleTooltips}
               className={`hidden md:inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                 tooltipsOn
-                  ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  ? 'bg-ember/10 text-ember hover:bg-ember/15'
                   : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
               }`}
               title={tooltipsOn ? 'Turn off tooltips' : 'Turn on tooltips'}
@@ -87,7 +85,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
                 resetTour(current)
                 window.location.reload()
               }}
-              className="inline-flex items-center justify-center rounded-full h-8 w-8 text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+              className="inline-flex items-center justify-center rounded-full h-8 w-8 text-forge/40 hover:bg-ember/10 hover:text-ember transition-colors"
               title="Show guided tour"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -97,14 +95,14 @@ export default function AdminNav({ companyName }: AdminNavProps) {
             <form action={logout}>
               <button
                 type="submit"
-                className="hidden md:inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                className="hidden md:inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-forge/60 hover:bg-gray-50 hover:text-forge transition-colors"
               >
                 Log out
               </button>
             </form>
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-forge/50 hover:bg-gray-100 hover:text-forge"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
@@ -125,7 +123,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-200 bg-white">
-          <div className="px-4 py-3 text-sm font-medium text-gray-700 border-b border-gray-100">
+          <div className="px-4 py-3 text-sm font-medium text-forge border-b border-gray-100">
             {companyName}
           </div>
           <div className="space-y-1 px-2 py-2">
@@ -138,8 +136,8 @@ export default function AdminNav({ companyName }: AdminNavProps) {
                   onClick={() => setMobileOpen(false)}
                   className={`block rounded-md px-3 py-2 text-sm font-medium ${
                     isActive
-                      ? "bg-primary-50 text-primary-700"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-ember/10 text-ember"
+                      : "text-forge/60 hover:bg-gray-50 hover:text-forge"
                   }`}
                 >
                   {link.label}
@@ -149,7 +147,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
             <form action={logout}>
               <button
                 type="submit"
-                className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-forge/60 hover:bg-gray-50 hover:text-forge"
               >
                 Log out
               </button>

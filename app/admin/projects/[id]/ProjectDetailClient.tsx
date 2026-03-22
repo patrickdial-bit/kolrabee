@@ -124,7 +124,7 @@ export default function ProjectDetailClient({
         <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
           <div className="flex items-start justify-between mb-6">
             <div>
-              {project.job_number && <p className="text-sm font-medium text-indigo-600 mb-1">#{project.job_number}</p>}
+              {project.job_number && <p className="text-sm font-medium text-ember mb-1">#{project.job_number}</p>}
               <h1 className="text-2xl font-bold text-gray-900">{project.customer_name}</h1>
             </div>
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium capitalize ${statusColors[project.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -138,29 +138,29 @@ export default function ProjectDetailClient({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Job Number</label>
                   <input type="text" name="job_number" defaultValue={project.job_number ?? ''}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
                   <input type="text" name="customer_name" required defaultValue={project.customer_name}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
                 <input type="text" name="address" required defaultValue={project.address}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                   <input type="date" name="start_date" defaultValue={project.start_date ?? ''}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
                   <input type="time" name="start_time" defaultValue={project.start_time ?? ''}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -169,38 +169,38 @@ export default function ProjectDetailClient({
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
                     <input type="number" name="payout_amount" required min="0" step="0.01" defaultValue={project.payout_amount}
-                      className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                      className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Labor Hours</label>
                   <input type="number" name="estimated_labor_hours" min="0" defaultValue={project.estimated_labor_hours ?? ''}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Work Order Link</label>
                 <input type="text" name="work_order_link" defaultValue={project.work_order_link ?? ''}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Photo Repository Link</label>
                 <input type="text" name="companycam_link" defaultValue={project.companycam_link ?? ''}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <textarea name="notes" rows={3} defaultValue={project.notes ?? ''}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Admin Notes</label>
                 <textarea name="admin_notes" rows={3} defaultValue={project.admin_notes ?? ''}
-                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 sm:text-sm" />
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
               </div>
               <div className="flex items-center gap-3 pt-2">
                 <button type="submit" disabled={isPending}
-                  className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+                  className="inline-flex items-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50">
                   {isPending ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button type="button" onClick={() => { setEditing(false); clearMessages() }}
@@ -232,7 +232,7 @@ export default function ProjectDetailClient({
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Work Order</dt>
                     <dd className="mt-1 text-sm">
-                      <a href={project.work_order_link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline">View</a>
+                      <a href={project.work_order_link} target="_blank" rel="noopener noreferrer" className="text-ember hover:text-primary-700 underline">View</a>
                     </dd>
                   </div>
                 )}
@@ -240,7 +240,7 @@ export default function ProjectDetailClient({
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Photos</dt>
                     <dd className="mt-1 text-sm">
-                      <a href={project.companycam_link} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 underline">View Photos</a>
+                      <a href={project.companycam_link} target="_blank" rel="noopener noreferrer" className="text-ember hover:text-primary-700 underline">View Photos</a>
                     </dd>
                   </div>
                 )}
@@ -275,9 +275,9 @@ export default function ProjectDetailClient({
                 {project.status === 'available' && (
                   <>
                     <button onClick={() => { setEditing(true); clearMessages() }}
-                      className="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Edit</button>
+                      className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Edit</button>
                     <button onClick={() => setShowInviteModal(true)}
-                      className="inline-flex items-center rounded-md bg-white border border-indigo-300 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Invite Subs</button>
+                      className="inline-flex items-center rounded-md bg-white border border-ember/30 px-4 py-2 text-sm font-semibold text-ember hover:bg-ember/10">Invite Subs</button>
                     <button onClick={handleDelete} disabled={isPending}
                       className="inline-flex items-center rounded-md bg-white border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">Delete</button>
                   </>
@@ -316,7 +316,7 @@ export default function ProjectDetailClient({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Invitations</h2>
             {project.status === 'available' && (
-              <button onClick={() => setShowInviteModal(true)} className="text-sm font-medium text-indigo-600 hover:text-indigo-800">+ Invite More</button>
+              <button onClick={() => setShowInviteModal(true)} className="text-sm font-medium text-ember hover:text-primary-700">+ Invite More</button>
             )}
           </div>
           {invitations.length > 0 ? (
