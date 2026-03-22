@@ -32,6 +32,7 @@ export type Tenant = {
   plan: 'free' | 'trial' | 'starter' | 'pro' | 'cancelled'
   trial_ends_at: string | null
   billing_email: string | null
+  notification_email: string | null
   max_projects: number
   max_subcontractors: number
   created_at: string

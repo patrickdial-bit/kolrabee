@@ -2,12 +2,20 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM_EMAIL = 'TradeTap <notifications@tradetap.com>'
+const DEFAULT_FROM = 'TradeTap <notifications@tradetap.com>'
+
+function getFrom(tenantName: string, notificationEmail: string | null) {
+  if (notificationEmail) {
+    return `${tenantName} via TradeTap <notifications@tradetap.com>`
+  }
+  return DEFAULT_FROM
+}
 
 type InviteEmailParams = {
   to: string
   subName: string
   tenantName: string
+  notificationEmail: string | null
   jobNumber: string | null
   customerName: string
   city: string
@@ -20,6 +28,7 @@ type AcceptEmailParams = {
   to: string
   subName: string
   tenantName: string
+  notificationEmail: string | null
   jobNumber: string | null
   customerName: string
   address: string
@@ -31,6 +40,7 @@ type CancelEmailParams = {
   to: string
   subName: string
   tenantName: string
+  notificationEmail: string | null
   jobNumber: string | null
   customerName: string
 }
@@ -46,12 +56,13 @@ function formatDate(date: string | null): string {
 
 /** Email 1: Sub invited to a project */
 export async function sendInviteEmail(params: InviteEmailParams) {
-  const { to, subName, tenantName, jobNumber, customerName, city, startDate, payout, loginUrl } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, city, startDate, payout, loginUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
     await resend.emails.send({
-      from: FROM_EMAIL,
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
       to,
       subject: `${tenantName}: New job available — ${customerName}`,
       html: `
@@ -76,12 +87,13 @@ export async function sendInviteEmail(params: InviteEmailParams) {
 
 /** Email 2: Sub accepted a project — notify admin */
 export async function sendAcceptEmail(params: AcceptEmailParams) {
-  const { to, subName, tenantName, jobNumber, customerName, address, startDate, payout } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, address, startDate, payout } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
     await resend.emails.send({
-      from: FROM_EMAIL,
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
       to,
       subject: `${subName} accepted ${jobLabel}${customerName}`,
       html: `
@@ -106,12 +118,13 @@ export async function sendAcceptEmail(params: AcceptEmailParams) {
 
 /** Email 3: Sub cancelled an accepted project — notify admin */
 export async function sendCancelEmail(params: CancelEmailParams) {
-  const { to, subName, tenantName, jobNumber, customerName } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
     await resend.emails.send({
-      from: FROM_EMAIL,
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
       to,
       subject: `${subName} cancelled ${jobLabel}${customerName}`,
       html: `

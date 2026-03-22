@@ -111,6 +111,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
         to: sub.email,
         subName: sub.first_name,
         tenantName: tenant.name,
+        notificationEmail: tenant.notification_email,
         jobNumber: project.job_number,
         customerName: project.customer_name,
         city,

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   slug VARCHAR(100) UNIQUE NOT NULL,
   owner_user_id UUID,
   timezone VARCHAR(50) DEFAULT 'America/New_York',
+  notification_email VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

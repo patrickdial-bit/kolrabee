@@ -6,6 +6,7 @@ import type { Tenant } from '@/lib/types'
 import { isTenantActive } from '@/lib/types'
 import { PLANS, ALL_PLANS } from '@/lib/plans'
 import type { PlanId } from '@/lib/plans'
+import { updateNotificationEmail } from './actions'
 
 interface Props {
   tenant: Tenant
@@ -17,6 +18,8 @@ export default function BillingClient({ tenant }: Props) {
   const canceled = searchParams.get('canceled') === 'true'
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notifEmail, setNotifEmail] = useState(tenant.notification_email || '')
+  const [notifSaved, setNotifSaved] = useState(false)
 
   const isActive = isTenantActive(tenant)
   const isFree = tenant.plan === 'free'
@@ -163,6 +166,55 @@ export default function BillingClient({ tenant }: Props) {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Notification Email Setting */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900">Notification Email</h2>
+        <p className="text-sm text-gray-500 mt-1 mb-4">
+          Set a reply-to email for notifications sent to your subcontractors. Emails will show as
+          &ldquo;{tenant.name} via TradeTap&rdquo; and replies will go to this address.
+        </p>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            setLoading('notif')
+            setError(null)
+            setNotifSaved(false)
+            const result = await updateNotificationEmail(notifEmail)
+            if (result.error) {
+              setError(result.error)
+            } else {
+              setNotifSaved(true)
+              setTimeout(() => setNotifSaved(false), 3000)
+            }
+            setLoading(null)
+          }}
+          className="flex items-end gap-3"
+        >
+          <div className="flex-1">
+            <label htmlFor="notif-email" className="block text-sm font-medium text-gray-700 mb-1">Reply-to Email</label>
+            <input
+              id="notif-email"
+              type="email"
+              placeholder="dispatch@yourcompany.com"
+              value={notifEmail}
+              onChange={(e) => setNotifEmail(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading === 'notif'}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          >
+            {loading === 'notif' ? 'Saving...' : 'Save'}
+          </button>
+          {notifSaved && (
+            <span className="text-sm text-green-600 font-medium">Saved</span>
+          )}
+        </form>
+        <p className="text-xs text-gray-400 mt-2">Leave blank to send from the default TradeTap address.</p>
       </div>
 
       {/* Plan Cards */}
