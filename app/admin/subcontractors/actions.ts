@@ -71,18 +71,34 @@ export async function inviteSubToJoin(email: string, name: string) {
     return { error: 'This email belongs to a deleted subcontractor. Reactivate them from the list instead.' }
   }
 
+  const normalizedEmail = email.toLowerCase().trim()
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tradetap-seven.vercel.app'
-  const params = new URLSearchParams({ email: email.toLowerCase().trim() })
+  const params = new URLSearchParams({ email: normalizedEmail })
   if (name) params.set('name', name)
   const joinUrl = `${baseUrl}/${tenant.slug}/join?${params.toString()}`
 
+  // Record the invite in the database
+  await adminClient
+    .from('platform_invites')
+    .upsert(
+      {
+        tenant_id: appUser.tenant_id,
+        email: normalizedEmail,
+        name: name || null,
+        status: 'pending',
+        invited_at: new Date().toISOString(),
+      },
+      { onConflict: 'tenant_id,email' }
+    )
+
   await sendPlatformInviteEmail({
-    to: email.toLowerCase().trim(),
+    to: normalizedEmail,
     name,
     tenantName: tenant.name,
     notificationEmail: tenant.notification_email ?? null,
     joinUrl,
   })
 
+  revalidatePath('/admin/dashboard')
   return { success: true }
 }

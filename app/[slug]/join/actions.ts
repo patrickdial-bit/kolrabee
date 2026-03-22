@@ -102,6 +102,14 @@ export async function joinAction(
     return { error: `Failed to create user profile: ${userError.message}` }
   }
 
+  // Mark any pending platform invite as accepted
+  await adminClient
+    .from('platform_invites')
+    .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+    .eq('tenant_id', tenant.id)
+    .eq('email', email.toLowerCase())
+    .eq('status', 'pending')
+
   // Sign in the user
   await supabase.auth.signInWithPassword({ email: email.toLowerCase(), password })
 

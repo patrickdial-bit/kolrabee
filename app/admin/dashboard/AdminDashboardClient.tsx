@@ -8,6 +8,7 @@ import StatusTabs from '@/components/StatusTabs'
 import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
+import type { PlatformInvite } from './page'
 
 interface AdminDashboardClientProps {
   projects: Project[]
@@ -19,6 +20,7 @@ interface AdminDashboardClientProps {
   maxSubcontractors: number
   projectCount: number
   subCount: number
+  platformInvites: PlatformInvite[]
 }
 
 const STATUS_TABS = ['Available', 'Accepted', 'Paid']
@@ -33,6 +35,7 @@ export default function AdminDashboardClient({
   maxSubcontractors,
   projectCount,
   subCount,
+  platformInvites,
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState('Available')
   const [search, setSearch] = useState('')
@@ -142,6 +145,47 @@ export default function AdminDashboardClient({
             </p>
           </div>
         </div>
+
+        {/* Platform Invites */}
+        {platformInvites.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">Subcontractor Invites</h2>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Email</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Invited</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {platformInvites.map((invite) => (
+                    <tr key={invite.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2.5 text-sm text-gray-900">{invite.name || '—'}</td>
+                      <td className="px-4 py-2.5 text-sm text-gray-600">{invite.email}</td>
+                      <td className="px-4 py-2.5">
+                        {invite.status === 'accepted' ? (
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                            Accepted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                            Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-sm text-gray-500">
+                        {new Date(invite.invited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <StatusTabs tabs={STATUS_TABS} activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />

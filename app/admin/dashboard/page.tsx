@@ -2,6 +2,16 @@ import { getCurrentUser, type Project } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminDashboardClient from './AdminDashboardClient'
 
+export type PlatformInvite = {
+  id: string
+  tenant_id: string
+  email: string
+  name: string | null
+  status: string
+  invited_at: string
+  accepted_at: string | null
+}
+
 export default async function AdminDashboardPage() {
   const { tenant } = await getCurrentUser()
 
@@ -26,6 +36,13 @@ export default async function AdminDashboardPage() {
     .eq('role', 'subcontractor')
     .eq('status', 'active')
 
+  // Fetch platform invites
+  const { data: platformInvites } = await adminClient
+    .from('platform_invites')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .order('invited_at', { ascending: false })
+
   return (
     <AdminDashboardClient
       projects={(projects ?? []) as Project[]}
@@ -37,6 +54,7 @@ export default async function AdminDashboardPage() {
       maxSubcontractors={tenant.max_subcontractors ?? 1}
       projectCount={projectCount ?? 0}
       subCount={subCount ?? 0}
+      platformInvites={(platformInvites ?? []) as PlatformInvite[]}
     />
   )
 }
