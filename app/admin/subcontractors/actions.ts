@@ -72,7 +72,9 @@ export async function inviteSubToJoin(email: string, name: string) {
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tradetap-seven.vercel.app'
-  const joinUrl = `${baseUrl}/${tenant.slug}/join`
+  const params = new URLSearchParams({ email: email.toLowerCase().trim() })
+  if (name) params.set('name', name)
+  const joinUrl = `${baseUrl}/${tenant.slug}/join?${params.toString()}`
 
   await sendPlatformInviteEmail({
     to: email.toLowerCase().trim(),
