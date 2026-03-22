@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import type { Tenant } from '@/lib/types'
 import { isTenantActive } from '@/lib/types'
-import { PLANS, ALL_PLANS } from '@/lib/stripe'
-import type { PlanId } from '@/lib/stripe'
+import { PLANS, ALL_PLANS } from '@/lib/plans'
+import type { PlanId } from '@/lib/plans'
 
 interface Props {
   tenant: Tenant
