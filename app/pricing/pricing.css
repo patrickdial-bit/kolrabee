@@ -213,9 +213,26 @@
 
 @keyframes pricingFadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 
+.pricing-page .mobile-menu-toggle { display: none; background: none; border: none; color: var(--dark); cursor: pointer; padding: 4px; }
+
+.pricing-page .mobile-menu {
+  display: none;
+  position: fixed; top: 60px; left: 0; right: 0; z-index: 99;
+  background: rgba(240,245,245,0.98); backdrop-filter: blur(12px);
+  padding: 16px 24px;
+  flex-direction: column; gap: 4px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.pricing-page .mobile-menu a { display: block; padding: 12px 0; font-size: 16px; font-weight: 500; color: var(--muted); text-decoration: none; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.pricing-page .mobile-menu a:hover { color: var(--dark); }
+.pricing-page .mobile-cta { background: var(--dark) !important; color: var(--white) !important; text-align: center; padding: 12px 20px !important; border-radius: 8px !important; font-weight: 600 !important; margin-top: 8px; border-bottom: none !important; }
+.pricing-page .mobile-cta:hover { background: var(--teal) !important; }
+
 @media (max-width: 768px) {
   .pricing-page nav { padding: 16px 24px; }
   .pricing-page .nav-links { display: none; }
+  .pricing-page .mobile-menu-toggle { display: block; }
+  .pricing-page .mobile-menu { display: flex; }
   .pricing-page .pricing-grid { grid-template-columns: 1fr; }
   .pricing-page section { padding: 72px 24px; }
   .pricing-page footer { padding: 32px 24px; }

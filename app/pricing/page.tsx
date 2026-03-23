@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import Link from 'next/link'
 import './pricing.css'
 
 export default function PricingPage() {
+  const [mobileOpen, setMobileOpen] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   const toggleFaq = useCallback((btn: HTMLButtonElement) => {
@@ -47,7 +48,26 @@ export default function PricingPage() {
           <Link href="/admin/login">Login</Link>
           <Link href="/admin/signup" className="nav-cta">Get Started Free</Link>
         </div>
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+          )}
+        </button>
       </nav>
+      {mobileOpen && (
+        <div className="mobile-menu">
+          <Link href="/" onClick={() => setMobileOpen(false)}>Home</Link>
+          <Link href="/about" onClick={() => setMobileOpen(false)}>About</Link>
+          <Link href="/admin/login" onClick={() => setMobileOpen(false)}>Login</Link>
+          <Link href="/admin/signup" className="mobile-cta" onClick={() => setMobileOpen(false)}>Get Started Free</Link>
+        </div>
+      )}
 
       {/* HERO */}
       <div className="hero">
