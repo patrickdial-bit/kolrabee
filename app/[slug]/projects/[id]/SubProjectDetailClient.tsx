@@ -7,7 +7,17 @@ import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { extractCity, formatCurrency, formatDate } from '@/lib/utils'
 import type { Project, ProjectInvitation } from '@/lib/types'
-import { acceptProject, cancelAcceptedProject, declineProject } from './actions'
+import { acceptProject, cancelAcceptedProject, declineProject, requestCompletion } from './actions'
+import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
+import type { ProjectAttachment } from '@/lib/types'
+
+interface MessageWithSender {
+  id: string
+  sender_id: string
+  body: string
+  created_at: string
+  sender_name: string
+}
 
 interface SubProjectDetailClientProps {
   slug: string
@@ -16,14 +26,27 @@ interface SubProjectDetailClientProps {
   project: Project
   invitation: ProjectInvitation | null
   isAcceptedByMe: boolean
+  attachments: ProjectAttachment[]
+  messages: MessageWithSender[]
+  currentUserId: string
 }
 
 const statusBadgeClasses: Record<string, string> = {
   available: 'bg-yellow-100 text-yellow-700',
   accepted: 'bg-blue-100 text-blue-700',
+  pending_completion: 'bg-orange-100 text-orange-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-gray-100 text-gray-700',
+}
+
+const statusLabels: Record<string, string> = {
+  available: 'Available',
+  accepted: 'Accepted',
+  pending_completion: 'Pending Approval',
+  completed: 'Completed',
+  paid: 'Paid',
+  cancelled: 'Cancelled',
 }
 
 export default function SubProjectDetailClient({
@@ -33,12 +56,18 @@ export default function SubProjectDetailClient({
   project,
   invitation,
   isAcceptedByMe,
+  attachments,
+  messages,
+  currentUserId,
 }: SubProjectDetailClientProps) {
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [showAcceptConfirm, setShowAcceptConfirm] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false)
+  const [messageText, setMessageText] = useState('')
+  const [messagePending, setMessagePending] = useState(false)
 
   // Determine visibility
   const isExpired = invitation?.expires_at ? new Date(invitation.expires_at) < new Date() : false
@@ -75,6 +104,43 @@ export default function SubProjectDetailClient({
     } finally {
       setLoading(null)
     }
+  }
+
+  async function handleMarkComplete() {
+    setError(null)
+    setLoading('complete')
+    try {
+      const result = await requestCompletion(project.id, project.version, slug)
+      if (result?.error) {
+        setError(result.error)
+        setShowCompleteConfirm(false)
+      }
+    } catch {
+      setError('An unexpected error occurred.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function handleSendMessage() {
+    if (!messageText.trim()) return
+    setMessagePending(true)
+    setError(null)
+    try {
+      const result = await sendSubMessage(project.id, messageText.trim(), slug)
+      if (result?.error) setError(result.error)
+      else setMessageText('')
+    } catch {
+      setError('Failed to send message.')
+    } finally {
+      setMessagePending(false)
+    }
+  }
+
+  async function handleDownloadAttachment(attachmentId: string) {
+    const result = await getSubAttachmentUrl(attachmentId, slug)
+    if (result?.error) setError(result.error)
+    else if (result?.url) window.open(result.url, '_blank')
   }
 
   async function handleCancel() {
@@ -128,7 +194,7 @@ export default function SubProjectDetailClient({
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClasses[project.status] || 'bg-gray-100 text-gray-700'}`}
               >
-                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                {statusLabels[project.status] || project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </span>
             </div>
           </div>
@@ -201,6 +267,74 @@ export default function SubProjectDetailClient({
             )}
           </div>
 
+          {/* Job Documents */}
+          {attachments.length > 0 && (
+            <div className="border-t border-gray-200 px-6 py-5">
+              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{t('project.documents')}</dt>
+              <ul className="space-y-2">
+                {attachments.map((att) => (
+                  <li key={att.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                      <span className="text-sm text-gray-900">{att.file_name}</span>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadAttachment(att.id)}
+                      className="text-xs font-medium text-ember hover:text-primary-700"
+                    >
+                      Download
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Messages */}
+          {isAcceptedByMe && (
+            <div className="border-t border-gray-200 px-6 py-5">
+              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{t('project.messages')}</dt>
+              {messages.length > 0 ? (
+                <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                  {messages.map((msg) => {
+                    const isMe = msg.sender_id === currentUserId
+                    return (
+                      <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-lg px-4 py-2 ${isMe ? 'bg-ember/10 text-gray-900' : 'bg-gray-100 text-gray-900'}`}>
+                          <p className="text-xs font-medium text-gray-500 mb-1">
+                            {msg.sender_name} &middot; {new Date(msg.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          </p>
+                          <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-4">{t('project.message_placeholder')}</p>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                  placeholder={t('project.message_placeholder')}
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={messagePending || !messageText.trim()}
+                  className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {messagePending ? t('project.sending_message') : t('project.send_message')}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
             {/* Expired invitation */}
@@ -261,14 +395,54 @@ export default function SubProjectDetailClient({
               </div>
             )}
 
-            {/* After acceptance, status='accepted': Cancel button */}
-            {isAcceptedByMe && project.status === 'accepted' && !showCancelConfirm && (
-              <button
-                onClick={() => setShowCancelConfirm(true)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
-              >
-                {t('project.cancel_acceptance')}
-              </button>
+            {/* After acceptance, status='accepted': Mark Complete + Cancel buttons */}
+            {isAcceptedByMe && project.status === 'accepted' && !showCancelConfirm && !showCompleteConfirm && (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setShowCompleteConfirm(true)}
+                  className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+                >
+                  {t('project.mark_complete')}
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+                >
+                  {t('project.cancel_acceptance')}
+                </button>
+              </div>
+            )}
+
+            {/* Mark Complete confirmation */}
+            {isAcceptedByMe && project.status === 'accepted' && showCompleteConfirm && (
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-900">
+                  {t('project.confirm_complete')}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleMarkComplete}
+                    disabled={loading === 'complete'}
+                    className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {loading === 'complete' ? t('project.completing') : t('project.yes_complete')}
+                  </button>
+                  <button
+                    onClick={() => setShowCompleteConfirm(false)}
+                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    {t('project.go_back')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Pending completion — awaiting owner approval */}
+            {isAcceptedByMe && project.status === 'pending_completion' && (
+              <div className="rounded-lg bg-orange-50 border border-orange-200 p-4">
+                <p className="text-sm font-medium text-orange-800">{t('project.awaiting_approval')}</p>
+                <p className="text-xs text-orange-600 mt-1">{t('project.awaiting_approval_desc')}</p>
+              </div>
             )}
 
             {/* Cancel confirmation */}
