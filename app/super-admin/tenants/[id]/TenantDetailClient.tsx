@@ -13,7 +13,7 @@ interface Props {
   invites: any[]
 }
 
-const planOptions = ['free', 'trial', 'starter', 'pro', 'cancelled'] as const
+const planOptions = ['free', 'trial', 'growth', 'operator', 'cancelled'] as const
 
 export default function TenantDetailClient({ tenant, users, projects, invites }: Props) {
   const [isPending, startTransition] = useTransition()

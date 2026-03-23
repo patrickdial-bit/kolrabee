@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
       const tenantId = session.metadata?.tenant_id
-      const plan = (session.metadata?.plan as string) || 'starter'
-      const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter
+      const plan = (session.metadata?.plan as string) || 'growth'
+      const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.growth
 
       if (tenantId && session.subscription) {
         await adminClient
@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
 
       if (subscription.status === 'active') {
         // Subscription is active — determine plan from metadata
-        const plan = subscription.metadata?.plan || 'starter'
-        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.starter
+        const plan = subscription.metadata?.plan || 'growth'
+        const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.growth
 
         await adminClient
           .from('tenants')

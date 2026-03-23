@@ -60,7 +60,7 @@ export type Tenant = {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   status: 'active' | 'suspended' | 'deleted'
-  plan: 'free' | 'trial' | 'starter' | 'pro' | 'cancelled'
+  plan: 'free' | 'trial' | 'growth' | 'operator' | 'cancelled'
   trial_ends_at: string | null
   billing_email: string | null
   notification_email: string | null
@@ -71,7 +71,7 @@ export type Tenant = {
 
 // Check if a tenant has an active subscription or is within trial period
 export function isTenantActive(tenant: Tenant): boolean {
-  if (tenant.plan === 'free' || tenant.plan === 'starter' || tenant.plan === 'pro') return true
+  if (tenant.plan === 'free' || tenant.plan === 'growth' || tenant.plan === 'operator') return true
   if (tenant.plan === 'trial' && tenant.trial_ends_at) {
     return new Date(tenant.trial_ends_at) > new Date()
   }
@@ -82,8 +82,8 @@ export function isTenantActive(tenant: Tenant): boolean {
 export const PLAN_LIMITS: Record<string, { max_projects: number; max_subcontractors: number }> = {
   free: { max_projects: 3, max_subcontractors: 1 },
   trial: { max_projects: 10, max_subcontractors: 5 },
-  starter: { max_projects: 50, max_subcontractors: 20 },
-  pro: { max_projects: 999999, max_subcontractors: 999999 },
+  growth: { max_projects: 999999, max_subcontractors: 999999 },
+  operator: { max_projects: 999999, max_subcontractors: 999999 },
 }
 
 export type Project = {
@@ -163,6 +163,11 @@ export type JobMessage = {
   sender_id: string
   body: string
   created_at: string
+}
+
+// Check if a tenant has Growth+ features (messaging, ratings, completion approval)
+export function hasGrowthFeatures(tenant: Tenant): boolean {
+  return tenant.plan === 'growth' || tenant.plan === 'operator'
 }
 
 // Helper to check if a sub is compliant (has current W-9 and non-expired COI)

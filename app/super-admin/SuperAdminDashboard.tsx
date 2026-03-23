@@ -31,8 +31,8 @@ interface Props {
 const planColors: Record<string, string> = {
   free: 'bg-gray-100 text-gray-700',
   trial: 'bg-blue-100 text-blue-700',
-  starter: 'bg-green-100 text-green-700',
-  pro: 'bg-ember/15 text-ember',
+  growth: 'bg-green-100 text-green-700',
+  operator: 'bg-ember/15 text-ember',
   cancelled: 'bg-amber-100 text-amber-700',
 }
 

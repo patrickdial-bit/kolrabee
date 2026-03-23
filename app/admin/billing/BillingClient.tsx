@@ -24,7 +24,7 @@ export default function BillingClient({ tenant }: Props) {
   const isActive = isTenantActive(tenant)
   const isFree = tenant.plan === 'free'
   const isTrial = tenant.plan === 'trial'
-  const hasSubscription = tenant.plan === 'starter' || tenant.plan === 'pro'
+  const hasSubscription = tenant.plan === 'growth' || tenant.plan === 'operator'
   const trialDaysLeft = tenant.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(tenant.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0
@@ -264,10 +264,10 @@ export default function BillingClient({ tenant }: Props) {
               <div
                 key={planId}
                 className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
-                  planId === 'pro' ? 'border-ember' : 'border-gray-200'
+                  planId === 'operator' ? 'border-ember' : 'border-gray-200'
                 }`}
               >
-                {planId === 'pro' && (
+                {planId === 'operator' && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-ember px-3 py-0.5 text-xs font-semibold text-white">
                     Most Popular
                   </span>
@@ -294,7 +294,7 @@ export default function BillingClient({ tenant }: Props) {
                   onClick={() => handleCheckout(planId)}
                   disabled={loading !== null}
                   className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
-                    planId === 'pro'
+                    planId === 'operator'
                       ? 'bg-ember text-white hover:bg-primary-700'
                       : 'bg-white text-ember border-2 border-ember hover:bg-ember/10'
                   }`}

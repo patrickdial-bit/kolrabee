@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMessageNotificationEmail } from '@/lib/email'
-import { getNotificationPrefs } from '@/lib/types'
+import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 
 export async function sendMessage(projectId: string, body: string) {
   if (!body.trim()) {
@@ -12,6 +12,10 @@ export async function sendMessage(projectId: string, body: string) {
   }
 
   const { appUser, tenant } = await getCurrentUser()
+
+  if (!hasGrowthFeatures(tenant)) {
+    return { error: 'In-app messaging requires the Growth plan or higher. Please upgrade.' }
+  }
   const adminClient = createAdminClient()
 
   // Verify project exists and has an accepted sub

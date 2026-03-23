@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendCompletionApprovedEmail } from '@/lib/email'
-import { getNotificationPrefs } from '@/lib/types'
+import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 
 export async function updateProject(projectId: string, formData: FormData) {
   const customerName = formData.get('customer_name') as string
@@ -84,6 +84,11 @@ export async function markCompleted(projectId: string) {
 
 export async function approveCompletion(projectId: string) {
   const { tenant } = await getCurrentUser()
+
+  if (!hasGrowthFeatures(tenant)) {
+    return { error: 'Completion approval requires the Growth plan or higher. Please upgrade.' }
+  }
+
   const adminClient = createAdminClient()
 
   // Get project before update to access sub info

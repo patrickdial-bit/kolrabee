@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasGrowthFeatures } from '@/lib/types'
 
 export async function submitRating(projectId: string, rating: number, note: string | null) {
   if (rating < 1 || rating > 5) {
@@ -10,6 +11,10 @@ export async function submitRating(projectId: string, rating: number, note: stri
   }
 
   const { appUser, tenant } = await getCurrentUser()
+
+  if (!hasGrowthFeatures(tenant)) {
+    return { error: 'Sub ratings require the Growth plan or higher. Please upgrade.' }
+  }
   const adminClient = createAdminClient()
 
   // Get the project to find the sub

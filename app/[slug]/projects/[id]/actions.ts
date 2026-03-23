@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAcceptEmail, sendCancelEmail, sendCompletionRequestEmail } from '@/lib/email'
-import { getNotificationPrefs } from '@/lib/types'
+import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
@@ -156,6 +156,11 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
 
 export async function requestCompletion(projectId: string, expectedVersion: number, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
+
+  if (!hasGrowthFeatures(tenant)) {
+    return { error: 'Completion approval requires the Growth plan or higher.' }
+  }
+
   const adminClient = createAdminClient()
 
   const { data, error } = await adminClient

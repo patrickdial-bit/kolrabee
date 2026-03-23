@@ -1,6 +1,6 @@
 // Client-safe plan configuration (no server-only imports)
 
-export type PlanId = 'starter' | 'pro'
+export type PlanId = 'growth' | 'operator'
 
 export const ALL_PLANS: Record<string, { name: string; price: number; features: string[] }> = {
   free: {
@@ -12,31 +12,34 @@ export const ALL_PLANS: Record<string, { name: string; price: number; features: 
       '1 admin user',
     ],
   },
-  starter: {
-    name: 'Starter',
+  growth: {
+    name: 'Growth',
     price: 49,
-    features: [
-      'Up to 50 projects',
-      'Up to 20 subcontractors',
-      'Email notifications',
-      'Document management',
-    ],
-  },
-  pro: {
-    name: 'Pro',
-    price: 99,
     features: [
       'Unlimited projects',
       'Unlimited subcontractors',
-      'Email notifications',
-      'Document management',
+      'In-app job messaging',
+      'Sub ratings & performance scores',
+      'Job completion approval',
+      'File attachments on jobs',
       'Priority support',
+    ],
+  },
+  operator: {
+    name: 'Operator',
+    price: 99,
+    features: [
+      'Everything in Growth',
+      'Up to 5 company workspaces',
+      'Consolidated owner dashboard',
+      'Dedicated onboarding support',
+      'Early access to new features',
     ],
   },
 }
 
 // Paid plans only (used for Stripe checkout)
 export const PLANS: Record<PlanId, { name: string; price: number; features: string[] }> = {
-  starter: ALL_PLANS.starter,
-  pro: ALL_PLANS.pro,
+  growth: ALL_PLANS.growth,
+  operator: ALL_PLANS.operator,
 }
