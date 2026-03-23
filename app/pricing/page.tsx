@@ -87,7 +87,7 @@ export default function PricingPage() {
               <ul className="plan-features">
                 <li className="plan-section-label">Jobs &amp; Dispatch</li>
                 <li>Up to 3 active jobs at a time</li>
-                <li>Up to 5 subcontractors</li>
+                <li>1 subcontractor</li>
                 <li>Multiple jobs per day, different start times</li>
                 <li>Job posting with full scope &amp; instructions</li>
                 <li>File attachments on job posts (up to 3)</li>
@@ -179,7 +179,7 @@ export default function PricingPage() {
             <tbody>
               <tr className="row-group"><td colSpan={4}>Jobs &amp; Dispatch</td></tr>
               <tr><td>Active jobs</td><td>3</td><td>Unlimited</td><td>Unlimited</td></tr>
-              <tr><td>Subcontractors</td><td>5</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Subcontractors</td><td>1</td><td>Unlimited</td><td>Unlimited</td></tr>
               <tr><td>Multiple jobs per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Different start times per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Day jobs &amp; multi-day jobs</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
