@@ -38,13 +38,13 @@
 }
 .pricing-page .hero::before {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 70% 30%, rgba(0,168,150,0.12) 0%, transparent 55%);
+  background: radial-gradient(ellipse at 70% 30%, rgba(0,168,150,0.15) 0%, transparent 55%);
   pointer-events: none;
 }
 .pricing-page .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.6s ease forwards 0.2s; }
 .pricing-page .hero-headline { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: clamp(52px, 8vw, 96px); line-height: 0.95; letter-spacing: -0.02em; color: var(--white); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.35s; }
 .pricing-page .hero-headline span { color: var(--teal); }
-.pricing-page .hero-sub { font-size: clamp(16px, 1.8vw, 19px); color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto; line-height: 1.7; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.5s; }
+.pricing-page .hero-sub { font-size: clamp(16px, 1.8vw, 19px); color: rgba(255,255,255,0.55); max-width: 500px; margin: 0 auto; line-height: 1.7; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.5s; }
 .pricing-page .hero-sub strong { color: rgba(255,255,255,0.9); }
 
 /* COMPETITOR BAR */
@@ -53,19 +53,14 @@
   display: flex; align-items: center; justify-content: center; gap: 48px;
   flex-wrap: wrap;
 }
-.pricing-page .comp-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.pricing-page .comp-platform { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
-.pricing-page .comp-price { font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700; line-height: 1; }
-.pricing-page .comp-price.theirs { color: rgba(255,255,255,0.35); text-decoration: line-through; }
+.pricing-page .comp-item { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.pricing-page .comp-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+.pricing-page .comp-price { font-family: 'Rajdhani', sans-serif; font-size: 42px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.pricing-page .comp-price.theirs { color: rgba(255,255,255,0.2); text-decoration: line-through; }
 .pricing-page .comp-price.ours { color: var(--teal); }
-.pricing-page .comp-note { font-size: 12px; color: rgba(255,255,255,0.3); }
-.pricing-page .comp-arrow { font-size: 28px; color: rgba(255,255,255,0.15); }
-.pricing-page .comp-badge {
-  background: rgba(0,168,150,0.15); color: var(--teal);
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; padding: 6px 16px; border-radius: 20px;
-  border: 1px solid rgba(0,168,150,0.3);
-}
+.pricing-page .comp-name { font-size: 13px; color: rgba(255,255,255,0.4); }
+.pricing-page .comp-vs { font-family: 'Rajdhani', sans-serif; font-size: 28px; font-weight: 700; color: rgba(255,255,255,0.15); }
+.pricing-page .comp-note { font-size: 13px; color: rgba(255,255,255,0.25); text-align: center; margin-top: 8px; width: 100%; max-width: 600px; }
 
 /* SECTIONS */
 .pricing-page section { padding: 100px 32px; }
@@ -87,14 +82,14 @@
 }
 .pricing-page .plan-card:hover { transform: translateY(-4px); }
 .pricing-page .plan-card.featured { border-color: var(--teal); }
-.pricing-page .plan-card.dark-card { background: var(--hero); }
+.pricing-page .plan-card.dark-card { background: var(--dark); }
 .pricing-page .plan-badge {
   display: inline-block; font-size: 11px; font-weight: 600;
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 4px 12px; border-radius: 20px; margin-bottom: 24px;
 }
-.pricing-page .badge-free     { background: var(--cream2); color: var(--muted); }
-.pricing-page .badge-featured { background: rgba(0,168,150,0.15); color: var(--teal); }
+.pricing-page .badge-free     { background: var(--cream); color: var(--muted); }
+.pricing-page .badge-featured { background: rgba(0,168,150,0.12); color: var(--teal); }
 .pricing-page .badge-dark     { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
 .pricing-page .plan-name {
   font-family: 'Rajdhani', sans-serif; font-weight: 700;
@@ -109,24 +104,30 @@
 }
 .pricing-page .plan-price sup { font-size: 28px; vertical-align: super; }
 .pricing-page .featured .plan-price { color: var(--teal); }
-.pricing-page .dark-card .plan-price { color: var(--teal-light); }
+.pricing-page .dark-card .plan-price { color: var(--white); }
 .pricing-page .plan-period { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .pricing-page .dark-card .plan-period { color: rgba(255,255,255,0.35); }
 .pricing-page .plan-for { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.5; }
 .pricing-page .dark-card .plan-for { color: rgba(255,255,255,0.4); }
-.pricing-page .plan-divider { height: 0.5px; background: #E0EAEA; margin-bottom: 24px; }
+.pricing-page .plan-divider { height: 0.5px; background: #dde8e8; margin-bottom: 24px; }
 .pricing-page .dark-card .plan-divider { background: rgba(255,255,255,0.08); }
-.pricing-page .plan-features { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+.pricing-page .plan-features { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 32px; }
 .pricing-page .plan-features li { font-size: 14px; color: #444; display: flex; align-items: flex-start; gap: 10px; line-height: 1.5; }
 .pricing-page .dark-card .plan-features li { color: rgba(255,255,255,0.6); }
 .pricing-page .plan-features li::before { content: '\2713'; color: var(--teal); font-weight: 700; flex-shrink: 0; font-size: 13px; margin-top: 1px; }
+.pricing-page .plan-features li.highlight { font-weight: 600; }
+.pricing-page .plan-features li.highlight::before { color: var(--teal); }
+.pricing-page .dark-card .plan-features li.highlight { color: rgba(255,255,255,0.9); }
+.pricing-page .plan-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 8px 0 4px; border-top: 0.5px solid #eee; margin-top: 4px; }
+.pricing-page .plan-features li.plan-section-label::before { content: none; }
+.pricing-page .dark-card .plan-section-label { color: rgba(255,255,255,0.25); border-top-color: rgba(255,255,255,0.08); }
 .pricing-page .plan-cta {
   display: block; text-align: center; padding: 14px 24px;
   border-radius: 10px; font-size: 15px; font-weight: 600;
   text-decoration: none; transition: transform 0.15s, background 0.2s;
 }
 .pricing-page .plan-cta:hover { transform: translateY(-2px); }
-.pricing-page .cta-outline { border: 1.5px solid #ddd; color: var(--dark); background: transparent; }
+.pricing-page .cta-outline { border: 1.5px solid #ccdede; color: var(--dark); background: transparent; }
 .pricing-page .cta-outline:hover { border-color: var(--teal); color: var(--teal); }
 .pricing-page .cta-teal { background: var(--teal); color: var(--white); border: none; }
 .pricing-page .cta-teal:hover { background: var(--teal-dark); }
@@ -145,9 +146,9 @@
   border-bottom: 2px solid var(--cream2);
 }
 .pricing-page .compare-table th:first-child { text-align: left; }
-.pricing-page .compare-table th.col-featured { color: var(--teal); }
+.pricing-page .compare-table th.col-teal { color: var(--teal); }
 .pricing-page .compare-table td {
-  padding: 14px 20px; font-size: 14px;
+  padding: 13px 20px; font-size: 14px;
   border-bottom: 0.5px solid var(--cream2);
   text-align: center; color: #444;
 }
@@ -155,21 +156,24 @@
 .pricing-page .compare-table tr:last-child td { border-bottom: none; }
 .pricing-page .compare-table tr:hover td { background: var(--cream); }
 .pricing-page .check { color: var(--teal); font-weight: 700; font-size: 16px; }
-.pricing-page .dash { color: #ddd; font-size: 18px; }
+.pricing-page .dash { color: #ccc; font-size: 18px; }
 .pricing-page .compare-table .row-group td,
 .pricing-page .compare-table .row-group th {
-  background: var(--cream); font-size: 11px;
-  font-weight: 600; letter-spacing: 0.08em;
+  background: var(--cream); font-size: 10px;
+  font-weight: 700; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
   padding: 10px 20px;
 }
+.pricing-page .compare-table .heypros-row td { background: rgba(255,50,50,0.03); }
+.pricing-page .compare-table .heypros-row td:first-child { color: var(--muted); font-style: italic; font-size: 13px; }
+.pricing-page .heypros-val { font-size: 12px; color: #bbb; font-style: italic; }
 
 /* FAQ */
 .pricing-page .faq-section { background: var(--cream); }
 .pricing-page .faq-list { display: flex; flex-direction: column; gap: 2px; margin-top: 48px; }
 .pricing-page .faq-item {
   background: var(--white); border-radius: 12px; overflow: hidden;
-  border: 0.5px solid #E0EAEA;
+  border: 0.5px solid #dde8e8;
 }
 .pricing-page .faq-q {
   width: 100%; background: none; border: none; cursor: pointer;
@@ -187,11 +191,11 @@
   transition: max-height 0.35s ease, padding 0.25s ease;
   padding: 0 24px;
 }
-.pricing-page .faq-item.open .faq-a { max-height: 300px; padding: 0 24px 20px; }
+.pricing-page .faq-item.open .faq-a { max-height: 400px; padding: 0 24px 20px; }
 .pricing-page .faq-a p { font-size: 14px; color: #555; line-height: 1.7; border-top: 0.5px solid var(--cream2); padding-top: 16px; }
 
 /* CTA */
-.pricing-page .cta-section { background: var(--dark); text-align: center; padding: 120px 32px; }
+.pricing-page .cta-section { background: var(--hero); text-align: center; padding: 120px 32px; }
 .pricing-page .cta-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: clamp(48px, 7vw, 88px); line-height: 0.95; color: var(--white); margin-bottom: 20px; }
 .pricing-page .cta-title span { color: var(--teal); }
 .pricing-page .cta-sub { font-size: 17px; color: rgba(255,255,255,0.4); margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.6; }
@@ -215,7 +219,6 @@
   .pricing-page .pricing-grid { grid-template-columns: 1fr; }
   .pricing-page section { padding: 72px 24px; }
   .pricing-page footer { padding: 32px 24px; }
-  .pricing-page .compare-table { font-size: 13px; }
-  .pricing-page .compare-table th, .pricing-page .compare-table td { padding: 12px 12px; }
-  .pricing-page .competitor-bar { gap: 24px; padding: 24px; }
+  .pricing-page .competitor-bar { padding: 24px; gap: 24px; }
+  .pricing-page .compare-table th, .pricing-page .compare-table td { padding: 10px 12px; font-size: 13px; }
 }
