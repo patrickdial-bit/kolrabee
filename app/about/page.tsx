@@ -5,39 +5,46 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-canvas">
       {/* Nav */}
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-        <Link href="/">
-          <KolrabeeLogo size="lg" />
+      <nav
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+          padding: '20px 48px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(240,245,245,0.92)', backdropFilter: 'blur(12px)',
+          borderBottom: '0.5px solid rgba(0,0,0,0.06)',
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+      >
+        <Link
+          href="/"
+          style={{
+            fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '28px',
+            letterSpacing: '-0.02em', textDecoration: 'none',
+          }}
+        >
+          <span style={{ color: '#111111' }}>kol</span>
+          <span style={{ color: '#00A896' }}>ra</span>
+          <span style={{ color: '#33BFB0' }}>bee</span>
         </Link>
-        <div className="flex items-center gap-6">
-          <Link
-            href="/about"
-            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
-          >
-            About
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/admin/login"
-            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
-          >
-            Login
-          </Link>
+        <div className="hidden sm:flex" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+          <Link href="/" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>Home</Link>
+          <Link href="/about" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>About</Link>
+          <Link href="/pricing" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>Pricing</Link>
+          <Link href="/admin/login" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>Login</Link>
           <Link
             href="/admin/signup"
-            className="inline-flex items-center rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
+            style={{
+              background: '#111111', color: '#ffffff',
+              padding: '10px 20px', borderRadius: '8px',
+              fontWeight: 600, fontSize: '14px', textDecoration: 'none',
+            }}
           >
             Get Started Free
           </Link>
         </div>
       </nav>
 
-      <main className="mx-auto max-w-3xl px-6 lg:px-8 py-16">
+      <main className="mx-auto max-w-3xl px-6 lg:px-8 py-16" style={{ paddingTop: '100px' }}>
         {/* Hero */}
         <div className="text-center mb-16">
           <KolrabeeLogo size="xl" />

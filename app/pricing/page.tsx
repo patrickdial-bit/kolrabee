@@ -44,6 +44,7 @@ export default function PricingPage() {
         <div className="nav-links">
           <Link href="/">Home</Link>
           <Link href="/about">About</Link>
+          <Link href="/pricing">Pricing</Link>
           <Link href="/admin/login">Login</Link>
           <Link href="/admin/signup" className="nav-cta">Get Started Free</Link>
         </div>
