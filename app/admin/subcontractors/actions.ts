@@ -72,7 +72,7 @@ export async function inviteSubToJoin(email: string, name: string) {
   }
 
   const normalizedEmail = email.toLowerCase().trim()
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tradetap-seven.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
   const params = new URLSearchParams({ email: normalizedEmail })
   if (name) params.set('name', name)
   const joinUrl = `${baseUrl}/${tenant.slug}/join?${params.toString()}`
