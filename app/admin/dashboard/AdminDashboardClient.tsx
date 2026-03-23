@@ -76,7 +76,7 @@ export default function AdminDashboardClient({
   const counts = useMemo(() => {
     const c: Record<string, number> = {}
     c['Available'] = projects.filter((p) => p.status === 'available').length
-    c['Accepted'] = projects.filter((p) => p.status === 'accepted' || p.status === 'completed').length
+    c['Accepted'] = projects.filter((p) => p.status === 'accepted' || p.status === 'pending_completion' || p.status === 'completed').length
     c['Paid'] = projects.filter((p) => p.status === 'paid').length
     return c
   }, [projects])
@@ -86,7 +86,7 @@ export default function AdminDashboardClient({
     if (activeTab === 'Available') {
       result = projects.filter((p) => p.status === 'available')
     } else if (activeTab === 'Accepted') {
-      result = projects.filter((p) => p.status === 'accepted' || p.status === 'completed')
+      result = projects.filter((p) => p.status === 'accepted' || p.status === 'pending_completion' || p.status === 'completed')
     } else {
       result = projects.filter((p) => p.status === 'paid')
     }

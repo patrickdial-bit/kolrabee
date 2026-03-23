@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import Link from 'next/link'
 import './pricing.css'
 
 export default function PricingPage() {
+  const [mobileOpen, setMobileOpen] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   const toggleFaq = useCallback((btn: HTMLButtonElement) => {
@@ -42,18 +43,53 @@ export default function PricingPage() {
       <nav>
         <Link href="/" className="nav-logo"><span className="k">kol</span><span className="r">ra</span><span className="b">bee</span></Link>
         <div className="nav-links">
+          <Link href="/">Home</Link>
           <Link href="/about">About</Link>
-          <Link href="/pricing">Pricing</Link>
           <Link href="/admin/login">Login</Link>
           <Link href="/admin/signup" className="nav-cta">Get Started Free</Link>
         </div>
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+          )}
+        </button>
       </nav>
+      {mobileOpen && (
+        <div className="mobile-menu">
+          <Link href="/" onClick={() => setMobileOpen(false)}>Home</Link>
+          <Link href="/about" onClick={() => setMobileOpen(false)}>About</Link>
+          <Link href="/admin/login" onClick={() => setMobileOpen(false)}>Login</Link>
+          <Link href="/admin/signup" className="mobile-cta" onClick={() => setMobileOpen(false)}>Get Started Free</Link>
+        </div>
+      )}
 
       {/* HERO */}
       <div className="hero">
         <div className="hero-eyebrow">Simple, transparent pricing</div>
         <h1 className="hero-headline">Pricing as <span>simple</span><br />as the platform.</h1>
         <p className="hero-sub">No hidden fees. No long-term contracts. <strong>Start free and scale when you&apos;re ready.</strong></p>
+      </div>
+
+      {/* COMPETITOR BAR */}
+      <div className="competitor-bar">
+        <div className="comp-item">
+          <div className="comp-label">HeyPros Pro+ starts at</div>
+          <div className="comp-price theirs">$249</div>
+          <div className="comp-name">per month</div>
+        </div>
+        <div className="comp-vs">VS</div>
+        <div className="comp-item">
+          <div className="comp-label">Kolrabee Growth starts at</div>
+          <div className="comp-price ours">$49</div>
+          <div className="comp-name">per month</div>
+        </div>
+        <div className="comp-note">Same features. Sub ratings, job messaging, completion approvals, file attachments — all included. Five times less.</div>
       </div>
 
       {/* PRICING CARDS */}
@@ -69,13 +105,20 @@ export default function PricingPage() {
               <div className="plan-for">For owners getting started — no credit card required.</div>
               <div className="plan-divider"></div>
               <ul className="plan-features">
+                <li className="plan-section-label">Jobs &amp; Dispatch</li>
                 <li>Up to 3 active jobs at a time</li>
-                <li>Up to 5 subcontractors</li>
-                <li>Job posting and acceptance tracking</li>
+                <li>1 subcontractor</li>
+                <li>Multiple jobs per day, different start times</li>
+                <li>Job posting with full scope &amp; instructions</li>
+                <li>File attachments on job posts (up to 3)</li>
+                <li className="plan-section-label">Tracking</li>
+                <li>Acceptance tracking in real time</li>
+                <li>Job completion confirmation</li>
                 <li>YTD earnings for subs</li>
-                <li>Mobile access</li>
+                <li className="plan-section-label">Team</li>
                 <li>1 admin user</li>
                 <li>1 company workspace</li>
+                <li>Mobile access</li>
               </ul>
               <a href="https://www.kolrabee.com/admin/signup" className="plan-cta cta-outline">Start Free</a>
             </div>
@@ -85,21 +128,30 @@ export default function PricingPage() {
               <div className="plan-badge badge-featured">Most Popular</div>
               <div className="plan-name">Growth</div>
               <div className="plan-price"><sup>$</sup>49</div>
-              <div className="plan-period">per month</div>
+              <div className="plan-period">per month — HeyPros Pro+ is $249</div>
               <div className="plan-for">For owners actively scaling their sub network.</div>
               <div className="plan-divider"></div>
               <ul className="plan-features">
-                <li>Unlimited active jobs</li>
-                <li>Unlimited subcontractors</li>
-                <li>Everything in Free</li>
+                <li className="plan-section-label">Jobs &amp; Dispatch</li>
+                <li className="highlight">Unlimited active jobs</li>
+                <li className="highlight">Unlimited subcontractors</li>
+                <li>Multiple jobs per day, different start times</li>
                 <li>Race-proof assignment engine</li>
+                <li>File attachments on job posts (up to 3)</li>
+                <li className="plan-section-label">Communication</li>
+                <li className="highlight">In-app job messaging (owner &#x2194; sub)</li>
+                <li className="plan-section-label">Tracking &amp; Accountability</li>
                 <li>Full acceptance tracking</li>
+                <li className="highlight">Job completion approval workflow</li>
+                <li className="highlight">Sub ratings &amp; performance scores</li>
+                <li>YTD earnings for subs</li>
+                <li className="plan-section-label">Team</li>
                 <li>2 admin users included</li>
                 <li>Additional admins: $10/mo each</li>
                 <li>1 company workspace</li>
                 <li>Priority support</li>
               </ul>
-              <a href="https://www.kolrabee.com/admin/signup" className="plan-cta cta-orange">Start Growth</a>
+              <a href="https://www.kolrabee.com/admin/signup" className="plan-cta cta-teal">Start Growth</a>
             </div>
 
             {/* OPERATOR */}
@@ -111,12 +163,15 @@ export default function PricingPage() {
               <div className="plan-for">For owners running multiple trade businesses.</div>
               <div className="plan-divider"></div>
               <ul className="plan-features">
-                <li>Everything in Growth</li>
-                <li>Up to 5 company workspaces</li>
-                <li>Separate URLs per company</li>
-                <li>Consolidated owner dashboard</li>
-                <li>2 admin users included</li>
+                <li className="plan-section-label">Everything in Growth, plus</li>
+                <li className="highlight">Up to 5 company workspaces</li>
+                <li className="highlight">Separate URLs per company</li>
+                <li className="highlight">Consolidated owner dashboard</li>
+                <li>All Growth features across every company</li>
+                <li className="plan-section-label">Team</li>
+                <li>2 admin users included per workspace</li>
                 <li>Additional admins: $10/mo each</li>
+                <li className="plan-section-label">Support</li>
                 <li>Early access to new features</li>
                 <li>Dedicated onboarding support</li>
               </ul>
@@ -137,99 +192,50 @@ export default function PricingPage() {
               <tr>
                 <th></th>
                 <th>Free</th>
-                <th className="col-featured">Growth</th>
-                <th className="col-dark">Operator</th>
+                <th className="col-teal">Growth</th>
+                <th>Operator</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="row-group"><td colSpan={4}>Jobs &amp; Subs</td></tr>
-              <tr>
-                <td>Active jobs</td>
-                <td>3</td>
-                <td>Unlimited</td>
-                <td>Unlimited</td>
-              </tr>
-              <tr>
-                <td>Subcontractors</td>
-                <td>5</td>
-                <td>Unlimited</td>
-                <td>Unlimited</td>
-              </tr>
-              <tr className="row-group"><td colSpan={4}>Core Features</td></tr>
-              <tr>
-                <td>Job posting</td>
-                <td><span className="check">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
-              <tr>
-                <td>Acceptance tracking</td>
-                <td><span className="check">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
-              <tr>
-                <td>YTD earnings dashboard</td>
-                <td><span className="check">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
-              <tr>
-                <td>Mobile access</td>
-                <td><span className="check">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
-              <tr>
-                <td>Race-proof assignments</td>
-                <td><span className="dash">—</span></td>
-                <td><span className="check-orange">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
+              <tr className="row-group"><td colSpan={4}>Jobs &amp; Dispatch</td></tr>
+              <tr><td>Active jobs</td><td>3</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Subcontractors</td><td>1</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Multiple jobs per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Different start times per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Day jobs &amp; multi-day jobs</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Race-proof assignments</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>File attachments on jobs</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr className="row-group"><td colSpan={4}>Communication</td></tr>
+              <tr><td>In-app job messaging</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr className="row-group"><td colSpan={4}>Tracking &amp; Accountability</td></tr>
+              <tr><td>Acceptance tracking</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Job completion confirmation</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Job completion approval</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Sub ratings &amp; performance scores</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>YTD earnings dashboard</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Mobile access</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr className="row-group"><td colSpan={4}>Team &amp; Admin</td></tr>
-              <tr>
-                <td>Admin users included</td>
-                <td>1</td>
-                <td>2</td>
-                <td>2</td>
-              </tr>
-              <tr>
-                <td>Additional admins</td>
-                <td><span className="dash">—</span></td>
-                <td>$10/mo each</td>
-                <td>$10/mo each</td>
-              </tr>
+              <tr><td>Admin users included</td><td>1</td><td>2</td><td>2 per workspace</td></tr>
+              <tr><td>Additional admins</td><td><span className="dash">&mdash;</span></td><td>$10/mo each</td><td>$10/mo each</td></tr>
               <tr className="row-group"><td colSpan={4}>Scale</td></tr>
-              <tr>
-                <td>Company workspaces</td>
-                <td>1</td>
-                <td>1</td>
-                <td>Up to 5</td>
-              </tr>
-              <tr>
-                <td>Consolidated dashboard</td>
-                <td><span className="dash">—</span></td>
-                <td><span className="dash">—</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
+              <tr><td>Company workspaces</td><td>1</td><td>1</td><td>Up to 5</td></tr>
+              <tr><td>Consolidated dashboard</td><td><span className="dash">&mdash;</span></td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr className="row-group"><td colSpan={4}>Support</td></tr>
-              <tr>
-                <td>Priority support</td>
-                <td><span className="dash">—</span></td>
-                <td><span className="check-orange">✓</span></td>
-                <td><span className="check-orange">✓</span></td>
+              <tr><td>Priority support</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Dedicated onboarding</td><td><span className="dash">&mdash;</span></td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Early feature access</td><td><span className="dash">&mdash;</span></td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr className="row-group"><td colSpan={4}>How we compare</td></tr>
+              <tr className="heypros-row">
+                <td>HeyPros Base — $149/mo</td>
+                <td><span className="heypros-val">15 subs max</span></td>
+                <td><span className="heypros-val">no ratings, no messaging</span></td>
+                <td><span className="heypros-val">&mdash;</span></td>
               </tr>
-              <tr>
-                <td>Dedicated onboarding</td>
-                <td><span className="dash">—</span></td>
-                <td><span className="dash">—</span></td>
-                <td><span className="check-orange">✓</span></td>
-              </tr>
-              <tr>
-                <td>Early feature access</td>
-                <td><span className="dash">—</span></td>
-                <td><span className="dash">—</span></td>
-                <td><span className="check-orange">✓</span></td>
+              <tr className="heypros-row">
+                <td>HeyPros Pro+ — $249/mo</td>
+                <td><span className="heypros-val">30 subs max</span></td>
+                <td><span className="heypros-val">ratings &amp; messaging included</span></td>
+                <td><span className="heypros-val">&mdash;</span></td>
               </tr>
             </tbody>
           </table>
@@ -251,6 +257,41 @@ export default function PricingPage() {
             </div>
             <div className="faq-item">
               <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
+                How is Kolrabee different from HeyPros?
+                <span className="faq-icon">+</span>
+              </button>
+              <div className="faq-a"><p>HeyPros Pro+ is $249/month and built for compliance tracking, Gantt charts, and complex project management — it&apos;s designed for large GCs. Kolrabee is built for small trade business owners who need fast, simple sub dispatch. Sub ratings, job messaging, file attachments, and completion approvals are all included in our $49 Growth plan. Same features that matter. Five times less cost. No bloat.</p></div>
+            </div>
+            <div className="faq-item">
+              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
+                Can I post multiple jobs the same day with different start times?
+                <span className="faq-icon">+</span>
+              </button>
+              <div className="faq-a"><p>Yes — that&apos;s exactly what Kolrabee is built for. Post as many jobs as your plan allows, each with its own start time, payout, assigned sub, and file attachments. Day jobs, 2-day jobs, multiple crews running simultaneously — all managed from one screen.</p></div>
+            </div>
+            <div className="faq-item">
+              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
+                How do sub ratings work?
+                <span className="faq-icon">+</span>
+              </button>
+              <div className="faq-a"><p>After a job is marked complete and approved, you&apos;re prompted to rate the sub 1–5 stars with an optional note. Subs can see their own rating and total job count. You can sort your sub list by rating so your best crew gets first pick on future jobs. Available on Growth and Operator plans.</p></div>
+            </div>
+            <div className="faq-item">
+              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
+                What is job completion approval?
+                <span className="faq-icon">+</span>
+              </button>
+              <div className="faq-a"><p>When a sub finishes a job they tap &ldquo;Mark Complete&rdquo; in the app. You get notified and tap &ldquo;Approve.&rdquo; Once approved the job closes, the sub&apos;s YTD earnings update, and you&apos;re prompted to leave a rating. It closes the loop cleanly — no ambiguity about whether a job is done or paid.</p></div>
+            </div>
+            <div className="faq-item">
+              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
+                What files can I attach to a job post?
+                <span className="faq-icon">+</span>
+              </button>
+              <div className="faq-a"><p>You can attach up to 3 files per job — PDF, JPG, or PNG. Subs can view and download the files before they accept. Perfect for attaching work orders, site photos, or job-specific instructions copied from your CRM.</p></div>
+            </div>
+            <div className="faq-item">
+              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
                 What is an admin user?
                 <span className="faq-icon">+</span>
               </button>
@@ -258,21 +299,7 @@ export default function PricingPage() {
             </div>
             <div className="faq-item">
               <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
-                Can I add more admin users?
-                <span className="faq-icon">+</span>
-              </button>
-              <div className="faq-a"><p>Yes. Growth and Operator plans include 2 admin users. Additional admins are $10/month each — perfect for adding a VA or office manager without upgrading your entire plan.</p></div>
-            </div>
-            <div className="faq-item">
-              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
-                What counts as an active job?
-                <span className="faq-icon">+</span>
-              </button>
-              <div className="faq-a"><p>Any job that has been posted and not yet marked complete. Once a job is closed and paid, it no longer counts toward your limit. Free plan users can have 3 active jobs at any time.</p></div>
-            </div>
-            <div className="faq-item">
-              <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
-                Can I switch plans?
+                Can I switch plans anytime?
                 <span className="faq-icon">+</span>
               </button>
               <div className="faq-a"><p>Yes — upgrade or downgrade anytime. No contracts, no cancellation fees. Changes take effect at the start of your next billing cycle.</p></div>
@@ -289,7 +316,7 @@ export default function PricingPage() {
                 What is a company workspace?
                 <span className="faq-icon">+</span>
               </button>
-              <div className="faq-a"><p>Each trade business you run gets its own workspace with a unique URL, separate crew list, and separate job board. The Operator plan supports up to 5 companies — perfect for owners running multiple trade businesses across different industries.</p></div>
+              <div className="faq-a"><p>Each trade business you run gets its own workspace with a unique URL, separate crew list, and separate job board. The Operator plan supports up to 5 companies — perfect for owners running a painting company, a landscaping company, or any combination of trades under one account.</p></div>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
+import StarRating from '@/components/StarRating'
 import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
 import { getDocumentUrl } from './doc-actions'
@@ -13,6 +14,7 @@ import { getDocumentUrl } from './doc-actions'
 const statusColors: Record<string, string> = {
   available: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   accepted: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
+  pending_completion: 'bg-orange-50 text-orange-700 ring-orange-600/20',
   completed: 'bg-ember/10 text-ember ring-ember/20',
   paid: 'bg-green-50 text-green-700 ring-green-600/20',
   cancelled: 'bg-gray-50 text-gray-700 ring-gray-600/20',
@@ -24,9 +26,12 @@ interface Props {
   ytdEarnings: number
   tenantName: string
   tenantSlug: string
+  avgRating: number | null
+  totalJobs: number
+  totalRatings: number
 }
 
-export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName, tenantSlug }: Props) {
+export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName, tenantSlug, avgRating, totalJobs, totalRatings }: Props) {
   const [isPending, startTransition] = useTransition()
   const [docLoading, setDocLoading] = useState<string | null>(null)
   const [docError, setDocError] = useState<string | null>(null)
@@ -122,10 +127,30 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
           </div>
         </div>
 
-        {/* YTD Earnings */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm mb-8">
-          <p className="text-sm font-medium text-gray-500">YTD Earnings</p>
-          <p className="mt-1 text-3xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-gray-500">YTD Earnings</p>
+            <p className="mt-1 text-3xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-gray-500">Average Rating</p>
+            <div className="mt-1 flex items-center gap-2">
+              {avgRating !== null ? (
+                <>
+                  <StarRating value={Math.round(avgRating)} readonly size="sm" />
+                  <span className="text-lg font-bold text-gray-900">{avgRating.toFixed(1)}</span>
+                  <span className="text-sm text-gray-500">({totalRatings})</span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-400">No ratings yet</span>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-gray-500">Total Jobs</p>
+            <p className="mt-1 text-3xl font-bold text-gray-900">{totalJobs}</p>
+          </div>
         </div>
 
         {/* Compliance & Documents */}

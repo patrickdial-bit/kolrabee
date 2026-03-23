@@ -32,6 +32,9 @@ export type NotificationPreferences = {
   project_updates: boolean
   project_accepted: boolean
   project_cancelled: boolean
+  project_completion_requested: boolean
+  project_completion_approved: boolean
+  new_message: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
@@ -39,6 +42,9 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   project_updates: true,
   project_accepted: true,
   project_cancelled: true,
+  project_completion_requested: true,
+  project_completion_approved: true,
+  new_message: true,
 }
 
 export function getNotificationPrefs(user: { notification_preferences: NotificationPreferences | null }): NotificationPreferences {
@@ -54,7 +60,7 @@ export type Tenant = {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   status: 'active' | 'suspended' | 'deleted'
-  plan: 'free' | 'trial' | 'starter' | 'pro' | 'cancelled'
+  plan: 'free' | 'trial' | 'growth' | 'operator' | 'cancelled'
   trial_ends_at: string | null
   billing_email: string | null
   notification_email: string | null
@@ -65,7 +71,7 @@ export type Tenant = {
 
 // Check if a tenant has an active subscription or is within trial period
 export function isTenantActive(tenant: Tenant): boolean {
-  if (tenant.plan === 'free' || tenant.plan === 'starter' || tenant.plan === 'pro') return true
+  if (tenant.plan === 'free' || tenant.plan === 'growth' || tenant.plan === 'operator') return true
   if (tenant.plan === 'trial' && tenant.trial_ends_at) {
     return new Date(tenant.trial_ends_at) > new Date()
   }
@@ -76,8 +82,8 @@ export function isTenantActive(tenant: Tenant): boolean {
 export const PLAN_LIMITS: Record<string, { max_projects: number; max_subcontractors: number }> = {
   free: { max_projects: 3, max_subcontractors: 1 },
   trial: { max_projects: 10, max_subcontractors: 5 },
-  starter: { max_projects: 50, max_subcontractors: 20 },
-  pro: { max_projects: 999999, max_subcontractors: 999999 },
+  growth: { max_projects: 999999, max_subcontractors: 999999 },
+  operator: { max_projects: 999999, max_subcontractors: 999999 },
 }
 
 export type Project = {
@@ -92,13 +98,15 @@ export type Project = {
   payout_amount: number
   estimated_labor_hours: number | null
   work_order_link: string | null
-  status: 'available' | 'accepted' | 'completed' | 'paid' | 'cancelled'
+  status: 'available' | 'accepted' | 'pending_completion' | 'completed' | 'paid' | 'cancelled'
   companycam_link: string | null
   notes: string | null
   admin_notes: string | null
   accepted_by: string | null
   accepted_at: string | null
   paid_at: string | null
+  completion_requested_by: string | null
+  completion_requested_at: string | null
   version: number
   created_at: string
 }
@@ -121,6 +129,45 @@ export function isInvitationExpired(expiresAt: string | null): boolean {
 export type SubcontractorWithStats = AppUser & {
   ytdPaid: number
   activeJobs: number
+  avgRating: number | null
+  totalJobs: number
+}
+
+export type SubRating = {
+  id: string
+  tenant_id: string
+  project_id: string
+  subcontractor_id: string
+  rated_by: string
+  rating: number
+  note: string | null
+  created_at: string
+}
+
+export type ProjectAttachment = {
+  id: string
+  tenant_id: string
+  project_id: string
+  file_name: string
+  file_url: string
+  file_size: number | null
+  file_type: string | null
+  uploaded_by: string
+  created_at: string
+}
+
+export type JobMessage = {
+  id: string
+  tenant_id: string
+  project_id: string
+  sender_id: string
+  body: string
+  created_at: string
+}
+
+// Check if a tenant has Growth+ features (messaging, ratings, completion approval)
+export function hasGrowthFeatures(tenant: Tenant): boolean {
+  return tenant.plan === 'growth' || tenant.plan === 'operator'
 }
 
 // Helper to check if a sub is compliant (has current W-9 and non-expired COI)

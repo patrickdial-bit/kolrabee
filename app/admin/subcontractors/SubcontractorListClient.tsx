@@ -10,7 +10,9 @@ import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
 import type { SubcontractorWithStats } from '@/lib/types'
 
-type SubSortKey = 'company_name' | 'first_name' | 'last_name' | 'email' | 'crew_size' | 'insurance_expiration' | 'insurance_provider' | 'phone' | 'years_in_business'
+import StarRating from '@/components/StarRating'
+
+type SubSortKey = 'company_name' | 'first_name' | 'last_name' | 'email' | 'crew_size' | 'insurance_expiration' | 'insurance_provider' | 'phone' | 'years_in_business' | 'rating'
 type SortDir = 'asc' | 'desc'
 
 interface Props {
@@ -89,6 +91,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
         case 'insurance_provider': return strCmp(a.insurance_provider, b.insurance_provider)
         case 'phone': return strCmp(a.phone, b.phone)
         case 'years_in_business': return numCmp(a.years_in_business, b.years_in_business)
+        case 'rating': return numCmp(a.avgRating, b.avgRating)
         default: return 0
       }
     })
@@ -245,6 +248,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Address</th>
                   <SubSortTh label="Phone" sortKey="phone" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                   <SubSortTh label="Years" sortKey="years_in_business" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
+                  <SubSortTh label="Rating" sortKey="rating" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">COI</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">W-9</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Edit</th>
@@ -270,6 +274,16 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       <td className="px-4 py-3 text-sm text-gray-600 max-w-[180px] truncate">{sub.address || '—'}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{sub.phone ?? '—'}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">{sub.years_in_business ?? '—'}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                        {sub.avgRating !== null ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <StarRating value={Math.round(sub.avgRating)} readonly size="sm" />
+                            <span className="text-xs text-gray-600">{sub.avgRating.toFixed(1)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         {sub.coi_file_url ? (
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
