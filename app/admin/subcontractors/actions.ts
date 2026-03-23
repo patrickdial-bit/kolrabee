@@ -87,6 +87,7 @@ export async function inviteSubToJoin(email: string, name: string) {
         name: name || null,
         status: 'pending',
         invited_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
       },
       { onConflict: 'tenant_id,email' }
     )

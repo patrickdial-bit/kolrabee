@@ -62,8 +62,8 @@ export default function AdminLoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-lg rounded-xl sm:px-10">
           {state?.error && (
-            <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-700">{state.error}</p>
+            <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <p className="text-sm text-amber-700">{state.error}</p>
             </div>
           )}
 

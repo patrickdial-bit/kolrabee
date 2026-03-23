@@ -92,6 +92,39 @@ export async function uploadDocument(slug: string, docType: 'w9' | 'coi', fileUr
   return { success: true }
 }
 
+export async function updateNotificationPreferences(
+  slug: string,
+  preferences: { project_invites: boolean; project_updates: boolean }
+) {
+  const { appUser } = await getCurrentSub(slug)
+  const adminClient = createAdminClient()
+
+  // Merge with existing preferences (keep admin-side prefs intact)
+  const existing = appUser.notification_preferences ?? {
+    project_invites: true,
+    project_updates: true,
+    project_accepted: true,
+    project_cancelled: true,
+  }
+
+  const { error } = await adminClient
+    .from('users')
+    .update({
+      notification_preferences: {
+        ...existing,
+        project_invites: preferences.project_invites,
+        project_updates: preferences.project_updates,
+      },
+    })
+    .eq('id', appUser.id)
+
+  if (error) {
+    return { error: 'Failed to update notification preferences.' }
+  }
+
+  return { success: true }
+}
+
 export async function changePassword(
   _prevState: { error?: string; success?: boolean } | null,
   formData: FormData

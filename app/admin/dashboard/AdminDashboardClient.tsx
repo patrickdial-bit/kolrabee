@@ -197,9 +197,9 @@ export default function AdminDashboardClient({
           const daysLeft = Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
           const expired = daysLeft === 0
           return (
-            <div className={`mb-6 rounded-lg border p-4 ${expired ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+            <div className={`mb-6 rounded-lg border p-4 ${expired ? 'bg-amber-50 border-amber-200' : 'bg-amber-50 border-amber-200'}`}>
               <div className="flex items-center justify-between">
-                <p className={`text-sm font-medium ${expired ? 'text-red-800' : 'text-amber-800'}`}>
+                <p className={`text-sm font-medium ${expired ? 'text-amber-800' : 'text-amber-800'}`}>
                   {expired
                     ? 'Your free trial has expired. Subscribe to continue creating projects.'
                     : `Free trial: ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`}
@@ -323,7 +323,7 @@ export default function AdminDashboardClient({
           ) : (
             <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-red-700">
+                <thead className="bg-forest">
                   <tr>
                     {activeTab === 'Available' && (
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Invite</th>
@@ -407,7 +407,7 @@ export default function AdminDashboardClient({
                         <>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                             <Link href={`/admin/projects/${project.id}`}
-                              className="inline-flex items-center rounded-md bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors">
+                              className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors">
                               Cancel
                             </Link>
                           </td>
@@ -427,7 +427,7 @@ export default function AdminDashboardClient({
                         </Link>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        <Link href={`/admin/projects/${project.id}`} className="text-red-600 hover:text-red-800">
+                        <Link href={`/admin/projects/${project.id}`} className="text-amber-600 hover:text-amber-800">
                           <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                           </svg>
@@ -468,7 +468,7 @@ function SortTh({ label, sortKey: key, currentKey, dir, onSort, align }: {
   const active = key === currentKey
   return (
     <th
-      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-red-800 transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
+      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-forest-700 transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
       onClick={() => onSort(key)}
     >
       <span className="inline-flex items-center gap-1">

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, extractCity } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isSubCompliant, isTenantActive } from '@/lib/types'
+import { isSubCompliant, isTenantActive, getNotificationPrefs } from '@/lib/types'
 import { sendInviteEmail } from '@/lib/email'
 import type { AppUser, Project } from '@/lib/types'
 
@@ -33,7 +33,7 @@ export async function getSubcontractors(tenantId: string) {
   return { data: subs }
 }
 
-export async function sendInvitations(projectId: string, subcontractorIds: string[]) {
+export async function sendInvitations(projectId: string, subcontractorIds: string[], expiresInDays: number = 7) {
   if (!subcontractorIds.length) {
     return { error: 'No subcontractors selected.' }
   }
@@ -62,12 +62,16 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     return { error: `Cannot invite: ${names} — missing W-9, COI, or insurance is expired.` }
   }
 
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + expiresInDays * 86400000).toISOString()
+
   const rows = subcontractorIds.map((subId) => ({
     tenant_id: tenant.id,
     project_id: projectId,
     subcontractor_id: subId,
     status: 'invited' as const,
-    invited_at: new Date().toISOString(),
+    invited_at: now.toISOString(),
+    expires_at: expiresAt,
   }))
 
   const { error } = await adminClient
@@ -95,6 +99,8 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     const city = extractCity(project.address)
 
     for (const sub of subs.filter((s: AppUser) => subcontractorIds.includes(s.id))) {
+      const prefs = getNotificationPrefs(sub)
+      if (!prefs.project_invites) continue
       sendInviteEmail({
         to: sub.email,
         subName: sub.first_name,

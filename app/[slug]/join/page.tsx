@@ -50,8 +50,8 @@ export default function SubJoinPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white py-8 px-6 shadow-lg rounded-xl sm:px-10">
           {state?.error && (
-            <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
-              <p className="text-sm text-red-700">{state.error}</p>
+            <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <p className="text-sm text-amber-700">{state.error}</p>
             </div>
           )}
 
@@ -69,7 +69,7 @@ export default function SubJoinPage() {
 
                 <div>
                   <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-                    Company Name <span className="text-red-500">*</span>
+                    Company Name <span className="text-amber-500">*</span>
                   </label>
                   <input
                     id="companyName"
@@ -84,7 +84,7 @@ export default function SubJoinPage() {
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <div>
                     <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                      First name <span className="text-red-500">*</span>
+                      First name <span className="text-amber-500">*</span>
                     </label>
                     <input id="firstName" name="firstName" type="text" required
                       defaultValue={prefillFirst}
@@ -93,7 +93,7 @@ export default function SubJoinPage() {
                   </div>
                   <div>
                     <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                      Last name <span className="text-red-500">*</span>
+                      Last name <span className="text-amber-500">*</span>
                     </label>
                     <input id="lastName" name="lastName" type="text" required
                       defaultValue={prefillLast}
@@ -104,7 +104,7 @@ export default function SubJoinPage() {
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email address <span className="text-red-500">*</span>
+                    Email address <span className="text-amber-500">*</span>
                   </label>
                   <input id="email" name="email" type="email" required autoComplete="email"
                     defaultValue={prefillEmail}
@@ -114,7 +114,7 @@ export default function SubJoinPage() {
 
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone number <span className="text-red-500">*</span>
+                    Phone number <span className="text-amber-500">*</span>
                   </label>
                   <input id="phone" name="phone" type="tel" required
                     className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
@@ -123,7 +123,7 @@ export default function SubJoinPage() {
 
                 <div>
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Business Address <span className="text-red-500">*</span>
+                    Business Address <span className="text-amber-500">*</span>
                   </label>
                   <input id="address" name="address" type="text" required
                     className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"
@@ -158,7 +158,7 @@ export default function SubJoinPage() {
 
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Password <span className="text-red-500">*</span>
+                    Password <span className="text-amber-500">*</span>
                   </label>
                   <input id="password" name="password" type="password" required minLength={8} autoComplete="new-password"
                     className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-ember focus:ring-2 focus:ring-ember focus:outline-none sm:text-sm"

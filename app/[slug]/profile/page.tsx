@@ -9,11 +9,19 @@ export default async function SubProfilePage({
   const { slug } = params
   const { appUser, tenant } = await getCurrentSub(slug)
 
+  const notifPrefs = appUser.notification_preferences ?? {
+    project_invites: true,
+    project_updates: true,
+    project_accepted: true,
+    project_cancelled: true,
+  }
+
   return (
     <ProfileClient
       slug={slug}
       tenantName={tenant.name}
       subName={`${appUser.first_name} ${appUser.last_name}`}
+      notificationPreferences={notifPrefs}
       initialValues={{
         firstName: appUser.first_name,
         lastName: appUser.last_name,

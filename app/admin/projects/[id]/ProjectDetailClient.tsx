@@ -16,6 +16,7 @@ interface InvitationWithName {
   subcontractor_id: string
   status: 'invited' | 'accepted' | 'declined'
   invited_at: string
+  expires_at: string | null
   subcontractor_name: string
   subcontractor_email: string
 }
@@ -33,13 +34,14 @@ const statusColors: Record<string, string> = {
   accepted: 'bg-yellow-100 text-yellow-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-purple-100 text-purple-700',
-  cancelled: 'bg-red-100 text-red-700',
+  cancelled: 'bg-amber-100 text-amber-700',
 }
 
 const inviteStatusColors: Record<string, string> = {
   invited: 'bg-gray-100 text-gray-600',
   accepted: 'bg-green-100 text-green-700',
-  declined: 'bg-red-100 text-red-700',
+  declined: 'bg-amber-100 text-amber-700',
+  expired: 'bg-amber-100 text-amber-700',
 }
 
 export default function ProjectDetailClient({
@@ -118,7 +120,7 @@ export default function ProjectDetailClient({
           </Link>
         </div>
 
-        {error && <div className="mb-4 rounded-md bg-red-50 p-4"><p className="text-sm text-red-700">{error}</p></div>}
+        {error && <div className="mb-4 rounded-md bg-amber-50 p-4"><p className="text-sm text-amber-700">{error}</p></div>}
         {successMsg && <div className="mb-4 rounded-md bg-green-50 p-4"><p className="text-sm text-green-700">{successMsg}</p></div>}
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
@@ -279,7 +281,7 @@ export default function ProjectDetailClient({
                     <button onClick={() => setShowInviteModal(true)}
                       className="inline-flex items-center rounded-md bg-white border border-ember/30 px-4 py-2 text-sm font-semibold text-ember hover:bg-ember/10">Invite Subs</button>
                     <button onClick={handleDelete} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">Delete</button>
+                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
                   </>
                 )}
                 {project.status === 'accepted' && (
@@ -293,7 +295,7 @@ export default function ProjectDetailClient({
                       {isPending ? 'Processing...' : 'Mark Paid'}
                     </button>
                     <button onClick={handleCancel} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">Cancel</button>
+                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
                   </>
                 )}
                 {project.status === 'completed' && (
@@ -303,7 +305,7 @@ export default function ProjectDetailClient({
                       {isPending ? 'Processing...' : 'Mark Paid'}
                     </button>
                     <button onClick={handleCancel} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">Cancel</button>
+                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
                   </>
                 )}
               </div>
@@ -321,17 +323,28 @@ export default function ProjectDetailClient({
           </div>
           {invitations.length > 0 ? (
             <ul className="divide-y divide-gray-100">
-              {invitations.map((inv) => (
-                <li key={inv.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{inv.subcontractor_name}</p>
-                    <p className="text-xs text-gray-500">{inv.subcontractor_email}</p>
-                  </div>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${inviteStatusColors[inv.status] || 'bg-gray-100 text-gray-600'}`}>
-                    {inv.status}
-                  </span>
-                </li>
-              ))}
+              {invitations.map((inv) => {
+                const isExpired = inv.status === 'invited' && inv.expires_at && new Date(inv.expires_at) < new Date()
+                const displayStatus = isExpired ? 'expired' : inv.status
+                return (
+                  <li key={inv.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{inv.subcontractor_name}</p>
+                      <p className="text-xs text-gray-500">{inv.subcontractor_email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {inv.status === 'invited' && inv.expires_at && !isExpired && (
+                        <span className="text-xs text-gray-400">
+                          expires {new Date(inv.expires_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${inviteStatusColors[displayStatus] || 'bg-gray-100 text-gray-600'}`}>
+                        {displayStatus}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           ) : (
             <p className="text-sm text-gray-500">No subcontractors have been invited yet.</p>

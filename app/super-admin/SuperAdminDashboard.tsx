@@ -33,7 +33,7 @@ const planColors: Record<string, string> = {
   trial: 'bg-blue-100 text-blue-700',
   starter: 'bg-green-100 text-green-700',
   pro: 'bg-ember/15 text-ember',
-  cancelled: 'bg-red-100 text-red-700',
+  cancelled: 'bg-amber-100 text-amber-700',
 }
 
 export default function SuperAdminDashboard({ tenants, stats }: Props) {

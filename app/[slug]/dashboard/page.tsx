@@ -31,15 +31,18 @@ export default async function SubDashboardPage({
     ytdEarnings = (paidProjects ?? []).reduce((sum, p) => sum + (p.payout_amount || 0), 0)
   }
 
-  // Available projects: projects this sub is invited to (invitation status='invited', project status='available')
+  // Available projects: projects this sub is invited to (invitation status='invited', project status='available', not expired)
   const { data: invitations } = await adminClient
     .from('project_invitations')
-    .select('project_id')
+    .select('project_id, expires_at')
     .eq('subcontractor_id', appUser.id)
     .eq('tenant_id', tenant.id)
     .eq('status', 'invited')
 
-  const invitedProjectIds = (invitations ?? []).map((i) => i.project_id)
+  const now = new Date().toISOString()
+  const invitedProjectIds = (invitations ?? [])
+    .filter((i) => !i.expires_at || i.expires_at > now)
+    .map((i) => i.project_id)
 
   let availableProjects: Project[] = []
   if (invitedProjectIds.length > 0) {

@@ -41,6 +41,9 @@ export default function AboutPage() {
         {/* Hero */}
         <div className="text-center mb-16">
           <KolrabeeLogo size="xl" />
+          <p className="mt-2" style={{ fontSize: '13px', color: 'rgba(0,0,0,0.35)', letterSpacing: '0.06em', fontFamily: "'DM Sans', sans-serif", fontWeight: 400 }}>
+            Pronounced: kohl &middot; rah &middot; bee
+          </p>
           <p className="mt-4 text-lg text-forge/70">
             Construction subcontractor management, simplified.
           </p>
@@ -112,40 +115,6 @@ export default function AboutPage() {
             post jobs, invite crews, track who accepted, and get everyone paid. Each company gets
             their own workspace &mdash; clean, fast, and built for the way contractors actually work.
           </p>
-        </section>
-
-        {/* Brand Colors */}
-        <section className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-2xl font-black font-display text-forge mb-6">
-            Our colors
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-            <div>
-              <div className="h-16 rounded-lg bg-ember mb-2" />
-              <p className="text-sm font-semibold text-forge">Ember</p>
-              <p className="text-xs text-forge/50">#E8780A</p>
-            </div>
-            <div>
-              <div className="h-16 rounded-lg bg-forest mb-2" />
-              <p className="text-sm font-semibold text-forge">Forest</p>
-              <p className="text-xs text-forge/50">#1B4D2E</p>
-            </div>
-            <div>
-              <div className="h-16 rounded-lg bg-forge mb-2" />
-              <p className="text-sm font-semibold text-forge">Forge</p>
-              <p className="text-xs text-forge/50">#2D2D2D</p>
-            </div>
-            <div>
-              <div className="h-16 rounded-lg bg-canvas border border-gray-200 mb-2" />
-              <p className="text-sm font-semibold text-forge">Canvas</p>
-              <p className="text-xs text-forge/50">#F5F0E8</p>
-            </div>
-            <div>
-              <div className="h-16 rounded-lg bg-ember-dark mb-2" />
-              <p className="text-sm font-semibold text-forge">Ember Dark</p>
-              <p className="text-xs text-forge/50">#1C1208</p>
-            </div>
-          </div>
         </section>
 
         <div className="mt-12 text-center">

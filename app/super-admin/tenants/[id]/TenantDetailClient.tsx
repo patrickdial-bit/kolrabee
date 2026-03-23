@@ -80,7 +80,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
               </span>
             )}
             {tenant.status === 'deleted' && (
-              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                 Deleted
               </span>
             )}
@@ -112,17 +112,17 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={isPending}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 transition-colors disabled:opacity-50"
+                className="rounded-md bg-gray-700 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-600 transition-colors disabled:opacity-50"
               >
                 Delete
               </button>
             ) : (
-              <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2">
-                <span className="text-sm text-red-700">Delete this company and all its data?</span>
+              <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-amber-50 px-4 py-2">
+                <span className="text-sm text-amber-700">Delete this company and all its data?</span>
                 <button
                   onClick={handleDelete}
                   disabled={isPending}
-                  className="rounded bg-red-600 px-3 py-1 text-xs font-bold text-white hover:bg-red-500 disabled:opacity-50"
+                  className="rounded bg-gray-700 px-3 py-1 text-xs font-bold text-white hover:bg-gray-600 disabled:opacity-50"
                 >
                   Yes, delete
                 </button>
@@ -137,7 +137,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
           </div>
 
           {actionMessage && (
-            <p className={`mt-2 text-sm font-medium ${actionMessage.includes('error') ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`mt-2 text-sm font-medium ${actionMessage.includes('error') ? 'text-amber-600' : 'text-green-600'}`}>
               {actionMessage}
             </p>
           )}
@@ -164,7 +164,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
                 </dd>
               </div>
               {planMessage && (
-                <p className={`text-xs ${planMessage.includes('error') ? 'text-red-600' : 'text-green-600'}`}>
+                <p className={`text-xs ${planMessage.includes('error') ? 'text-amber-600' : 'text-green-600'}`}>
                   {planMessage}
                 </p>
               )}
@@ -273,10 +273,10 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
                       <td className="px-4 py-2.5 text-sm text-gray-600">{u.company_name || '—'}</td>
                       <td className="px-4 py-2.5 text-sm text-gray-600">{u.email}</td>
                       <td className="px-4 py-2.5 text-center text-sm">
-                        {u.w9_file_url ? <span className="text-green-600">Yes</span> : <span className="text-red-500">No</span>}
+                        {u.w9_file_url ? <span className="text-green-600">Yes</span> : <span className="text-amber-500">No</span>}
                       </td>
                       <td className="px-4 py-2.5 text-center text-sm">
-                        {u.coi_file_url ? <span className="text-green-600">Yes</span> : <span className="text-red-500">No</span>}
+                        {u.coi_file_url ? <span className="text-green-600">Yes</span> : <span className="text-amber-500">No</span>}
                       </td>
                       <td className="px-4 py-2.5 text-sm capitalize text-gray-600">{u.status}</td>
                     </tr>

@@ -145,8 +145,8 @@ export default function SubDashboardClient({
         </div>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-4 rounded-md bg-amber-50 p-4">
+            <p className="text-sm text-amber-700">{error}</p>
           </div>
         )}
 
@@ -278,7 +278,7 @@ export default function SubDashboardClient({
                               showCancelConfirm === project.id ? (
                                 <div className="flex items-center justify-center gap-1">
                                   <button onClick={() => handleCancel(project)} disabled={loading}
-                                    className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50">
+                                    className="rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-forest disabled:opacity-50">
                                     {loading ? '...' : t('action.confirm')}
                                   </button>
                                   <button onClick={() => setShowCancelConfirm(null)}
@@ -289,7 +289,7 @@ export default function SubDashboardClient({
                               ) : (
                                 <Tooltip text={t('tip.cancel_project')} position="left">
                                   <button onClick={() => setShowCancelConfirm(project.id)}
-                                    className="inline-flex items-center rounded-md bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors">
+                                    className="inline-flex items-center rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors">
                                     {t('action.cancel')}
                                   </button>
                                 </Tooltip>

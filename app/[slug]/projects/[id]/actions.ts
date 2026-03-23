@@ -4,10 +4,23 @@ import { redirect } from 'next/navigation'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAcceptEmail, sendCancelEmail } from '@/lib/email'
+import { getNotificationPrefs } from '@/lib/types'
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
   const adminClient = createAdminClient()
+
+  // Check if invitation has expired
+  const { data: invitation } = await adminClient
+    .from('project_invitations')
+    .select('expires_at')
+    .eq('project_id', projectId)
+    .eq('subcontractor_id', appUser.id)
+    .maybeSingle()
+
+  if (invitation?.expires_at && new Date(invitation.expires_at) < new Date()) {
+    return { error: 'This invitation has expired.' }
+  }
 
   // Race-condition-safe update: only update if status is still 'available' and version matches
   const { data, error } = await adminClient
@@ -118,13 +131,15 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
   if (cancelledProject) {
     const { data: admins } = await adminClient
       .from('users')
-      .select('email')
+      .select('email, notification_preferences')
       .eq('tenant_id', tenant.id)
       .eq('role', 'admin')
       .eq('status', 'active')
 
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
+      const prefs = getNotificationPrefs(admin)
+      if (!prefs.project_cancelled) continue
       sendCancelEmail({
         to: admin.email,
         subName,
