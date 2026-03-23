@@ -19,7 +19,7 @@
   backdrop-filter: blur(12px);
   border-bottom: 0.5px solid rgba(0,0,0,0.06);
 }
-.pricing-page .nav-logo { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: 28px; letter-spacing: -0.02em; text-decoration: none; }
+.pricing-page .nav-logo { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: -0.02em; text-decoration: none; }
 .pricing-page .nav-logo .k { color: var(--dark); }
 .pricing-page .nav-logo .r { color: var(--accent); }
 .pricing-page .nav-logo .b { color: var(--hero-bg); }
@@ -42,7 +42,7 @@
   pointer-events: none;
 }
 .pricing-page .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.6s ease forwards 0.2s; }
-.pricing-page .hero-headline { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: clamp(52px, 8vw, 96px); line-height: 0.95; letter-spacing: -0.02em; color: var(--white); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.35s; }
+.pricing-page .hero-headline { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: clamp(52px, 8vw, 96px); line-height: 0.95; letter-spacing: -0.02em; color: var(--white); margin-bottom: 24px; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.35s; }
 .pricing-page .hero-headline span { color: var(--accent); }
 .pricing-page .hero-sub { font-size: clamp(16px, 1.8vw, 19px); color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto; line-height: 1.7; opacity: 0; animation: pricingFadeUp 0.7s ease forwards 0.5s; }
 .pricing-page .hero-sub strong { color: rgba(255,255,255,0.9); font-weight: 600; }
@@ -51,7 +51,7 @@
 .pricing-page section { padding: 100px 32px; }
 .pricing-page .container { max-width: 1080px; margin: 0 auto; }
 .pricing-page .section-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
-.pricing-page .section-title { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: clamp(36px, 5vw, 64px); line-height: 0.95; letter-spacing: -0.02em; margin-bottom: 24px; }
+.pricing-page .section-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: clamp(36px, 5vw, 64px); line-height: 0.95; letter-spacing: -0.02em; margin-bottom: 24px; }
 .pricing-page .section-body { font-size: 17px; color: #555; line-height: 1.7; max-width: 520px; }
 
 /* PRICING CARDS */
@@ -78,13 +78,13 @@
 .pricing-page .badge-featured { background: rgba(0,168,150,0.15); color: var(--accent); }
 .pricing-page .badge-dark     { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
 .pricing-page .plan-name {
-  font-family: 'Rajdhani', sans-serif; font-weight: 900;
+  font-family: 'Rajdhani', sans-serif; font-weight: 700;
   font-size: 28px; letter-spacing: -0.01em; margin-bottom: 8px;
   color: var(--dark);
 }
 .pricing-page .dark-card .plan-name { color: var(--white); }
 .pricing-page .plan-price {
-  font-family: 'Rajdhani', sans-serif; font-weight: 900;
+  font-family: 'Rajdhani', sans-serif; font-weight: 700;
   font-size: 64px; line-height: 1; letter-spacing: -0.02em;
   color: var(--dark); margin-bottom: 4px;
 }
@@ -122,7 +122,7 @@
 .pricing-page .compare-section { background: var(--white); }
 .pricing-page .compare-table { width: 100%; border-collapse: collapse; margin-top: 48px; }
 .pricing-page .compare-table th {
-  font-family: 'Rajdhani', sans-serif; font-weight: 800;
+  font-family: 'Rajdhani', sans-serif; font-weight: 700;
   font-size: 18px; letter-spacing: -0.01em;
   padding: 16px 20px; text-align: center;
   border-bottom: 2px solid var(--cream2);
@@ -177,7 +177,7 @@
 
 /* CTA */
 .pricing-page .cta-section { background: var(--dark); text-align: center; padding: 120px 32px; }
-.pricing-page .cta-title { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: clamp(48px, 7vw, 88px); line-height: 0.95; color: var(--white); margin-bottom: 20px; }
+.pricing-page .cta-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: clamp(48px, 7vw, 88px); line-height: 0.95; color: var(--white); margin-bottom: 20px; }
 .pricing-page .cta-title span { color: var(--accent); }
 .pricing-page .cta-sub { font-size: 17px; color: rgba(255,255,255,0.4); margin-bottom: 40px; max-width: 400px; margin-left: auto; margin-right: auto; line-height: 1.6; }
 .pricing-page .btn-big { background: var(--accent); color: var(--white); padding: 20px 48px; border-radius: 12px; font-size: 18px; font-weight: 700; text-decoration: none; transition: transform 0.15s, background 0.2s; display: inline-block; margin-bottom: 16px; }
@@ -186,7 +186,7 @@
 
 /* FOOTER */
 .pricing-page footer { background: var(--dark); border-top: 0.5px solid rgba(255,255,255,0.06); padding: 40px 48px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.pricing-page .footer-logo { font-family: 'Rajdhani', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: -0.02em; text-decoration: none; }
+.pricing-page .footer-logo { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.02em; text-decoration: none; }
 .pricing-page .footer-logo .k { color: var(--white); }
 .pricing-page .footer-logo .r { color: var(--accent); }
 .pricing-page .footer-logo .b { color: var(--green-light); }

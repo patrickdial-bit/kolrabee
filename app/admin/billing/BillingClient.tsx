@@ -86,8 +86,8 @@ export default function BillingClient({ tenant }: Props) {
         </div>
       )}
       {error && (
-        <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+          <p className="text-sm text-amber-700">{error}</p>
         </div>
       )}
 
@@ -105,7 +105,7 @@ export default function BillingClient({ tenant }: Props) {
                     ? 'bg-gray-100 text-gray-700'
                     : isTrial && isActive
                       ? 'bg-blue-100 text-blue-700'
-                      : 'bg-red-100 text-red-700'
+                      : 'bg-amber-100 text-amber-700'
               }`}>
                 {hasSubscription ? 'Active' : isFree ? 'Free Plan' : isTrial && isActive ? `Trial (${trialDaysLeft} days left)` : isTrial ? 'Trial Expired' : 'Cancelled'}
               </span>
@@ -160,8 +160,8 @@ export default function BillingClient({ tenant }: Props) {
 
         {/* Expired State */}
         {!isActive && !isFree && (
-          <div className="mt-4 rounded-md bg-red-50 border border-red-200 p-3">
-            <p className="text-sm text-red-800">
+          <div className="mt-4 rounded-md bg-amber-50 border border-amber-200 p-3">
+            <p className="text-sm text-amber-800">
               Your subscription is inactive. You cannot create new projects until you subscribe to a plan.
             </p>
           </div>

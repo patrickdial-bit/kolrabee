@@ -173,7 +173,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
               <button
                 id="tour-invite-sub"
                 onClick={() => setShowInviteModal(true)}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-forest px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-700 transition-colors"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
@@ -233,7 +233,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
         ) : (
           <div id="tour-sub-table" className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-red-700">
+              <thead className="bg-forest">
                 <tr>
                   <SubSortTh label="Company Name" sortKey="company_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                   <SubSortTh label="First Name" sortKey="first_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
@@ -263,7 +263,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{sub.last_name}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{sub.email}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">{sub.crew_size ?? '—'}</td>
-                      <td className={`px-4 py-3 whitespace-nowrap text-sm text-center font-medium ${insuranceInfo.isExpired ? 'text-red-600 bg-red-50' : 'text-gray-600'}`}>
+                      <td className={`px-4 py-3 whitespace-nowrap text-sm text-center font-medium ${insuranceInfo.isExpired ? 'text-amber-600 bg-amber-50' : 'text-gray-600'}`}>
                         {insuranceInfo.text}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{sub.insurance_provider || '—'}</td>
@@ -278,8 +278,8 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                             </svg>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100">
-                            <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100">
+                            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </span>
@@ -293,8 +293,8 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                             </svg>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100">
-                            <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100">
+                            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </span>
@@ -312,7 +312,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                           confirmDeleteId === sub.id ? (
                             <div className="flex items-center justify-center gap-1">
                               <button onClick={() => handleDelete(sub.id)} disabled={isPending}
-                                className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50">
+                                className="rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-forest disabled:opacity-50">
                                 {isPending ? '...' : 'Yes'}
                               </button>
                               <button onClick={() => setConfirmDeleteId(null)} disabled={isPending}
@@ -322,7 +322,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                             </div>
                           ) : (
                             <button onClick={() => setConfirmDeleteId(sub.id)}
-                              className="text-red-600 hover:text-red-800">
+                              className="text-amber-600 hover:text-amber-800">
                               <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                               </svg>
@@ -361,7 +361,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   <div className="flex gap-3 justify-center">
                     <button
                       onClick={() => { setInviteSuccess(false); setInviteEmail(''); setInviteName('') }}
-                      className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
+                      className="rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-700"
                     >
                       Invite Another
                     </button>
@@ -391,7 +391,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-amber-500">*</span></label>
                     <input
                       type="email"
                       value={inviteEmail}
@@ -402,7 +402,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   </div>
 
                   {inviteError && (
-                    <p className="text-sm text-red-600">{inviteError}</p>
+                    <p className="text-sm text-amber-600">{inviteError}</p>
                   )}
                 </div>
 
@@ -416,7 +416,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   <button
                     onClick={handleInvite}
                     disabled={isPending}
-                    className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+                    className="rounded-lg bg-forest px-4 py-2 text-sm font-semibold text-white hover:bg-forest-700 disabled:opacity-50"
                   >
                     {isPending ? 'Sending...' : 'Send Invitation'}
                   </button>
@@ -440,7 +440,7 @@ function SubSortTh({ label, sortKey: key, currentKey, dir, onSort, align }: {
   const active = key === currentKey
   return (
     <th
-      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-red-800 transition-colors ${
+      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-forest-700 transition-colors ${
         align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
       }`}
       onClick={() => onSort(key)}

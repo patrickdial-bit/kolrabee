@@ -76,8 +76,8 @@ export default function NewProjectForm() {
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Create New Project</h1>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-4 rounded-md bg-amber-50 p-4">
+            <p className="text-sm text-amber-700">{error}</p>
           </div>
         )}
 
@@ -94,7 +94,7 @@ export default function NewProjectForm() {
 
             <div>
               <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Customer Name <span className="text-red-500">*</span>
+                Customer Name <span className="text-amber-500">*</span>
               </label>
               <input type="text" id="customer_name" name="customer_name" required
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
@@ -104,7 +104,7 @@ export default function NewProjectForm() {
 
           <div>
             <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-              Project Site Address <span className="text-red-500">*</span>
+              Project Site Address <span className="text-amber-500">*</span>
             </label>
             <input type="text" id="address" name="address" required
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
@@ -132,7 +132,7 @@ export default function NewProjectForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label htmlFor="payout_amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Project Payout ($ Amount) <span className="text-red-500">*</span>
+                Project Payout ($ Amount) <span className="text-amber-500">*</span>
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>

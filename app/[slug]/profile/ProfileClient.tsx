@@ -134,8 +134,8 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
           </div>
           <div className="px-6 py-5 space-y-5">
             {uploadError && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-                <p className="text-sm text-red-700">{uploadError}</p>
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+                <p className="text-sm text-amber-700">{uploadError}</p>
               </div>
             )}
             {uploadSuccess && (
@@ -233,8 +233,8 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
             <input type="hidden" name="slug" value={slug} />
 
             {profileState?.error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-                <p className="text-sm text-red-700">{profileState.error}</p>
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+                <p className="text-sm text-amber-700">{profileState.error}</p>
               </div>
             )}
             {profileState?.success && (
@@ -334,8 +334,8 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
           </div>
           <div className="px-6 py-5 space-y-4">
             {notifMsg && (
-              <div className={`rounded-lg p-3 ${notifMsg.includes('Failed') ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                <p className={`text-sm ${notifMsg.includes('Failed') ? 'text-red-700' : 'text-green-700'}`}>{notifMsg}</p>
+              <div className={`rounded-lg p-3 ${notifMsg.includes('Failed') ? 'bg-amber-50 border border-amber-200' : 'bg-green-50 border border-green-200'}`}>
+                <p className={`text-sm ${notifMsg.includes('Failed') ? 'text-amber-700' : 'text-green-700'}`}>{notifMsg}</p>
               </div>
             )}
 
@@ -400,8 +400,8 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
             <input type="hidden" name="slug" value={slug} />
 
             {passwordState?.error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-                <p className="text-sm text-red-700">{passwordState.error}</p>
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+                <p className="text-sm text-amber-700">{passwordState.error}</p>
               </div>
             )}
             {passwordState?.success && (

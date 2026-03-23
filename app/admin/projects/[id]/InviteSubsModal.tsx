@@ -97,8 +97,8 @@ export default function InviteSubsModal({
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 p-3">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-4 rounded-md bg-amber-50 p-3">
+              <p className="text-sm text-amber-700">{error}</p>
             </div>
           )}
 
@@ -155,7 +155,7 @@ export default function InviteSubsModal({
               {/* Non-compliant subs shown as unavailable */}
               {nonCompliantSubs.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-xs font-medium text-red-500 uppercase tracking-wide mb-2">
+                  <p className="text-xs font-medium text-amber-500 uppercase tracking-wide mb-2">
                     Not Eligible (Missing W-9/COI or Expired Insurance)
                   </p>
                   <ul className="space-y-1">

@@ -94,8 +94,8 @@ export default function AdminForgotPasswordPage() {
           ) : (
             <>
               {state?.error && (
-                <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
-                  <p className="text-sm text-red-700">{state.error}</p>
+                <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+                  <p className="text-sm text-amber-700">{state.error}</p>
                 </div>
               )}
 

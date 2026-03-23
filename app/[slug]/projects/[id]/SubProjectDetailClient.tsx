@@ -110,8 +110,8 @@ export default function SubProjectDetailClient({
         </Link>
 
         {error && (
-          <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+            <p className="text-sm text-amber-700">{error}</p>
           </div>
         )}
 
@@ -265,7 +265,7 @@ export default function SubProjectDetailClient({
             {isAcceptedByMe && project.status === 'accepted' && !showCancelConfirm && (
               <button
                 onClick={() => setShowCancelConfirm(true)}
-                className="w-full rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
               >
                 {t('project.cancel_acceptance')}
               </button>
@@ -281,7 +281,7 @@ export default function SubProjectDetailClient({
                   <button
                     onClick={handleCancel}
                     disabled={loading === 'cancel'}
-                    className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                    className="flex-1 rounded-lg bg-gray-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest transition-colors disabled:opacity-50"
                   >
                     {loading === 'cancel' ? t('project.cancelling') : t('project.yes_cancel')}
                   </button>
