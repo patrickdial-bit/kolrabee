@@ -31,6 +31,7 @@ interface ProjectDetailClientProps {
 const statusColors: Record<string, string> = {
   available: 'bg-blue-100 text-blue-700',
   accepted: 'bg-yellow-100 text-yellow-700',
+  in_progress: 'bg-indigo-100 text-indigo-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-purple-100 text-purple-700',
   cancelled: 'bg-amber-100 text-amber-700',
@@ -282,7 +283,7 @@ export default function ProjectDetailClient({
                       className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
                   </>
                 )}
-                {project.status === 'accepted' && (
+                {(project.status === 'accepted' || project.status === 'in_progress') && (
                   <>
                     <button onClick={handleMarkCompleted} disabled={isPending}
                       className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">

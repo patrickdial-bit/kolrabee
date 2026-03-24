@@ -7,7 +7,7 @@ import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { extractCity, formatCurrency, formatDate } from '@/lib/utils'
 import type { Project, ProjectInvitation } from '@/lib/types'
-import { acceptProject, cancelAcceptedProject, declineProject } from './actions'
+import { acceptProject, cancelAcceptedProject, declineProject, markInProgress, markCompleted } from './actions'
 
 interface SubProjectDetailClientProps {
   slug: string
@@ -21,6 +21,7 @@ interface SubProjectDetailClientProps {
 const statusBadgeClasses: Record<string, string> = {
   available: 'bg-yellow-100 text-yellow-700',
   accepted: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-indigo-100 text-indigo-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-gray-100 text-gray-700',
@@ -69,6 +70,32 @@ export default function SubProjectDetailClient({
       if (result?.error) {
         setError(result.error)
       }
+    } catch {
+      setError('An unexpected error occurred.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function handleStartJob() {
+    setError(null)
+    setLoading('start')
+    try {
+      const result = await markInProgress(project.id, project.version, slug)
+      if (result?.error) setError(result.error)
+    } catch {
+      setError('An unexpected error occurred.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function handleMarkComplete() {
+    setError(null)
+    setLoading('complete')
+    try {
+      const result = await markCompleted(project.id, project.version, slug)
+      if (result?.error) setError(result.error)
     } catch {
       setError('An unexpected error occurred.')
     } finally {
@@ -245,13 +272,33 @@ export default function SubProjectDetailClient({
               </div>
             )}
 
-            {/* After acceptance, status='accepted': Cancel button */}
+            {/* Accepted: Start Job + Cancel */}
             {isAcceptedByMe && project.status === 'accepted' && !showCancelConfirm && (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleStartJob}
+                  disabled={loading === 'start'}
+                  className="flex-1 rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                >
+                  {loading === 'start' ? 'Starting...' : 'Start Job'}
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+                >
+                  {t('project.cancel_acceptance')}
+                </button>
+              </div>
+            )}
+
+            {/* In Progress: Mark Complete */}
+            {isAcceptedByMe && project.status === 'in_progress' && (
               <button
-                onClick={() => setShowCancelConfirm(true)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+                onClick={handleMarkComplete}
+                disabled={loading === 'complete'}
+                className="w-full rounded-lg bg-green-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-600 transition-colors disabled:opacity-50"
               >
-                {t('project.cancel_acceptance')}
+                {loading === 'complete' ? 'Completing...' : 'Mark Complete'}
               </button>
             )}
 

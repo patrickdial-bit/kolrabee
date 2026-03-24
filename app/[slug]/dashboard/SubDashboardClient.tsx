@@ -1,18 +1,20 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import SubNav from '@/components/SubNav'
-import StatusTabs from '@/components/StatusTabs'
+import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
-import { acceptProject, cancelAcceptedProject } from '@/app/[slug]/projects/[id]/actions'
-
-type SubSortKey = 'customer_name' | 'start_date' | 'payout_amount' | 'estimated_labor_hours' | 'address'
-type SortDir = 'asc' | 'desc'
+import {
+  acceptProject,
+  cancelAcceptedProject,
+  markInProgress,
+  markCompleted,
+} from '@/app/[slug]/projects/[id]/actions'
 
 interface SubDashboardClientProps {
   slug: string
@@ -25,6 +27,14 @@ interface SubDashboardClientProps {
   subName: string
 }
 
+const columnConfig = [
+  { key: 'available', label: 'Available', color: 'bg-amber-500', emptyKey: 'dash.no_available' },
+  { key: 'accepted', label: 'Accepted', color: 'bg-blue-500', emptyKey: 'dash.no_accepted' },
+  { key: 'in_progress', label: 'In Progress', color: 'bg-indigo-500', emptyKey: 'dash.no_in_progress' },
+  { key: 'completed', label: 'Completed', color: 'bg-green-500', emptyKey: 'dash.no_completed' },
+  { key: 'paid', label: 'Paid', color: 'bg-emerald-600', emptyKey: 'dash.no_paid' },
+] as const
+
 export default function SubDashboardClient({
   slug,
   tenantName,
@@ -36,64 +46,36 @@ export default function SubDashboardClient({
   subName,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
-  const tabs = [t('dash.available'), t('dash.accepted'), t('dash.paid')]
-  const [activeIdx, setActiveIdx] = useState(0)
-  const activeTab = tabs[activeIdx]
+  const router = useRouter()
   const [showAcceptModal, setShowAcceptModal] = useState<Project | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<SubSortKey>('start_date')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
-  const router = useRouter()
 
-  const toggleSort = useCallback((key: SubSortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('asc')
+  // Organize projects into columns
+  const columns = useMemo(() => {
+    const accepted = myJobs.filter((p) => p.status === 'accepted')
+    const inProgress = myJobs.filter((p) => p.status === 'in_progress')
+    const completed = myJobs.filter((p) => p.status === 'completed')
+    return {
+      available: availableProjects,
+      accepted,
+      in_progress: inProgress,
+      completed,
+      paid: paidProjects,
     }
-  }, [sortKey])
+  }, [availableProjects, myJobs, paidProjects])
 
-  const sortProjects = useCallback((projects: Project[]) => {
-    return [...projects].sort((a, b) => {
-      const dir = sortDir === 'asc' ? 1 : -1
-      switch (sortKey) {
-        case 'customer_name':
-          return dir * a.customer_name.localeCompare(b.customer_name)
-        case 'start_date': {
-          if (!a.start_date && !b.start_date) return 0
-          if (!a.start_date) return 1
-          if (!b.start_date) return -1
-          return dir * (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-        }
-        case 'payout_amount':
-          return dir * ((a.payout_amount ?? 0) - (b.payout_amount ?? 0))
-        case 'estimated_labor_hours':
-          return dir * ((a.estimated_labor_hours ?? 0) - (b.estimated_labor_hours ?? 0))
-        case 'address':
-          return dir * a.address.localeCompare(b.address)
-        default:
-          return 0
-      }
-    })
-  }, [sortKey, sortDir])
-
-  const sortedAvailable = useMemo(() => sortProjects(availableProjects), [availableProjects, sortProjects])
-  const sortedMyJobs = useMemo(() => sortProjects(myJobs), [myJobs, sortProjects])
-  const sortedPaid = useMemo(() => sortProjects(paidProjects), [paidProjects, sortProjects])
+  // Queue count = accepted + in_progress
+  const queueCount = columns.accepted.length + columns.in_progress.length
 
   const handleAccept = async (project: Project) => {
     setLoading(true)
     setError(null)
     try {
       const result = await acceptProject(project.id, project.version, slug)
-      if (result?.error) {
-        setError(result.error)
-      } else {
-        router.refresh()
-      }
+      if (result?.error) setError(result.error)
+      else router.refresh()
       setShowAcceptModal(null)
     } catch {
       setError('An unexpected error occurred.')
@@ -108,11 +90,8 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await cancelAcceptedProject(project.id, project.version, slug)
-      if (result?.error) {
-        setError(result.error)
-      } else {
-        router.refresh()
-      }
+      if (result?.error) setError(result.error)
+      else router.refresh()
       setShowCancelConfirm(null)
     } catch {
       setError('An unexpected error occurred.')
@@ -121,15 +100,58 @@ export default function SubDashboardClient({
     }
   }
 
+  const handleMarkInProgress = async (project: Project) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await markInProgress(project.id, project.version, slug)
+      if (result?.error) setError(result.error)
+      else router.refresh()
+    } catch {
+      setError('An unexpected error occurred.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleMarkCompleted = async (project: Project) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await markCompleted(project.id, project.version, slug)
+      if (result?.error) setError(result.error)
+      else router.refresh()
+    } catch {
+      setError('An unexpected error occurred.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const tourSteps: TourStep[] = [
+    {
+      target: '#tour-sub-stats',
+      title: t('tour.sub_stats_title') || 'Your Stats',
+      content: t('tour.sub_stats_content') || 'Track your earnings and jobs in queue at a glance.',
+      placement: 'bottom',
+    },
+    {
+      target: '#tour-sub-kanban',
+      title: t('tour.sub_kanban_title') || 'Your Job Board',
+      content: t('tour.sub_kanban_content') || 'Jobs flow from left to right: Available, Accepted, In Progress, Completed, Paid. Use the buttons on each card to advance.',
+      placement: 'top',
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SubNav slug={slug} tenantName={tenantName} subName={subName} />
 
-      <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('dash.title')}</h1>
+      <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('dash.title')}</h1>
 
-        {/* Earnings — always visible */}
-        <div className="mb-6 flex flex-wrap items-center gap-4">
+        {/* Stats row */}
+        <div id="tour-sub-stats" className="mb-6 flex flex-wrap items-center gap-3">
           <Tooltip text={t('tip.paid_ytd')} position="bottom">
             <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
               <span className="text-sm font-medium text-gray-500">{t('dash.paid_ytd')}</span>
@@ -142,6 +164,12 @@ export default function SubDashboardClient({
               <span className="text-lg font-bold text-gray-700">{formatCurrency(allTimeEarnings)}</span>
             </div>
           </Tooltip>
+          <Tooltip text={t('tip.queue_count') || 'Jobs you have accepted or started.'} position="bottom">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+              <span className="text-sm font-medium text-gray-500">{t('dash.jobs_in_queue') || 'Jobs in Queue'}</span>
+              <span className="text-lg font-bold text-indigo-600">{queueCount}</span>
+            </div>
+          </Tooltip>
         </div>
 
         {error && (
@@ -150,221 +178,52 @@ export default function SubDashboardClient({
           </div>
         )}
 
-        {/* Tabs */}
-        <StatusTabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={(tab) => setActiveIdx(tabs.indexOf(tab))}
-        />
+        {/* Kanban Board */}
+        <div id="tour-sub-kanban" className="flex gap-4 overflow-x-auto pb-4">
+          {columnConfig.map((col) => {
+            const projects = columns[col.key]
+            return (
+              <div key={col.key} className="flex-shrink-0 w-72 min-w-[18rem]">
+                {/* Column header */}
+                <div className={`${col.color} rounded-t-lg px-4 py-2.5 flex items-center justify-between`}>
+                  <h3 className="text-sm font-semibold text-white">{col.label}</h3>
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-xs font-bold text-white">
+                    {projects.length}
+                  </span>
+                </div>
 
-        <div className="mt-6">
-
-
-          {/* Available Projects Tab */}
-          {activeTab === t('dash.available') && (
-            <>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dash.sub_available')}</h2>
-              {availableProjects.length === 0 ? (
-                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-                  <p className="text-sm text-gray-500">{t('dash.no_available')}</p>
+                {/* Column body */}
+                <div className="bg-gray-100 rounded-b-lg p-3 space-y-3 min-h-[200px]">
+                  {projects.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-8">
+                      {t(col.emptyKey) || 'No projects'}
+                    </p>
+                  ) : (
+                    projects.map((project) => (
+                      <KanbanCard
+                        key={project.id}
+                        project={project}
+                        column={col.key}
+                        slug={slug}
+                        loading={loading}
+                        showCancelConfirm={showCancelConfirm}
+                        onAccept={() => setShowAcceptModal(project)}
+                        onStartJob={() => handleMarkInProgress(project)}
+                        onMarkComplete={() => handleMarkCompleted(project)}
+                        onCancel={() =>
+                          showCancelConfirm === project.id
+                            ? handleCancel(project)
+                            : setShowCancelConfirm(project.id)
+                        }
+                        onCancelDismiss={() => setShowCancelConfirm(null)}
+                        t={t}
+                      />
+                    ))
+                  )}
                 </div>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-amber-500">
-                      <tr>
-                        <SubSortTh label={t('th.project_id')} sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.work_order')}</th>
-                        <SubSortTh label={t('th.project_start')} sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <SubSortTh label={t('th.est_hours')} sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
-                        <SubSortTh label={t('th.payout')} sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
-                        <SubSortTh label={t('th.address')} sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.action')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {sortedAvailable.map((project) => (
-                        <tr key={project.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            {project.work_order_link ? (
-                              <Tooltip text={t('tip.work_order')} position="top">
-                                <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
-                              </Tooltip>
-                            ) : '—'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                            {formatDateTime(project.start_date, project.start_time)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
-                            {project.estimated_labor_hours ?? '—'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                            {formatCurrency(project.payout_amount)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <Tooltip text={t('tip.accept_project')} position="left">
-                              <button
-                                onClick={() => setShowAcceptModal(project)}
-                                className="inline-flex items-center rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors"
-                              >
-                                {t('action.accept')}
-                              </button>
-                            </Tooltip>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Accepted Projects Tab */}
-          {activeIdx === 1 && (
-            <>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dash.sub_accepted')}</h2>
-              {myJobs.length === 0 ? (
-                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-                  <p className="text-sm text-gray-500">{t('dash.no_accepted')}</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-amber-500">
-                      <tr>
-                        <SubSortTh label={t('th.project_id')} sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.work_order')}</th>
-                        <SubSortTh label={t('th.project_start')} sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <SubSortTh label={t('th.est_hours')} sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="amber" />
-                        <SubSortTh label={t('th.payout')} sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="amber" />
-                        <SubSortTh label={t('th.address')} sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="amber" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.status')}</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.action')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {sortedMyJobs.map((project) => (
-                        <tr key={project.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            {project.work_order_link ? (
-                              <Tooltip text={t('tip.work_order')} position="top">
-                                <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
-                              </Tooltip>
-                            ) : '—'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                            {formatDateTime(project.start_date, project.start_time)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
-                            {project.estimated_labor_hours ?? '—'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                            {formatCurrency(project.payout_amount)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                              {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-center">
-                            {project.status === 'accepted' && (
-                              showCancelConfirm === project.id ? (
-                                <div className="flex items-center justify-center gap-1">
-                                  <button onClick={() => handleCancel(project)} disabled={loading}
-                                    className="rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-forest disabled:opacity-50">
-                                    {loading ? '...' : t('action.confirm')}
-                                  </button>
-                                  <button onClick={() => setShowCancelConfirm(null)}
-                                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200">
-                                    {t('action.no')}
-                                  </button>
-                                </div>
-                              ) : (
-                                <Tooltip text={t('tip.cancel_project')} position="left">
-                                  <button onClick={() => setShowCancelConfirm(project.id)}
-                                    className="inline-flex items-center rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors">
-                                    {t('action.cancel')}
-                                  </button>
-                                </Tooltip>
-                              )
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Paid Projects Tab */}
-          {activeIdx === 2 && (
-            <>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dash.all_paid')}</h2>
-              {paidProjects.length === 0 ? (
-                <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-                  <p className="text-sm text-gray-500">{t('dash.no_paid')}</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-700">
-                      <tr>
-                        <SubSortTh label={t('th.project_id')} sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
-                        <SubSortTh label={t('th.project_start')} sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
-                        <SubSortTh label={t('th.payout')} sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" bg="gray" />
-                        <SubSortTh label={t('th.est_hours')} sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" bg="gray" />
-                        <SubSortTh label={t('th.address')} sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" bg="gray" />
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.work_order')}</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">{t('th.photos')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {sortedPaid.map((project) => (
-                        <tr key={project.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{project.customer_name}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                            {formatDateTime(project.start_date, project.start_time)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                            {formatCurrency(project.payout_amount)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">
-                            {project.estimated_labor_hours ?? '—'}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600">{project.address}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            {project.work_order_link ? (
-                              <Tooltip text={t('tip.work_order')} position="top">
-                                <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
-                              </Tooltip>
-                            ) : '—'}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            {project.companycam_link ? (
-                              <Tooltip text={t('tip.photos_link')} position="top">
-                                <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
-                                  className="text-ember hover:text-primary-700 font-medium">{t('action.link')}</a>
-                              </Tooltip>
-                            ) : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
+              </div>
+            )
+          })}
         </div>
       </main>
 
@@ -381,9 +240,7 @@ export default function SubDashboardClient({
               </div>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-3">{t('modal.accept_title')}</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              {t('modal.accept_body')}
-            </p>
+            <p className="text-sm text-gray-600 mb-6">{t('modal.accept_body')}</p>
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setShowAcceptModal(null)}
@@ -402,31 +259,141 @@ export default function SubDashboardClient({
           </div>
         </div>
       )}
+
+      <GuidedTour steps={tourSteps} tourKey="sub-dashboard" />
     </div>
   )
 }
 
-function SubSortTh({ label, sortKey: key, currentKey, dir, onSort, align, bg }: {
-  label: string; sortKey: SubSortKey; currentKey: SubSortKey; dir: SortDir
-  onSort: (k: SubSortKey) => void; align: 'left' | 'right' | 'center'; bg: 'amber' | 'gray'
+function KanbanCard({
+  project,
+  column,
+  slug,
+  loading,
+  showCancelConfirm,
+  onAccept,
+  onStartJob,
+  onMarkComplete,
+  onCancel,
+  onCancelDismiss,
+  t,
+}: {
+  project: Project
+  column: string
+  slug: string
+  loading: boolean
+  showCancelConfirm: string | null
+  onAccept: () => void
+  onStartJob: () => void
+  onMarkComplete: () => void
+  onCancel: () => void
+  onCancelDismiss: () => void
+  t: (key: string) => string
 }) {
-  const active = key === currentKey
-  const hoverBg = bg === 'amber' ? 'hover:bg-amber-600' : 'hover:bg-gray-800'
   return (
-    <th
-      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none ${hoverBg} transition-colors ${
-        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
-      }`}
-      onClick={() => onSort(key)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <svg className={`h-3.5 w-3.5 ${active ? 'opacity-100' : 'opacity-40'}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-          {active && dir === 'desc'
-            ? <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-            : <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />}
-        </svg>
-      </span>
-    </th>
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
+      {/* Card header */}
+      <div className="flex items-start justify-between mb-2">
+        <Link
+          href={`/${slug}/projects/${project.id}`}
+          className="text-sm font-semibold text-gray-900 hover:text-ember transition-colors line-clamp-1"
+        >
+          {project.customer_name}
+        </Link>
+        {project.job_number && (
+          <span className="text-xs text-gray-400 ml-2 flex-shrink-0">#{project.job_number}</span>
+        )}
+      </div>
+
+      {/* Card details */}
+      <div className="space-y-1 mb-3">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+          {formatDateTime(project.start_date, project.start_time)}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z" />
+          </svg>
+          <span className="line-clamp-1">{project.address}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-gray-900">{formatCurrency(project.payout_amount)}</span>
+          {project.estimated_labor_hours && (
+            <span className="text-xs text-gray-400">{project.estimated_labor_hours}h est.</span>
+          )}
+        </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="flex items-center gap-3 mb-3">
+        {project.work_order_link && (
+          <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+            className="text-xs font-medium text-ember hover:text-primary-700">{t('th.work_order') || 'Work Order'}</a>
+        )}
+        {project.companycam_link && (
+          <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
+            className="text-xs font-medium text-ember hover:text-primary-700">{t('th.photos') || 'Photos'}</a>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        {column === 'available' && (
+          <button
+            onClick={onAccept}
+            disabled={loading}
+            className="flex-1 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+          >
+            {t('action.accept')}
+          </button>
+        )}
+
+        {column === 'accepted' && (
+          <>
+            <button
+              onClick={onStartJob}
+              disabled={loading}
+              className="flex-1 rounded-md bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+            >
+              Start Job
+            </button>
+            {showCancelConfirm === project.id ? (
+              <div className="flex gap-1">
+                <button onClick={onCancel} disabled={loading}
+                  className="rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-gray-800 disabled:opacity-50">
+                  {loading ? '...' : t('action.confirm')}
+                </button>
+                <button onClick={onCancelDismiss}
+                  className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-gray-200">
+                  {t('action.no')}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onCancel}
+                disabled={loading}
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {t('action.cancel')}
+              </button>
+            )}
+          </>
+        )}
+
+        {column === 'in_progress' && (
+          <button
+            onClick={onMarkComplete}
+            disabled={loading}
+            className="flex-1 rounded-md bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
+          >
+            Mark Complete
+          </button>
+        )}
+      </div>
+    </div>
   )
 }

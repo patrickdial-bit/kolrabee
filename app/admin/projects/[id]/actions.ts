@@ -70,7 +70,7 @@ export async function markCompleted(projectId: string) {
     .update({ status: 'completed' })
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
-    .eq('status', 'accepted')
+    .in('status', ['accepted', 'in_progress'])
 
   if (error) {
     return { error: 'Failed to mark project as completed.' }
@@ -91,7 +91,7 @@ export async function markPaid(projectId: string) {
     })
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
-    .in('status', ['accepted', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'completed'])
 
   if (error) {
     return { error: 'Failed to mark project as paid.' }
@@ -116,7 +116,7 @@ export async function cancelProject(projectId: string, version: number) {
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .eq('version', version)
-    .in('status', ['accepted', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'completed'])
     .select('id')
 
   if (error) {

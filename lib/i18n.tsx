@@ -24,6 +24,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'dash.no_available': 'No available projects. New projects will appear here when you are invited.',
     'dash.no_accepted': 'No active jobs. Accept an available project to see it here.',
     'dash.no_paid': 'No paid projects yet. Completed and paid projects will appear here.',
+    'dash.no_in_progress': 'No jobs in progress. Start an accepted job to see it here.',
+    'dash.no_completed': 'No completed jobs yet. Jobs you mark as complete will appear here.',
+    'dash.jobs_in_queue': 'Jobs in Queue',
     'dash.sub_available': 'Subcontractor Available Projects',
     'dash.sub_accepted': 'Subcontractor Accepted Projects',
     'dash.all_paid': 'All Paid Projects',
@@ -123,6 +126,13 @@ const translations: Record<Locale, Record<string, string>> = {
     'tip.upload_w9': 'Upload your W-9 tax form (PDF, JPG, or PNG).',
     'tip.upload_coi': 'Upload your Certificate of Insurance (PDF, JPG, or PNG).',
     'tip.insurance_exp': 'Your insurance must be current to receive project invitations.',
+    'tip.queue_count': 'Jobs you have accepted or started.',
+
+    // Tour
+    'tour.sub_stats_title': 'Your Stats',
+    'tour.sub_stats_content': 'Track your earnings and jobs in queue at a glance.',
+    'tour.sub_kanban_title': 'Your Job Board',
+    'tour.sub_kanban_content': 'Jobs flow left to right: Available, Accepted, In Progress, Completed, Paid. Use the buttons on each card to advance.',
   },
   es: {
     // Nav
@@ -143,6 +153,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'dash.no_available': 'No hay proyectos disponibles. Los nuevos proyectos apareceran aqui cuando seas invitado.',
     'dash.no_accepted': 'No tienes trabajos activos. Acepta un proyecto disponible para verlo aqui.',
     'dash.no_paid': 'No hay proyectos pagados aun. Los proyectos completados y pagados apareceran aqui.',
+    'dash.no_in_progress': 'No hay trabajos en progreso. Inicia un trabajo aceptado para verlo aqui.',
+    'dash.no_completed': 'No hay trabajos completados aun. Los trabajos que marques como completos apareceran aqui.',
+    'dash.jobs_in_queue': 'Trabajos en Cola',
     'dash.sub_available': 'Proyectos Disponibles del Subcontratista',
     'dash.sub_accepted': 'Proyectos Aceptados del Subcontratista',
     'dash.all_paid': 'Todos los Proyectos Pagados',
@@ -242,6 +255,13 @@ const translations: Record<Locale, Record<string, string>> = {
     'tip.upload_w9': 'Sube tu formulario de impuestos W-9 (PDF, JPG o PNG).',
     'tip.upload_coi': 'Sube tu Certificado de Seguro (PDF, JPG o PNG).',
     'tip.insurance_exp': 'Tu seguro debe estar vigente para recibir invitaciones a proyectos.',
+    'tip.queue_count': 'Trabajos que has aceptado o iniciado.',
+
+    // Tour
+    'tour.sub_stats_title': 'Tus Estadisticas',
+    'tour.sub_stats_content': 'Revisa tus ganancias y trabajos en cola de un vistazo.',
+    'tour.sub_kanban_title': 'Tu Tablero de Trabajos',
+    'tour.sub_kanban_content': 'Los trabajos fluyen de izquierda a derecha: Disponible, Aceptado, En Progreso, Completado, Pagado. Usa los botones en cada tarjeta para avanzar.',
   },
 }
 

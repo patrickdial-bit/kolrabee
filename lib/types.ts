@@ -92,7 +92,7 @@ export type Project = {
   payout_amount: number
   estimated_labor_hours: number | null
   work_order_link: string | null
-  status: 'available' | 'accepted' | 'completed' | 'paid' | 'cancelled'
+  status: 'available' | 'accepted' | 'in_progress' | 'completed' | 'paid' | 'cancelled'
   companycam_link: string | null
   notes: string | null
   admin_notes: string | null

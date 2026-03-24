@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail } from '@/lib/email'
+import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail, sendStatusUpdateEmail } from '@/lib/email'
 import { getNotificationPrefs } from '@/lib/types'
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
@@ -154,6 +154,116 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
   }
 
   redirect(`/${slug}/dashboard`)
+}
+
+export async function markInProgress(projectId: string, expectedVersion: number, slug: string) {
+  const { appUser, tenant } = await getCurrentSub(slug)
+  const adminClient = createAdminClient()
+
+  const { data, error } = await adminClient
+    .from('projects')
+    .update({
+      status: 'in_progress',
+      version: expectedVersion + 1,
+    })
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .eq('accepted_by', appUser.id)
+    .eq('status', 'accepted')
+    .eq('version', expectedVersion)
+    .select('id, job_number, customer_name')
+
+  if (error) {
+    return { error: 'Failed to update project status. Please try again.' }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: 'This project has already been updated. Please refresh.' }
+  }
+
+  // Notify admin(s)
+  const project = data[0]
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const projectUrl = `${siteUrl}/admin/projects/${projectId}`
+  const { data: admins } = await adminClient
+    .from('users')
+    .select('email, notification_preferences')
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+
+  const subName = `${appUser.first_name} ${appUser.last_name}`
+  for (const admin of admins ?? []) {
+    const prefs = getNotificationPrefs(admin)
+    if (!prefs.project_updates) continue
+    sendStatusUpdateEmail({
+      to: admin.email,
+      subName,
+      tenantName: tenant.name,
+      notificationEmail: tenant.notification_email,
+      jobNumber: project.job_number,
+      customerName: project.customer_name,
+      newStatus: 'in_progress',
+      projectUrl,
+    })
+  }
+
+  return { success: true }
+}
+
+export async function markCompleted(projectId: string, expectedVersion: number, slug: string) {
+  const { appUser, tenant } = await getCurrentSub(slug)
+  const adminClient = createAdminClient()
+
+  const { data, error } = await adminClient
+    .from('projects')
+    .update({
+      status: 'completed',
+      version: expectedVersion + 1,
+    })
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .eq('accepted_by', appUser.id)
+    .in('status', ['accepted', 'in_progress'])
+    .eq('version', expectedVersion)
+    .select('id, job_number, customer_name')
+
+  if (error) {
+    return { error: 'Failed to update project status. Please try again.' }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: 'This project has already been updated. Please refresh.' }
+  }
+
+  // Notify admin(s)
+  const project = data[0]
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const projectUrl = `${siteUrl}/admin/projects/${projectId}`
+  const { data: admins } = await adminClient
+    .from('users')
+    .select('email, notification_preferences')
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+
+  const subName = `${appUser.first_name} ${appUser.last_name}`
+  for (const admin of admins ?? []) {
+    const prefs = getNotificationPrefs(admin)
+    if (!prefs.project_updates) continue
+    sendStatusUpdateEmail({
+      to: admin.email,
+      subName,
+      tenantName: tenant.name,
+      notificationEmail: tenant.notification_email,
+      jobNumber: project.job_number,
+      customerName: project.customer_name,
+      newStatus: 'completed',
+      projectUrl,
+    })
+  }
+
+  return { success: true }
 }
 
 export async function declineProject(projectId: string, slug: string) {

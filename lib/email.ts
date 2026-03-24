@@ -45,6 +45,17 @@ type DeclineEmailParams = {
   customerName: string
 }
 
+type StatusUpdateEmailParams = {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+  newStatus: string
+  projectUrl: string
+}
+
 type CancelEmailParams = {
   to: string
   subName: string
@@ -204,5 +215,32 @@ export async function sendCancelEmail(params: CancelEmailParams) {
     })
   } catch (err) {
     console.error('Failed to send cancel email:', err)
+  }
+}
+
+/** Email 5: Sub updated project status (in_progress / completed) — notify admin with link */
+export async function sendStatusUpdateEmail(params: StatusUpdateEmailParams) {
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, newStatus, projectUrl } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+  const statusLabel = newStatus === 'in_progress' ? 'In Progress' : 'Completed'
+  const color = newStatus === 'in_progress' ? '#2563eb' : '#16a34a'
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `${subName} marked ${jobLabel}${customerName} as ${statusLabel}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: ${color}; margin-bottom: 4px;">Project ${statusLabel}</h2>
+          <p style="color: #666; margin-top: 0;"><strong>${subName}</strong> has marked <strong>${jobLabel}${customerName}</strong> as <strong>${statusLabel}</strong>.</p>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">View Project</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee admin dashboard for details.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send status update email:', err)
   }
 }

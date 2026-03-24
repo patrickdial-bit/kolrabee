@@ -8,6 +8,7 @@ import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
+import { getDocumentUrl } from './[id]/doc-actions'
 import type { SubcontractorWithStats } from '@/lib/types'
 
 type SubSortKey = 'company_name' | 'first_name' | 'last_name' | 'email' | 'crew_size' | 'insurance_expiration' | 'insurance_provider' | 'phone' | 'years_in_business'
@@ -36,6 +37,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
       setSortDir('asc')
     }
   }, [sortKey])
+  const [docLoading, setDocLoading] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
@@ -133,6 +135,16 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
     setInviteName('')
     setInviteError('')
     setInviteSuccess(false)
+  }
+
+  async function handleViewDoc(subId: string, docType: 'w9' | 'coi') {
+    const key = `${subId}-${docType}`
+    setDocLoading(key)
+    const result = await getDocumentUrl(subId, docType)
+    setDocLoading(null)
+    if (result.url) {
+      window.open(result.url, '_blank')
+    }
   }
 
   const subsTourSteps: TourStep[] = [
@@ -272,11 +284,17 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-center">{sub.years_in_business ?? '—'}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         {sub.coi_file_url ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
-                            <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          <button
+                            onClick={() => handleViewDoc(sub.id, 'coi')}
+                            disabled={docLoading === `${sub.id}-coi`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                          </span>
+                            {docLoading === `${sub.id}-coi` ? '...' : 'View'}
+                          </button>
                         ) : (
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100">
                             <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -287,11 +305,17 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         {sub.w9_file_url ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
-                            <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          <button
+                            onClick={() => handleViewDoc(sub.id, 'w9')}
+                            disabled={docLoading === `${sub.id}-w9`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                          </span>
+                            {docLoading === `${sub.id}-w9` ? '...' : 'View'}
+                          </button>
                         ) : (
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100">
                             <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">

@@ -53,12 +53,12 @@ export default async function SubDashboardPage({
     availableProjects = (data ?? []) as Project[]
   }
 
-  // My jobs: projects accepted by this sub with status in ('accepted', 'completed')
+  // My jobs: projects accepted by this sub with active statuses
   const { data: myJobsData } = await adminClient
     .from('projects')
     .select('*')
     .eq('accepted_by', appUser.id)
-    .in('status', ['accepted', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'completed'])
     .order('start_date', { ascending: true, nullsFirst: false })
 
   const myJobs = (myJobsData ?? []) as Project[]
