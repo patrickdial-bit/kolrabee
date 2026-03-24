@@ -82,7 +82,8 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     })
 
   if (error) {
-    return { error: 'Failed to send invitations.' }
+    console.error('project_invitations upsert failed:', error)
+    return { error: `Failed to send invitations: ${error.message}` }
   }
 
   // Fetch project details for the email
