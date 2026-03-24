@@ -110,12 +110,6 @@ export type ProjectInvitation = {
   subcontractor_id: string
   status: 'invited' | 'accepted' | 'declined'
   invited_at: string
-  expires_at: string | null
-}
-
-export function isInvitationExpired(expiresAt: string | null): boolean {
-  if (!expiresAt) return false
-  return new Date(expiresAt) < new Date()
 }
 
 export type SubcontractorWithStats = AppUser & {

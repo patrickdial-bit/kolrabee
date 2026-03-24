@@ -16,7 +16,6 @@ interface InvitationWithName {
   subcontractor_id: string
   status: 'invited' | 'accepted' | 'declined'
   invited_at: string
-  expires_at: string | null
   subcontractor_name: string
   subcontractor_email: string
 }
@@ -41,7 +40,6 @@ const inviteStatusColors: Record<string, string> = {
   invited: 'bg-gray-100 text-gray-600',
   accepted: 'bg-green-100 text-green-700',
   declined: 'bg-amber-100 text-amber-700',
-  expired: 'bg-amber-100 text-amber-700',
 }
 
 export default function ProjectDetailClient({
@@ -323,28 +321,17 @@ export default function ProjectDetailClient({
           </div>
           {invitations.length > 0 ? (
             <ul className="divide-y divide-gray-100">
-              {invitations.map((inv) => {
-                const isExpired = inv.status === 'invited' && inv.expires_at && new Date(inv.expires_at) < new Date()
-                const displayStatus = isExpired ? 'expired' : inv.status
-                return (
+              {invitations.map((inv) => (
                   <li key={inv.id} className="flex items-center justify-between py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{inv.subcontractor_name}</p>
                       <p className="text-xs text-gray-500">{inv.subcontractor_email}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {inv.status === 'invited' && inv.expires_at && !isExpired && (
-                        <span className="text-xs text-gray-400">
-                          expires {new Date(inv.expires_at).toLocaleDateString()}
-                        </span>
-                      )}
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${inviteStatusColors[displayStatus] || 'bg-gray-100 text-gray-600'}`}>
-                        {displayStatus}
-                      </span>
-                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${inviteStatusColors[inv.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {inv.status}
+                    </span>
                   </li>
-                )
-              })}
+                ))}
             </ul>
           ) : (
             <p className="text-sm text-gray-500">No subcontractors have been invited yet.</p>

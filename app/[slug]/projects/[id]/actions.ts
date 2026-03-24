@@ -10,18 +10,6 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
   const { appUser, tenant } = await getCurrentSub(slug)
   const adminClient = createAdminClient()
 
-  // Check if invitation has expired
-  const { data: invitation } = await adminClient
-    .from('project_invitations')
-    .select('expires_at')
-    .eq('project_id', projectId)
-    .eq('subcontractor_id', appUser.id)
-    .maybeSingle()
-
-  if (invitation?.expires_at && new Date(invitation.expires_at) < new Date()) {
-    return { error: 'This invitation has expired.' }
-  }
-
   // Race-condition-safe update: only update if status is still 'available' and version matches
   const { data, error } = await adminClient
     .from('projects')
@@ -45,12 +33,19 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
     return { error: 'This project was just accepted by another subcontractor.' }
   }
 
-  // Update invitation status to 'accepted'
+  // Update this contractor's invitation to 'accepted'
   await adminClient
     .from('project_invitations')
     .update({ status: 'accepted' })
     .eq('project_id', projectId)
     .eq('subcontractor_id', appUser.id)
+
+  // Withdraw all other invitations for this project so it disappears from other boards
+  await adminClient
+    .from('project_invitations')
+    .update({ status: 'declined' })
+    .eq('project_id', projectId)
+    .eq('status', 'invited')
 
   // Notify admin via email (fire-and-forget)
   const { data: project } = await adminClient
@@ -114,12 +109,19 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
     return { error: 'This project has already been updated. Please refresh and try again.' }
   }
 
-  // Update invitation status back to 'invited'
+  // Restore this contractor's invitation to 'invited'
   await adminClient
     .from('project_invitations')
     .update({ status: 'invited' })
     .eq('project_id', projectId)
     .eq('subcontractor_id', appUser.id)
+
+  // Restore other contractors' invitations so the project reappears on their boards
+  await adminClient
+    .from('project_invitations')
+    .update({ status: 'invited' })
+    .eq('project_id', projectId)
+    .eq('status', 'declined')
 
   // Notify admin via email (fire-and-forget)
   const { data: cancelledProject } = await adminClient

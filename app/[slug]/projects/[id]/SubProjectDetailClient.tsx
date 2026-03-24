@@ -41,9 +41,8 @@ export default function SubProjectDetailClient({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   // Determine visibility
-  const isExpired = invitation?.expires_at ? new Date(invitation.expires_at) < new Date() : false
   const isBeforeAcceptance =
-    project.status === 'available' && invitation?.status === 'invited' && !isAcceptedByMe && !isExpired
+    project.status === 'available' && invitation?.status === 'invited' && !isAcceptedByMe
   const showFullDetails = isAcceptedByMe
 
   async function handleAccept() {
@@ -203,21 +202,6 @@ export default function SubProjectDetailClient({
 
           {/* Actions */}
           <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-            {/* Expired invitation */}
-            {invitation?.status === 'invited' && isExpired && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                <p className="text-sm font-medium text-amber-800">This invitation has expired.</p>
-                <p className="text-xs text-amber-600 mt-1">Contact your contractor to request a new invitation.</p>
-              </div>
-            )}
-
-            {/* Expiry countdown for active invitations */}
-            {isBeforeAcceptance && invitation?.expires_at && (
-              <p className="text-xs text-gray-500 mb-3">
-                Expires {new Date(invitation.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            )}
-
             {/* Before acceptance: Accept + Decline */}
             {isBeforeAcceptance && !showAcceptConfirm && (
               <div className="flex gap-3">
