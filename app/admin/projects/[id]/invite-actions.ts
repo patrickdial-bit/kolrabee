@@ -74,12 +74,30 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     expires_at: expiresAt,
   }))
 
-  const { error } = await adminClient
+  let { error } = await adminClient
     .from('project_invitations')
     .upsert(rows, {
       onConflict: 'project_id,subcontractor_id',
       ignoreDuplicates: true,
     })
+
+  // Fallback: if expires_at column hasn't been migrated yet, retry without it
+  if (error?.message?.includes('expires_at')) {
+    const fallbackRows = subcontractorIds.map((subId) => ({
+      tenant_id: tenant.id,
+      project_id: projectId,
+      subcontractor_id: subId,
+      status: 'invited' as const,
+      invited_at: now.toISOString(),
+    }))
+    const result = await adminClient
+      .from('project_invitations')
+      .upsert(fallbackRows, {
+        onConflict: 'project_id,subcontractor_id',
+        ignoreDuplicates: true,
+      })
+    error = result.error
+  }
 
   if (error) {
     console.error('project_invitations upsert failed:', error)
