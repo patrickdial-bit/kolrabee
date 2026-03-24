@@ -36,6 +36,15 @@ type AcceptEmailParams = {
   payout: number
 }
 
+type DeclineEmailParams = {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+}
+
 type CancelEmailParams = {
   to: string
   subName: string
@@ -148,7 +157,32 @@ export async function sendAcceptEmail(params: AcceptEmailParams) {
   }
 }
 
-/** Email 3: Sub cancelled an accepted project — notify admin */
+/** Email 3: Sub declined a project — notify admin */
+export async function sendDeclineEmail(params: DeclineEmailParams) {
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `${subName} declined ${jobLabel}${customerName}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #d97706; margin-bottom: 4px;">Project Declined</h2>
+          <p style="color: #666; margin-top: 0;"><strong>${subName}</strong> has declined <strong>${jobLabel}${customerName}</strong>.</p>
+          <p style="color: #666;">You may want to invite another subcontractor to this project.</p>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee admin dashboard to manage this project.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send decline email:', err)
+  }
+}
+
+/** Email 4: Sub cancelled an accepted project — notify admin */
 export async function sendCancelEmail(params: CancelEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''

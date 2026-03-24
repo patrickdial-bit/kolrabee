@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendAcceptEmail, sendCancelEmail } from '@/lib/email'
+import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail } from '@/lib/email'
 import { getNotificationPrefs } from '@/lib/types'
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
@@ -157,7 +157,7 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
 }
 
 export async function declineProject(projectId: string, slug: string) {
-  const { appUser } = await getCurrentSub(slug)
+  const { appUser, tenant } = await getCurrentSub(slug)
   const adminClient = createAdminClient()
 
   const { error } = await adminClient
@@ -168,6 +168,36 @@ export async function declineProject(projectId: string, slug: string) {
 
   if (error) {
     return { error: 'Failed to decline project. Please try again.' }
+  }
+
+  // Notify admin so they can reassign
+  const { data: project } = await adminClient
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single()
+
+  if (project) {
+    const { data: admins } = await adminClient
+      .from('users')
+      .select('email, notification_preferences')
+      .eq('tenant_id', tenant.id)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+
+    const subName = `${appUser.first_name} ${appUser.last_name}`
+    for (const admin of admins ?? []) {
+      const prefs = getNotificationPrefs(admin)
+      if (!prefs.project_cancelled) continue
+      sendDeclineEmail({
+        to: admin.email,
+        subName,
+        tenantName: tenant.name,
+        notificationEmail: tenant.notification_email,
+        jobNumber: project.job_number,
+        customerName: project.customer_name,
+      })
+    }
   }
 
   redirect(`/${slug}/dashboard`)
