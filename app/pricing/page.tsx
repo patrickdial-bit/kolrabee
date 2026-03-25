@@ -87,10 +87,10 @@ export default function PricingPage() {
         <div className="comp-vs">VS</div>
         <div className="comp-item">
           <div className="comp-label">Kolrabee Growth starts at</div>
-          <div className="comp-price ours">$49</div>
+          <div className="comp-price ours">$29</div>
           <div className="comp-name">per month</div>
         </div>
-        <div className="comp-note">Same features. Sub ratings, job messaging, completion approvals, file attachments — all included. Five times less.</div>
+        <div className="comp-note">Same features. Sub ratings, job messaging, completion approvals, file attachments — all included. 8x cheaper.</div>
       </div>
 
       {/* PRICING CARDS */}
@@ -108,7 +108,7 @@ export default function PricingPage() {
               <ul className="plan-features">
                 <li className="plan-section-label">Jobs &amp; Dispatch</li>
                 <li>Up to 3 active jobs at a time</li>
-                <li>1 subcontractor</li>
+                <li>3 subcontractors</li>
                 <li>Multiple jobs per day, different start times</li>
                 <li>Job posting with full scope &amp; instructions</li>
                 <li>File attachments on job posts (up to 3)</li>
@@ -128,7 +128,7 @@ export default function PricingPage() {
             <div className="plan-card featured">
               <div className="plan-badge badge-featured">Most Popular</div>
               <div className="plan-name">Growth</div>
-              <div className="plan-price"><sup>$</sup>49</div>
+              <div className="plan-price"><sup>$</sup>29</div>
               <div className="plan-period">per month — HeyPros Pro+ is $249</div>
               <div className="plan-for">For owners actively scaling their sub network.</div>
               <div className="plan-divider"></div>
@@ -159,7 +159,7 @@ export default function PricingPage() {
             <div className="plan-card dark-card">
               <div className="plan-badge badge-dark">Operator</div>
               <div className="plan-name">Operator</div>
-              <div className="plan-price"><sup>$</sup>99</div>
+              <div className="plan-price"><sup>$</sup>49</div>
               <div className="plan-period">per month</div>
               <div className="plan-for">For owners running multiple trade businesses.</div>
               <div className="plan-divider"></div>
@@ -200,7 +200,7 @@ export default function PricingPage() {
             <tbody>
               <tr className="row-group"><td colSpan={4}>Jobs &amp; Dispatch</td></tr>
               <tr><td>Active jobs</td><td>3</td><td>Unlimited</td><td>Unlimited</td></tr>
-              <tr><td>Subcontractors</td><td>1</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Subcontractors</td><td>3</td><td>Unlimited</td><td>Unlimited</td></tr>
               <tr><td>Multiple jobs per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Different start times per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Day jobs &amp; multi-day jobs</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
@@ -261,7 +261,7 @@ export default function PricingPage() {
                 How is Kolrabee different from HeyPros?
                 <span className="faq-icon">+</span>
               </button>
-              <div className="faq-a"><p>HeyPros Pro+ is $249/month and built for compliance tracking, Gantt charts, and complex project management — it&apos;s designed for large GCs. Kolrabee is built for small trade business owners who need fast, simple sub dispatch. Sub ratings, job messaging, file attachments, and completion approvals are all included in our $49 Growth plan. Same features that matter. Five times less cost. No bloat.</p></div>
+              <div className="faq-a"><p>HeyPros Pro+ is $249/month and built for compliance tracking, Gantt charts, and complex project management — it&apos;s designed for large GCs. Kolrabee is built for small trade business owners who need fast, simple sub dispatch. Sub ratings, job messaging, file attachments, and completion approvals are all included in our $29 Growth plan. Same features that matter. 8x less cost. No bloat.</p></div>
             </div>
             <div className="faq-item">
               <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
