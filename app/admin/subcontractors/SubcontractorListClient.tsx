@@ -2,12 +2,14 @@
 
 import { useState, useTransition, useMemo, useCallback } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
+import { getDocumentUrl } from './[id]/doc-actions'
 import type { SubcontractorWithStats } from '@/lib/types'
 
 import StarRating from '@/components/StarRating'
@@ -38,6 +40,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
       setSortDir('asc')
     }
   }, [sortKey])
+  const [docLoading, setDocLoading] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
@@ -122,10 +125,12 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
       const result = await inviteSubToJoin(inviteEmail, inviteName)
       if (result.error) {
         setInviteError(result.error)
+        toast.error(result.error)
       } else {
         setInviteSuccess(true)
         setInviteEmail('')
         setInviteName('')
+        toast.success(`Invite sent to ${inviteEmail}!`)
       }
     })
   }
@@ -136,6 +141,16 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
     setInviteName('')
     setInviteError('')
     setInviteSuccess(false)
+  }
+
+  async function handleViewDoc(subId: string, docType: 'w9' | 'coi') {
+    const key = `${subId}-${docType}`
+    setDocLoading(key)
+    const result = await getDocumentUrl(subId, docType)
+    setDocLoading(null)
+    if (result.url) {
+      window.open(result.url, '_blank')
+    }
   }
 
   const subsTourSteps: TourStep[] = [
@@ -234,7 +249,60 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             </p>
           </div>
         ) : (
-          <div id="tour-sub-table" className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+          <>
+          {/* Mobile cards */}
+          <div id="tour-sub-table" className="md:hidden space-y-3">
+            {filtered.map((sub) => {
+              const insuranceInfo = formatInsuranceDate(sub.insurance_expiration)
+              const compliant = isSubCompliant(sub)
+              return (
+                <div key={sub.id} className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${sub.status === 'deleted' ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/admin/subcontractors/${sub.id}`} className="text-sm font-semibold text-gray-900 hover:text-ember">
+                        {sub.first_name} {sub.last_name}
+                      </Link>
+                      {sub.company_name && <p className="text-xs text-gray-500">{sub.company_name}</p>}
+                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                      compliant
+                        ? 'bg-green-50 text-green-700 ring-green-600/20'
+                        : 'bg-amber-50 text-amber-700 ring-amber-600/20'
+                    }`}>
+                      {compliant ? 'Compliant' : 'Incomplete'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-xs text-gray-500 mb-3">
+                    <p>{sub.email}</p>
+                    {sub.phone && <p>{sub.phone}</p>}
+                    <div className="flex items-center gap-3">
+                      <span>YTD: <strong className="text-gray-900">{formatCurrency(sub.ytdPaid)}</strong></span>
+                      <span>Active: <strong className="text-gray-900">{sub.activeJobs}</strong></span>
+                      {sub.crew_size && <span>Crew: <strong className="text-gray-900">{sub.crew_size}</strong></span>}
+                    </div>
+                    <p className={insuranceInfo.isExpired ? 'text-amber-600 font-medium' : ''}>
+                      Insurance: {insuranceInfo.text}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/admin/subcontractors/${sub.id}`}
+                      className="rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15">
+                      View Details
+                    </Link>
+                    {sub.w9_file_url && (
+                      <span className="text-xs text-green-600 font-medium">W-9</span>
+                    )}
+                    {sub.coi_file_url && (
+                      <span className="text-xs text-green-600 font-medium">COI</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-forest">
                 <tr>
@@ -286,11 +354,17 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         {sub.coi_file_url ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
-                            <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          <button
+                            onClick={() => handleViewDoc(sub.id, 'coi')}
+                            disabled={docLoading === `${sub.id}-coi`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                          </span>
+                            {docLoading === `${sub.id}-coi` ? '...' : 'View'}
+                          </button>
                         ) : (
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100">
                             <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -301,11 +375,17 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         {sub.w9_file_url ? (
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100">
-                            <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                          <button
+                            onClick={() => handleViewDoc(sub.id, 'w9')}
+                            disabled={docLoading === `${sub.id}-w9`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                          </span>
+                            {docLoading === `${sub.id}-w9` ? '...' : 'View'}
+                          </button>
                         ) : (
                           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100">
                             <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
@@ -355,6 +435,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

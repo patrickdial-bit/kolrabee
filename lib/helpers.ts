@@ -97,6 +97,11 @@ export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUse
     redirect('/admin/login?error=suspended')
   }
 
+  // Ensure only admins can access admin routes
+  if (appUser.role !== 'admin') {
+    redirect('/admin/login')
+  }
+
   return { authUser, appUser: appUser as AppUser, tenant: tenant as Tenant }
 }
 

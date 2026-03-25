@@ -32,6 +32,7 @@ export default async function SubProjectDetailPage({
     .select('*')
     .eq('project_id', id)
     .eq('subcontractor_id', appUser.id)
+    .eq('tenant_id', tenant.id)
     .maybeSingle()
 
   // Sub must either be invited or have accepted this project

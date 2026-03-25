@@ -33,7 +33,7 @@ export async function getSubcontractors(tenantId: string) {
   return { data: subs }
 }
 
-export async function sendInvitations(projectId: string, subcontractorIds: string[], expiresInDays: number = 7) {
+export async function sendInvitations(projectId: string, subcontractorIds: string[]) {
   if (!subcontractorIds.length) {
     return { error: 'No subcontractors selected.' }
   }
@@ -46,6 +46,18 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
   }
 
   const adminClient = createAdminClient()
+
+  // Verify project belongs to this tenant
+  const { data: projectCheck } = await adminClient
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .single()
+
+  if (!projectCheck) {
+    return { error: 'Project not found.' }
+  }
 
   // Verify all selected subs are compliant
   const { data: subs } = await adminClient
@@ -63,7 +75,6 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
   }
 
   const now = new Date()
-  const expiresAt = new Date(now.getTime() + expiresInDays * 86400000).toISOString()
 
   const rows = subcontractorIds.map((subId) => ({
     tenant_id: tenant.id,
@@ -71,7 +82,6 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     subcontractor_id: subId,
     status: 'invited' as const,
     invited_at: now.toISOString(),
-    expires_at: expiresAt,
   }))
 
   const { error } = await adminClient
@@ -82,20 +92,22 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     })
 
   if (error) {
-    return { error: 'Failed to send invitations.' }
+    console.error('project_invitations upsert failed:', error)
+    return { error: `Failed to send invitations: ${error.message}` }
   }
 
-  // Fetch project details for the email
+  // Fetch project details for the email (scoped to tenant)
   const { data: project } = await adminClient
     .from('projects')
     .select('*')
     .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
     .single()
 
   // Send invitation emails (fire-and-forget — don't block on email failures)
   if (project && subs) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tradetap-seven.vercel.app'
-    const loginUrl = `${siteUrl}/${tenant.slug}/login`
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const projectUrl = `${siteUrl}/${tenant.slug}/projects/${projectId}`
     const city = extractCity(project.address)
 
     for (const sub of subs.filter((s: AppUser) => subcontractorIds.includes(s.id))) {
@@ -111,7 +123,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
         city,
         startDate: project.start_date,
         payout: project.payout_amount,
-        loginUrl,
+        projectUrl,
       })
     }
   }

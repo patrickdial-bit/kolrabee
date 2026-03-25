@@ -24,6 +24,7 @@ export default async function SubDashboardPage({
     const { data: paidProjects } = await adminClient
       .from('projects')
       .select('payout_amount')
+      .eq('tenant_id', tenant.id)
       .eq('accepted_by', appUser.id)
       .eq('status', 'paid')
       .gte('paid_at', `${new Date().getFullYear()}-01-01`)
@@ -31,18 +32,15 @@ export default async function SubDashboardPage({
     ytdEarnings = (paidProjects ?? []).reduce((sum, p) => sum + (p.payout_amount || 0), 0)
   }
 
-  // Available projects: projects this sub is invited to (invitation status='invited', project status='available', not expired)
+  // Available projects: projects this sub is invited to (invitation status='invited', project status='available')
   const { data: invitations } = await adminClient
     .from('project_invitations')
-    .select('project_id, expires_at')
+    .select('project_id')
     .eq('subcontractor_id', appUser.id)
     .eq('tenant_id', tenant.id)
     .eq('status', 'invited')
 
-  const now = new Date().toISOString()
-  const invitedProjectIds = (invitations ?? [])
-    .filter((i) => !i.expires_at || i.expires_at > now)
-    .map((i) => i.project_id)
+  const invitedProjectIds = (invitations ?? []).map((i) => i.project_id)
 
   let availableProjects: Project[] = []
   if (invitedProjectIds.length > 0) {
@@ -56,12 +54,13 @@ export default async function SubDashboardPage({
     availableProjects = (data ?? []) as Project[]
   }
 
-  // My jobs: projects accepted by this sub with status in ('accepted', 'completed')
+  // My jobs: projects accepted by this sub with active statuses
   const { data: myJobsData } = await adminClient
     .from('projects')
     .select('*')
+    .eq('tenant_id', tenant.id)
     .eq('accepted_by', appUser.id)
-    .in('status', ['accepted', 'pending_completion', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
     .order('start_date', { ascending: true, nullsFirst: false })
 
   const myJobs = (myJobsData ?? []) as Project[]
@@ -70,6 +69,7 @@ export default async function SubDashboardPage({
   const { data: paidData } = await adminClient
     .from('projects')
     .select('*')
+    .eq('tenant_id', tenant.id)
     .eq('accepted_by', appUser.id)
     .eq('status', 'paid')
     .order('paid_at', { ascending: false })

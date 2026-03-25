@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendCompletionApprovedEmail } from '@/lib/email'
+import { sendPaidEmail, sendCompletionApprovedEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 
 export async function updateProject(projectId: string, formData: FormData) {
@@ -34,6 +34,9 @@ export async function updateProject(projectId: string, formData: FormData) {
   }
 
   const estimatedLaborHours = estimatedLaborHoursRaw ? parseInt(estimatedLaborHoursRaw) : null
+  if (estimatedLaborHours !== null && (isNaN(estimatedLaborHours) || estimatedLaborHours < 0)) {
+    return { error: 'Estimated labor hours must be a positive number.' }
+  }
 
   const { appUser, tenant } = await getCurrentUser()
 
@@ -72,7 +75,7 @@ export async function markCompleted(projectId: string) {
     .update({ status: 'completed' })
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
-    .eq('status', 'accepted')
+    .in('status', ['accepted', 'in_progress'])
 
   if (error) {
     return { error: 'Failed to mark project as completed.' }
@@ -149,7 +152,7 @@ export async function approveCompletion(projectId: string) {
 export async function markPaid(projectId: string) {
   const { tenant } = await getCurrentUser()
   const adminClient = createAdminClient()
-  const { error } = await adminClient
+  const { data: rows, error } = await adminClient
     .from('projects')
     .update({
       status: 'paid',
@@ -157,10 +160,43 @@ export async function markPaid(projectId: string) {
     })
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
-    .in('status', ['accepted', 'pending_completion', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
+    .select('id, job_number, customer_name, payout_amount, accepted_by')
 
   if (error) {
     return { error: 'Failed to mark project as paid.' }
+  }
+
+  if (!rows || rows.length === 0) {
+    return { error: 'Project not found or already paid.' }
+  }
+
+  const project = rows[0]
+
+  // Notify the sub they got paid (fire-and-forget)
+  if (project?.accepted_by) {
+    const { data: sub } = await adminClient
+      .from('users')
+      .select('email, first_name, notification_preferences')
+      .eq('id', project.accepted_by)
+      .single()
+
+    if (sub) {
+      const prefs = getNotificationPrefs(sub)
+      if (prefs.project_updates) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+        sendPaidEmail({
+          to: sub.email,
+          subName: sub.first_name,
+          tenantName: tenant.name,
+          notificationEmail: tenant.notification_email,
+          jobNumber: project.job_number,
+          customerName: project.customer_name,
+          payout: project.payout_amount,
+          dashboardUrl: `${siteUrl}/${tenant.slug}/dashboard`,
+        })
+      }
+    }
   }
 
   revalidatePath(`/admin/projects/${projectId}`)
@@ -182,7 +218,7 @@ export async function cancelProject(projectId: string, version: number) {
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .eq('version', version)
-    .in('status', ['accepted', 'pending_completion', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
     .select('id')
 
   if (error) {

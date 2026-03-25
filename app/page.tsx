@@ -65,8 +65,8 @@ export default function HomePage() {
           <span className="b">bee</span>
         </Link>
         <div className="nav-links">
-          <a href="#how">How it works</a>
-          <a href="#features">Features</a>
+          <Link href="/">Home</Link>
+          <Link href="/about">About</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/about">About</Link>
           <Link href="/admin/login">Login</Link>

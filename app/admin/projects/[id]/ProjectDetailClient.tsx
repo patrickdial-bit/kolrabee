@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
@@ -21,7 +22,6 @@ interface InvitationWithName {
   subcontractor_id: string
   status: 'invited' | 'accepted' | 'declined'
   invited_at: string
-  expires_at: string | null
   subcontractor_name: string
   subcontractor_email: string
 }
@@ -51,6 +51,7 @@ interface ProjectDetailClientProps {
 const statusColors: Record<string, string> = {
   available: 'bg-blue-100 text-blue-700',
   accepted: 'bg-yellow-100 text-yellow-700',
+  in_progress: 'bg-indigo-100 text-indigo-700',
   pending_completion: 'bg-orange-100 text-orange-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-purple-100 text-purple-700',
@@ -61,7 +62,6 @@ const inviteStatusColors: Record<string, string> = {
   invited: 'bg-gray-100 text-gray-600',
   accepted: 'bg-green-100 text-green-700',
   declined: 'bg-amber-100 text-amber-700',
-  expired: 'bg-amber-100 text-amber-700',
 }
 
 export default function ProjectDetailClient({
@@ -98,8 +98,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await updateProject(project.id, formData)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Project updated.'); setEditing(false); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Project updated.'); setEditing(false); router.refresh() }
     })
   }
 
@@ -107,8 +107,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await markCompleted(project.id)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Marked as completed.'); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Marked as completed.'); router.refresh() }
     })
   }
 
@@ -125,8 +125,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await markPaid(project.id)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Marked as paid.'); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Marked as paid. Sub has been notified.'); router.refresh() }
     })
   }
 
@@ -135,8 +135,8 @@ export default function ProjectDetailClient({
     if (!confirm('Cancel this project? It will return to Available status.')) return
     startTransition(async () => {
       const result = await cancelProject(project.id, project.version)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Cancelled.'); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.info('Project cancelled and returned to Available.'); router.refresh() }
     })
   }
 
@@ -223,7 +223,7 @@ export default function ProjectDetailClient({
     if (!confirm('Delete this project? This cannot be undone.')) return
     startTransition(async () => {
       const result = await deleteProject(project.id)
-      if (result?.error) setError(result.error)
+      if (result?.error) { setError(result.error); toast.error(result.error) }
     })
   }
 
@@ -405,7 +405,7 @@ export default function ProjectDetailClient({
                       className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
                   </>
                 )}
-                {project.status === 'accepted' && (
+                {(project.status === 'accepted' || project.status === 'in_progress') && (
                   <>
                     <button onClick={handleMarkCompleted} disabled={isPending}
                       className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
@@ -458,28 +458,17 @@ export default function ProjectDetailClient({
           </div>
           {invitations.length > 0 ? (
             <ul className="divide-y divide-gray-100">
-              {invitations.map((inv) => {
-                const isExpired = inv.status === 'invited' && inv.expires_at && new Date(inv.expires_at) < new Date()
-                const displayStatus = isExpired ? 'expired' : inv.status
-                return (
+              {invitations.map((inv) => (
                   <li key={inv.id} className="flex items-center justify-between py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{inv.subcontractor_name}</p>
                       <p className="text-xs text-gray-500">{inv.subcontractor_email}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {inv.status === 'invited' && inv.expires_at && !isExpired && (
-                        <span className="text-xs text-gray-400">
-                          expires {new Date(inv.expires_at).toLocaleDateString()}
-                        </span>
-                      )}
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${inviteStatusColors[displayStatus] || 'bg-gray-100 text-gray-600'}`}>
-                        {displayStatus}
-                      </span>
-                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${inviteStatusColors[inv.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {inv.status}
+                    </span>
                   </li>
-                )
-              })}
+                ))}
             </ul>
           ) : (
             <p className="text-sm text-gray-500">No subcontractors have been invited yet.</p>

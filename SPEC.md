@@ -204,53 +204,49 @@ WHERE accepted_by = :sub_id AND status = 'paid'
 ```
 Displayed prominently on the sub's dashboard. This is motivational and was a specific feature request during Bubble development.
 ---
-## WHAT'S NOT IN V1 (Add Later When You Have Paying Customers)
-| Feature | Why it's cut | When to add |
+## FEATURE STATUS TRACKER
+### Built (shipped beyond original MVP spec)
+| Feature | Status | Notes |
 |---|---|---|
-| Daily progress reports + photos | Added late in Bubble dev. Not core. | V2 — after 5+ paying customers |
-| Stripe billing | Invoice first 5 manually. | V2 — when you have 10+ customers |
-| Super admin panel | Use Supabase dashboard directly. | V2 — when you can't manage manually |
-| Activity/audit log | Not needed with 5 customers you know personally. | V2 |
-| In-app notification bell | Email notifications are enough. | V2 |
-| Plan limits | You manage 5 tenants, you know their usage. | V2 — with Stripe |
-| Custom branding per tenant | TradeTap branding is fine for now. | V3 |
-| Data export / GDPR | Required at scale, not at 5 customers. | V2 |
-| Account deletion flow | You delete accounts manually in Supabase. | V2 |
-| Invitation expiration | Admin can manually cancel stale invitations. | V2 |
-| Report locking | No reports in V1. | V2 |
-| Notification preferences | Everyone gets emails. No toggles. | V2 |
-| Custom email templates | One template per notification. Done. | V3 |
-| Multi-company sub login | Edge case. Handle it when it happens. | V3 |
-| Native mobile app | Responsive web works on phones. | V3 |
-| Offline support | Requires native app. | V3 |
-| Push notifications | Requires native app. | V3 |
-| CSV export | Copy from Supabase dashboard. | V2 |
-| Multiple admin roles (owner vs admin) | One admin per company is fine. | V2 |
----
-## BUILD ESTIMATE (Simplified Version)
-### Using Claude Code (recommended):
-- Time: 3-4 weeks (evenings/weekends)
-- Cost: $20-100/month Claude Pro/Max + $0 Supabase + $0 Resend + $0 Vercel = **$20-100/month**
-- Your involvement: 25-40 hours of sessions
-- See: `tradetap-claude-code-playbook.md` for step-by-step instructions
-### Hiring a developer:
-- Time: 3-5 weeks
-- Cost: $4,000-8,000 (hand them `tradetap-mvp-simplified.md` as the spec)
-- Your involvement: 30 minutes/week reviewing demos
-### Why it's cheap:
-- 4 database tables instead of 8
-- 10 screens instead of 25+
-- 3 email templates instead of 10+
-- ~15 API endpoints instead of 45+
-- No Stripe integration
-- No super admin panel
-- No daily reports system
-- No file upload system (no photos/videos in v1)
+| Stripe billing | **Built** | Full checkout, portal, webhooks, 4 plan tiers (free/trial/starter/pro) |
+| Super admin panel | **Built** | Platform stats, tenant management, impersonation, tenant detail |
+| W-9 / COI uploads | **Built** | Subs upload from profile, admins view/download, compliance gating |
+| Spanish / i18n | **Built** | Full English + Spanish on sub-facing pages, localStorage toggle |
+| Guided tours + tooltips | **Built** | First-visit tours on dashboard/new project/sub list, toggle in nav |
+| Notification preferences | **Built** | Per-user JSONB toggles for email notifications |
+| Work order link | **Built** | Extra link field on projects (in addition to CompanyCam link) |
+| Plan limit enforcement | **Built** | max_projects and max_subcontractors enforced per plan |
+
+### Partially Built
+| Feature | Status | What's missing |
+|---|---|---|
+| Multi-company workspaces | **Partial** | DB supports multiple tenants per owner. No user-facing workspace switcher, no "create workspace" flow for existing admins. Pricing page advertises up to 5 for Operator plan. |
+| Multiple admin users per tenant | **Partial** | DB allows multiple admins. Pricing page shows "2 included, $10/mo each extra." No enforcement of admin count limits, no billing UI for extra admins. |
+
+### Not Yet Built
+| Feature | Description | Priority |
+|---|---|---|
+| Job file attachments | Upload photos, PDFs, scope docs directly to a job. Storage bucket exists but no project-level upload UI or DB fields. | Next |
+| Daily progress reports + photos | Sub submits daily report with photos/notes. Was in Bubble app. | V2 — after 5+ paying customers |
+| Activity / audit log | Track who did what and when. | V2 |
+| In-app notification bell | Real-time notifications beyond email. | V2 |
+| Custom branding per tenant | Logo, colors per company. | V3 |
+| Data export / GDPR | User data export and deletion requests. | V2 |
+| Account deletion flow (self-serve) | Users request their own account deletion. | V2 |
+| Report locking | Lock daily reports after review. | V2 — requires daily reports |
+| Custom email templates | Per-tenant email branding. | V3 |
+| Multi-company sub login | Sub works for multiple companies, single login. | V3 |
+| Native mobile app | iOS/Android app vs responsive web. | V3 |
+| Offline support | Work without connectivity. Requires native app. | V3 |
+| Push notifications | Mobile push. Requires native app. | V3 |
+| CSV export | Export project/sub/payment data. | V2 |
+| Consolidated owner dashboard | Single view across all workspaces for Operator plan. | V2 — requires multi-workspace |
 ---
 ## V2 TRIGGER: When To Build More
+Add job file attachments when: customers ask to stop linking Google Drive
 Add daily reports when: 3+ customers ask for it
-Add Stripe billing when: you have 10+ customers and invoicing is painful
-Add super admin panel when: you can't keep track of tenants in Supabase dashboard
+Add multi-workspace switcher when: first Operator plan subscriber signs up
+Add admin count enforcement when: Stripe billing is live and plans are enforced
 Add branding when: a customer specifically asks to white-label it
 Add native mobile when: subs complain the responsive web isn't good enough
 **Don't build features because they'd be cool. Build them because a customer is asking for them or you physically can't operate without them.**

@@ -33,6 +33,9 @@ export async function createProject(formData: FormData) {
   }
 
   const estimatedLaborHours = estimatedLaborHoursRaw ? parseInt(estimatedLaborHoursRaw) : null
+  if (estimatedLaborHours !== null && (isNaN(estimatedLaborHours) || estimatedLaborHours < 0)) {
+    return { error: 'Estimated labor hours must be a positive number.' }
+  }
 
   const { appUser, tenant } = await getCurrentUser()
 

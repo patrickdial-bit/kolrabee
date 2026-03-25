@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTooltips } from '@/lib/tooltip-context'
 
 export interface TourStep {
   target: string          // CSS selector for the element to highlight
@@ -20,17 +21,17 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
   const [active, setActive] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const { enabled: tooltipsOn } = useTooltips()
 
   const storageKey = `tour_completed_${tourKey}`
 
   useEffect(() => {
-    const completed = localStorage.getItem(storageKey)
-    if (!completed) {
-      // Small delay so the page renders first
-      const timer = setTimeout(() => setActive(true), 600)
-      return () => clearTimeout(timer)
-    }
-  }, [storageKey])
+    // Show tour on every load while tooltips are on,
+    // or show once if tooltips were turned off before completing it
+    if (!tooltipsOn) return
+    const timer = setTimeout(() => setActive(true), 600)
+    return () => clearTimeout(timer)
+  }, [tooltipsOn])
 
   const updateRect = useCallback(() => {
     if (!active || !steps[currentStep]) return

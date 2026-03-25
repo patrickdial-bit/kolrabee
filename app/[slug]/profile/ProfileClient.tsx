@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import SubNav from '@/components/SubNav'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
@@ -86,6 +87,7 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
 
       if (storageError) {
         setUploadError(`Failed to upload ${docType.toUpperCase()}: ${storageError.message}`)
+        toast.error(`Upload failed: ${storageError.message}`)
         return
       }
 
@@ -93,13 +95,16 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
         const result = await uploadDocument(slug, docType, path)
         if (result?.error) {
           setUploadError(result.error)
+          toast.error(result.error)
         } else {
           setUploadSuccess(`${docType.toUpperCase()} uploaded successfully.`)
+          toast.success(`${docType.toUpperCase()} uploaded! ${hasW9 && hasCoi ? 'You\'re all set for jobs.' : 'One more document to go.'}`)
           router.refresh()
         }
       })
     } catch {
       setUploadError('Upload failed. Please try again.')
+      toast.error('Upload failed. Please try again.')
     } finally {
       setUploading(null)
     }

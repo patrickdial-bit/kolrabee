@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import SubNav from '@/components/SubNav'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { extractCity, formatCurrency, formatDate } from '@/lib/utils'
 import type { Project, ProjectInvitation } from '@/lib/types'
-import { acceptProject, cancelAcceptedProject, declineProject, requestCompletion } from './actions'
+import { acceptProject, cancelAcceptedProject, declineProject, markInProgress, requestCompletion } from './actions'
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
 import type { ProjectAttachment } from '@/lib/types'
 
@@ -34,6 +35,7 @@ interface SubProjectDetailClientProps {
 const statusBadgeClasses: Record<string, string> = {
   available: 'bg-yellow-100 text-yellow-700',
   accepted: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-indigo-100 text-indigo-700',
   pending_completion: 'bg-orange-100 text-orange-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-emerald-100 text-emerald-700',
@@ -43,6 +45,7 @@ const statusBadgeClasses: Record<string, string> = {
 const statusLabels: Record<string, string> = {
   available: 'Available',
   accepted: 'Accepted',
+  in_progress: 'In Progress',
   pending_completion: 'Pending Approval',
   completed: 'Completed',
   paid: 'Paid',
@@ -70,9 +73,8 @@ export default function SubProjectDetailClient({
   const [messagePending, setMessagePending] = useState(false)
 
   // Determine visibility
-  const isExpired = invitation?.expires_at ? new Date(invitation.expires_at) < new Date() : false
   const isBeforeAcceptance =
-    project.status === 'available' && invitation?.status === 'invited' && !isAcceptedByMe && !isExpired
+    project.status === 'available' && invitation?.status === 'invited' && !isAcceptedByMe
   const showFullDetails = isAcceptedByMe
 
   async function handleAccept() {
@@ -82,10 +84,12 @@ export default function SubProjectDetailClient({
       const result = await acceptProject(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
         setShowAcceptConfirm(false)
       }
+      // Redirects on success, no toast needed
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -98,9 +102,25 @@ export default function SubProjectDetailClient({
       const result = await declineProject(project.id, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
       }
+      // Redirects on success
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function handleStartJob() {
+    setError(null)
+    setLoading('start')
+    try {
+      const result = await markInProgress(project.id, project.version, slug)
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else toast.success('Job started! Get after it.')
+    } catch {
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -113,10 +133,13 @@ export default function SubProjectDetailClient({
       const result = await requestCompletion(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
         setShowCompleteConfirm(false)
+      } else {
+        toast.success('Completion requested! Awaiting approval.')
       }
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -150,10 +173,12 @@ export default function SubProjectDetailClient({
       const result = await cancelAcceptedProject(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
         setShowCancelConfirm(false)
       }
+      // Redirects on success
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -184,7 +209,7 @@ export default function SubProjectDetailClient({
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Header */}
           <div className="border-b border-gray-200 px-6 py-5">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div>
                 {project.job_number && (
                   <p className="text-sm font-medium text-ember">#{project.job_number}</p>
@@ -192,7 +217,7 @@ export default function SubProjectDetailClient({
                 <h1 className="mt-1 text-xl font-bold text-gray-900">{project.customer_name}</h1>
               </div>
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClasses[project.status] || 'bg-gray-100 text-gray-700'}`}
+                className={`self-start inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClasses[project.status] || 'bg-gray-100 text-gray-700'}`}
               >
                 {statusLabels[project.status] || project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </span>
@@ -218,8 +243,20 @@ export default function SubProjectDetailClient({
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('project.payout')}</dt>
                 <dd className="mt-1 text-lg font-semibold text-gray-900">
                   {formatCurrency(project.payout_amount)}
+                  {project.estimated_labor_hours ? (
+                    <span className="ml-2 text-sm font-semibold text-emerald-600">
+                      ({formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr)
+                    </span>
+                  ) : null}
                 </dd>
               </div>
+
+              {project.estimated_labor_hours && (
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">EST. HOURS</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours} hours</dd>
+                </div>
+              )}
 
               {showFullDetails && project.accepted_at && (
                 <div>
@@ -337,21 +374,6 @@ export default function SubProjectDetailClient({
 
           {/* Actions */}
           <div className="border-t border-gray-200 px-6 py-4 bg-gray-50">
-            {/* Expired invitation */}
-            {invitation?.status === 'invited' && isExpired && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                <p className="text-sm font-medium text-amber-800">This invitation has expired.</p>
-                <p className="text-xs text-amber-600 mt-1">Contact your contractor to request a new invitation.</p>
-              </div>
-            )}
-
-            {/* Expiry countdown for active invitations */}
-            {isBeforeAcceptance && invitation?.expires_at && (
-              <p className="text-xs text-gray-500 mb-3">
-                Expires {new Date(invitation.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            )}
-
             {/* Before acceptance: Accept + Decline */}
             {isBeforeAcceptance && !showAcceptConfirm && (
               <div className="flex gap-3">
@@ -395,9 +417,16 @@ export default function SubProjectDetailClient({
               </div>
             )}
 
-            {/* After acceptance, status='accepted': Mark Complete + Cancel buttons */}
+            {/* Accepted: Start Job + Mark Complete + Cancel */}
             {isAcceptedByMe && project.status === 'accepted' && !showCancelConfirm && !showCompleteConfirm && (
               <div className="space-y-3">
+                <button
+                  onClick={handleStartJob}
+                  disabled={loading === 'start'}
+                  className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                >
+                  {loading === 'start' ? 'Starting...' : 'Start Job'}
+                </button>
                 <button
                   onClick={() => setShowCompleteConfirm(true)}
                   className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
@@ -413,8 +442,20 @@ export default function SubProjectDetailClient({
               </div>
             )}
 
+            {/* In Progress: Mark Complete */}
+            {isAcceptedByMe && project.status === 'in_progress' && !showCompleteConfirm && (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setShowCompleteConfirm(true)}
+                  className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+                >
+                  {t('project.mark_complete')}
+                </button>
+              </div>
+            )}
+
             {/* Mark Complete confirmation */}
-            {isAcceptedByMe && project.status === 'accepted' && showCompleteConfirm && (
+            {isAcceptedByMe && (project.status === 'accepted' || project.status === 'in_progress') && showCompleteConfirm && (
               <div className="space-y-3">
                 <p className="text-sm font-medium text-gray-900">
                   {t('project.confirm_complete')}

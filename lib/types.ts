@@ -98,7 +98,7 @@ export type Project = {
   payout_amount: number
   estimated_labor_hours: number | null
   work_order_link: string | null
-  status: 'available' | 'accepted' | 'pending_completion' | 'completed' | 'paid' | 'cancelled'
+  status: 'available' | 'accepted' | 'in_progress' | 'pending_completion' | 'completed' | 'paid' | 'cancelled'
   companycam_link: string | null
   notes: string | null
   admin_notes: string | null
@@ -118,12 +118,6 @@ export type ProjectInvitation = {
   subcontractor_id: string
   status: 'invited' | 'accepted' | 'declined'
   invited_at: string
-  expires_at: string | null
-}
-
-export function isInvitationExpired(expiresAt: string | null): boolean {
-  if (!expiresAt) return false
-  return new Date(expiresAt) < new Date()
 }
 
 export type SubcontractorWithStats = AppUser & {
@@ -168,6 +162,17 @@ export type JobMessage = {
 // Check if a tenant has Growth+ features (messaging, ratings, completion approval)
 export function hasGrowthFeatures(tenant: Tenant): boolean {
   return tenant.plan === 'growth' || tenant.plan === 'operator'
+}
+
+export type ReliabilityStats = {
+  totalInvited: number
+  totalAccepted: number
+  totalDeclined: number
+  totalCompleted: number
+  totalPaid: number
+  totalCancelled: number
+  acceptRate: number
+  completionRate: number
 }
 
 // Helper to check if a sub is compliant (has current W-9 and non-expired COI)
