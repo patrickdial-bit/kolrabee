@@ -8,7 +8,7 @@ import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
 import { isSubCompliant } from '@/lib/types'
-import type { ReliabilityStats } from './page'
+import type { ReliabilityStats } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
 import { getDocumentUrl } from './doc-actions'
 

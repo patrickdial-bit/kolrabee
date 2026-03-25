@@ -24,6 +24,7 @@ export default async function SubDashboardPage({
     const { data: paidProjects } = await adminClient
       .from('projects')
       .select('payout_amount')
+      .eq('tenant_id', tenant.id)
       .eq('accepted_by', appUser.id)
       .eq('status', 'paid')
       .gte('paid_at', `${new Date().getFullYear()}-01-01`)
@@ -57,6 +58,7 @@ export default async function SubDashboardPage({
   const { data: myJobsData } = await adminClient
     .from('projects')
     .select('*')
+    .eq('tenant_id', tenant.id)
     .eq('accepted_by', appUser.id)
     .in('status', ['accepted', 'in_progress', 'completed'])
     .order('start_date', { ascending: true, nullsFirst: false })
@@ -67,6 +69,7 @@ export default async function SubDashboardPage({
   const { data: paidData } = await adminClient
     .from('projects')
     .select('*')
+    .eq('tenant_id', tenant.id)
     .eq('accepted_by', appUser.id)
     .eq('status', 'paid')
     .order('paid_at', { ascending: false })

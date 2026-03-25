@@ -1,18 +1,8 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser, type AppUser, type Project } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { ReliabilityStats } from '@/lib/types'
 import SubDetailClient from './SubDetailClient'
-
-export type ReliabilityStats = {
-  totalInvited: number
-  totalAccepted: number
-  totalDeclined: number
-  totalCompleted: number
-  totalPaid: number
-  totalCancelled: number
-  acceptRate: number
-  completionRate: number
-}
 
 export default async function SubDetailPage({ params }: { params: { id: string } }) {
   const { appUser, tenant } = await getCurrentUser()

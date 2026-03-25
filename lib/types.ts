@@ -117,6 +117,17 @@ export type SubcontractorWithStats = AppUser & {
   activeJobs: number
 }
 
+export type ReliabilityStats = {
+  totalInvited: number
+  totalAccepted: number
+  totalDeclined: number
+  totalCompleted: number
+  totalPaid: number
+  totalCancelled: number
+  acceptRate: number
+  completionRate: number
+}
+
 // Helper to check if a sub is compliant (has current W-9 and non-expired COI)
 export function isSubCompliant(sub: AppUser): boolean {
   const hasW9 = !!sub.w9_file_url

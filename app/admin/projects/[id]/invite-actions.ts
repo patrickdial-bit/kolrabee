@@ -47,6 +47,18 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
 
   const adminClient = createAdminClient()
 
+  // Verify project belongs to this tenant
+  const { data: projectCheck } = await adminClient
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .single()
+
+  if (!projectCheck) {
+    return { error: 'Project not found.' }
+  }
+
   // Verify all selected subs are compliant
   const { data: subs } = await adminClient
     .from('users')
@@ -84,11 +96,12 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     return { error: `Failed to send invitations: ${error.message}` }
   }
 
-  // Fetch project details for the email
+  // Fetch project details for the email (scoped to tenant)
   const { data: project } = await adminClient
     .from('projects')
     .select('*')
     .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
     .single()
 
   // Send invitation emails (fire-and-forget — don't block on email failures)

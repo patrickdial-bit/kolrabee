@@ -85,7 +85,7 @@ export async function markCompleted(projectId: string) {
 export async function markPaid(projectId: string) {
   const { tenant } = await getCurrentUser()
   const adminClient = createAdminClient()
-  const { data: project, error } = await adminClient
+  const { data: rows, error } = await adminClient
     .from('projects')
     .update({
       status: 'paid',
@@ -95,11 +95,16 @@ export async function markPaid(projectId: string) {
     .eq('tenant_id', tenant.id)
     .in('status', ['accepted', 'in_progress', 'completed'])
     .select('id, job_number, customer_name, payout_amount, accepted_by')
-    .single()
 
   if (error) {
     return { error: 'Failed to mark project as paid.' }
   }
+
+  if (!rows || rows.length === 0) {
+    return { error: 'Project not found or already paid.' }
+  }
+
+  const project = rows[0]
 
   // Notify the sub they got paid (fire-and-forget)
   if (project?.accepted_by) {
