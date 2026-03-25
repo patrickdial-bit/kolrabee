@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPaidEmail } from '@/lib/email'
+import { getNotificationPrefs } from '@/lib/types'
 
 export async function updateProject(projectId: string, formData: FormData) {
   const customerName = formData.get('customer_name') as string
@@ -83,7 +85,7 @@ export async function markCompleted(projectId: string) {
 export async function markPaid(projectId: string) {
   const { tenant } = await getCurrentUser()
   const adminClient = createAdminClient()
-  const { error } = await adminClient
+  const { data: project, error } = await adminClient
     .from('projects')
     .update({
       status: 'paid',
@@ -92,9 +94,37 @@ export async function markPaid(projectId: string) {
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .in('status', ['accepted', 'in_progress', 'completed'])
+    .select('id, job_number, customer_name, payout_amount, accepted_by')
+    .single()
 
   if (error) {
     return { error: 'Failed to mark project as paid.' }
+  }
+
+  // Notify the sub they got paid (fire-and-forget)
+  if (project?.accepted_by) {
+    const { data: sub } = await adminClient
+      .from('users')
+      .select('email, first_name, notification_preferences')
+      .eq('id', project.accepted_by)
+      .single()
+
+    if (sub) {
+      const prefs = getNotificationPrefs(sub)
+      if (prefs.project_updates) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+        sendPaidEmail({
+          to: sub.email,
+          subName: sub.first_name,
+          tenantName: tenant.name,
+          notificationEmail: tenant.notification_email,
+          jobNumber: project.job_number,
+          customerName: project.customer_name,
+          payout: project.payout_amount,
+          dashboardUrl: `${siteUrl}/${tenant.slug}/dashboard`,
+        })
+      }
+    }
   }
 
   revalidatePath(`/admin/projects/${projectId}`)

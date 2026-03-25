@@ -224,7 +224,46 @@ export async function sendCancelEmail(params: CancelEmailParams) {
   }
 }
 
-/** Email 5: Sub updated project status (in_progress / completed) — notify admin with link */
+/** Email 5: Notify sub they got paid — the money email */
+export async function sendPaidEmail(params: {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+  payout: number
+  dashboardUrl: string
+}) {
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, payout, dashboardUrl } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+  const formattedPayout = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(payout)
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `You got paid! ${formattedPayout} for ${jobLabel}${customerName}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #16a34a; margin-bottom: 4px;">Payment Confirmed</h2>
+          <p style="color: #666; margin-top: 0;">Hey ${subName}, great work!</p>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+            <p style="color: #666; margin: 0 0 4px 0; font-size: 14px;">${jobLabel}${customerName}</p>
+            <p style="color: #16a34a; font-size: 32px; font-weight: 700; margin: 0;">${formattedPayout}</p>
+          </div>
+          <a href="${dashboardUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">View Your Dashboard</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Keep up the great work. More jobs available on your dashboard.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send paid email:', err)
+  }
+}
+
+/** Email 6: Sub updated project status (in_progress / completed) — notify admin with link */
 export async function sendStatusUpdateEmail(params: StatusUpdateEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, newStatus, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''

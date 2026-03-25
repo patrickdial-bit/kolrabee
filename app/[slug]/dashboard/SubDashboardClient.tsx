@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import SubNav from '@/components/SubNav'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
@@ -74,11 +75,11 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await acceptProject(project.id, project.version, slug)
-      if (result?.error) setError(result.error)
-      else router.refresh()
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success(`Job accepted! ${formatCurrency(project.payout_amount)} added to your queue.`); router.refresh() }
       setShowAcceptModal(null)
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
       setShowAcceptModal(null)
     } finally {
       setLoading(false)
@@ -90,11 +91,11 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await cancelAcceptedProject(project.id, project.version, slug)
-      if (result?.error) setError(result.error)
-      else router.refresh()
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.info('Job cancelled. It\'s back in the Available pool.'); router.refresh() }
       setShowCancelConfirm(null)
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(false)
     }
@@ -105,10 +106,10 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await markInProgress(project.id, project.version, slug)
-      if (result?.error) setError(result.error)
-      else router.refresh()
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Job started! Get after it.'); router.refresh() }
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(false)
     }
@@ -119,10 +120,10 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await markCompleted(project.id, project.version, slug)
-      if (result?.error) setError(result.error)
-      else router.refresh()
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success(`Job complete! ${formatCurrency(project.payout_amount)} — payment incoming.`); router.refresh() }
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(false)
     }

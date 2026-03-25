@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo, useCallback } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
@@ -121,10 +122,12 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
       const result = await inviteSubToJoin(inviteEmail, inviteName)
       if (result.error) {
         setInviteError(result.error)
+        toast.error(result.error)
       } else {
         setInviteSuccess(true)
         setInviteEmail('')
         setInviteName('')
+        toast.success(`Invite sent to ${inviteEmail}!`)
       }
     })
   }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
@@ -63,8 +64,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await updateProject(project.id, formData)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Project updated.'); setEditing(false); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Project updated.'); setEditing(false); router.refresh() }
     })
   }
 
@@ -72,8 +73,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await markCompleted(project.id)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Marked as completed.'); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Marked as completed.'); router.refresh() }
     })
   }
 
@@ -81,8 +82,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await markPaid(project.id)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Marked as paid.'); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Marked as paid. Sub has been notified.'); router.refresh() }
     })
   }
 
@@ -91,8 +92,8 @@ export default function ProjectDetailClient({
     if (!confirm('Cancel this project? It will return to Available status.')) return
     startTransition(async () => {
       const result = await cancelProject(project.id, project.version)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Cancelled.'); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.info('Project cancelled and returned to Available.'); router.refresh() }
     })
   }
 
@@ -101,7 +102,7 @@ export default function ProjectDetailClient({
     if (!confirm('Delete this project? This cannot be undone.')) return
     startTransition(async () => {
       const result = await deleteProject(project.id)
-      if (result?.error) setError(result.error)
+      if (result?.error) { setError(result.error); toast.error(result.error) }
     })
   }
 

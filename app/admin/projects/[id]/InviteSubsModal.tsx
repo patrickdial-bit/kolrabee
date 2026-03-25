@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { toast } from 'sonner'
 import { getSubcontractors, sendInvitations } from './invite-actions'
 
 interface Sub {
@@ -75,7 +76,9 @@ export default function InviteSubsModal({
       const result = await sendInvitations(projectId, Array.from(selected))
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
       } else {
+        toast.success(`Invites sent to ${selected.size} subcontractor${selected.size > 1 ? 's' : ''}.`)
         onClose()
       }
     })

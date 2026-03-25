@@ -3,10 +3,12 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
 import { isSubCompliant } from '@/lib/types'
+import type { ReliabilityStats } from './page'
 import { softDeleteSub, reactivateSub } from '../actions'
 import { getDocumentUrl } from './doc-actions'
 
@@ -22,11 +24,12 @@ interface Props {
   sub: AppUser
   projects: Project[]
   ytdEarnings: number
+  reliabilityStats: ReliabilityStats
   tenantName: string
   tenantSlug: string
 }
 
-export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName, tenantSlug }: Props) {
+export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilityStats, tenantName, tenantSlug }: Props) {
   const [isPending, startTransition] = useTransition()
   const [docLoading, setDocLoading] = useState<string | null>(null)
   const [docError, setDocError] = useState<string | null>(null)
@@ -45,11 +48,16 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
   }
 
   function handleStatusToggle() {
+    if (sub.status === 'active' && !confirm(`Remove ${sub.first_name} ${sub.last_name}? They won't receive new invitations.`)) return
     startTransition(async () => {
       if (sub.status === 'active') {
-        await softDeleteSub(sub.id)
+        const result = await softDeleteSub(sub.id)
+        if (result?.error) toast.error(result.error)
+        else toast.success(`${sub.first_name} ${sub.last_name} removed.`)
       } else {
-        await reactivateSub(sub.id)
+        const result = await reactivateSub(sub.id)
+        if (result?.error) toast.error(result.error)
+        else toast.success(`${sub.first_name} ${sub.last_name} reactivated.`)
       }
       router.refresh()
     })
@@ -122,10 +130,33 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, tenantName
           </div>
         </div>
 
-        {/* YTD Earnings */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm mb-8">
-          <p className="text-sm font-medium text-gray-500">YTD Earnings</p>
-          <p className="mt-1 text-3xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
+        {/* Reliability & Performance */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">YTD Earnings</p>
+            <p className="mt-1 text-2xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Accept Rate</p>
+            <p className={`mt-1 text-2xl font-bold ${reliabilityStats.acceptRate >= 70 ? 'text-green-600' : reliabilityStats.acceptRate >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+              {reliabilityStats.totalInvited > 0 ? `${reliabilityStats.acceptRate}%` : '—'}
+            </p>
+            <p className="text-xs text-gray-400">{reliabilityStats.totalAccepted} of {reliabilityStats.totalInvited} invites</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</p>
+            <p className={`mt-1 text-2xl font-bold ${reliabilityStats.completionRate >= 80 ? 'text-green-600' : reliabilityStats.completionRate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+              {reliabilityStats.totalAccepted > 0 ? `${reliabilityStats.completionRate}%` : '—'}
+            </p>
+            <p className="text-xs text-gray-400">{reliabilityStats.totalCompleted} completed, {reliabilityStats.totalPaid} paid</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Declined / Cancelled</p>
+            <p className={`mt-1 text-2xl font-bold ${(reliabilityStats.totalDeclined + reliabilityStats.totalCancelled) === 0 ? 'text-green-600' : 'text-amber-600'}`}>
+              {reliabilityStats.totalDeclined + reliabilityStats.totalCancelled}
+            </p>
+            <p className="text-xs text-gray-400">{reliabilityStats.totalDeclined} declined, {reliabilityStats.totalCancelled} cancelled</p>
+          </div>
         </div>
 
         {/* Compliance & Documents */}
