@@ -8,7 +8,7 @@ export const ALL_PLANS: Record<string, { name: string; price: number; features: 
     price: 0,
     features: [
       'Up to 3 projects',
-      '1 subcontractor',
+      '3 subcontractors',
       '1 admin user',
     ],
   },
