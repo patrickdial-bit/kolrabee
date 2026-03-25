@@ -22,6 +22,23 @@ export default async function AdminDashboardPage() {
     .eq('tenant_id', tenant.id)
     .order('start_date', { ascending: true, nullsFirst: false })
 
+  // Fetch names for all accepted_by user IDs
+  const acceptedByIds = (projects ?? [])
+    .map((p: any) => p.accepted_by)
+    .filter((id: string | null): id is string => !!id)
+  const uniqueIds = Array.from(new Set(acceptedByIds))
+
+  let subNameMap: Record<string, string> = {}
+  if (uniqueIds.length > 0) {
+    const { data: subs } = await adminClient
+      .from('users')
+      .select('id, first_name, last_name')
+      .in('id', uniqueIds)
+    for (const sub of subs ?? []) {
+      subNameMap[sub.id] = `${sub.first_name} ${sub.last_name}`
+    }
+  }
+
   // Get usage counts for plan limits display
   const { count: projectCount } = await adminClient
     .from('projects')
@@ -46,6 +63,7 @@ export default async function AdminDashboardPage() {
   return (
     <AdminDashboardClient
       projects={(projects ?? []) as Project[]}
+      subNameMap={subNameMap}
       tenantName={tenant.name ?? ''}
       tenantId={tenant.id}
       tenantSlug={tenant.slug ?? ''}

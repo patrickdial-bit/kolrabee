@@ -323,9 +323,11 @@ function KanbanCard({
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-bold text-gray-900">{formatCurrency(project.payout_amount)}</span>
-          {project.estimated_labor_hours && (
-            <span className="text-xs text-gray-400">{project.estimated_labor_hours}h est.</span>
-          )}
+          {project.estimated_labor_hours ? (
+            <span className="text-xs font-semibold text-emerald-600">
+              {formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr
+            </span>
+          ) : null}
         </div>
       </div>
 

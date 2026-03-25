@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import SubNav from '@/components/SubNav'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
@@ -53,10 +54,12 @@ export default function SubProjectDetailClient({
       const result = await acceptProject(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
         setShowAcceptConfirm(false)
       }
+      // Redirects on success, no toast needed
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -69,9 +72,11 @@ export default function SubProjectDetailClient({
       const result = await declineProject(project.id, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
       }
+      // Redirects on success
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -82,9 +87,10 @@ export default function SubProjectDetailClient({
     setLoading('start')
     try {
       const result = await markInProgress(project.id, project.version, slug)
-      if (result?.error) setError(result.error)
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else toast.success('Job started! Get after it.')
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -95,9 +101,10 @@ export default function SubProjectDetailClient({
     setLoading('complete')
     try {
       const result = await markCompleted(project.id, project.version, slug)
-      if (result?.error) setError(result.error)
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else toast.success(`Job complete! ${formatCurrency(project.payout_amount)} — payment incoming.`)
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -110,10 +117,12 @@ export default function SubProjectDetailClient({
       const result = await cancelAcceptedProject(project.id, project.version, slug)
       if (result?.error) {
         setError(result.error)
+        toast.error(result.error)
         setShowCancelConfirm(false)
       }
+      // Redirects on success
     } catch {
-      setError('An unexpected error occurred.')
+      toast.error('Something went wrong. Try again.')
     } finally {
       setLoading(null)
     }
@@ -178,8 +187,20 @@ export default function SubProjectDetailClient({
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('project.payout')}</dt>
                 <dd className="mt-1 text-lg font-semibold text-gray-900">
                   {formatCurrency(project.payout_amount)}
+                  {project.estimated_labor_hours ? (
+                    <span className="ml-2 text-sm font-semibold text-emerald-600">
+                      ({formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr)
+                    </span>
+                  ) : null}
                 </dd>
               </div>
+
+              {project.estimated_labor_hours && (
+                <div>
+                  <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">EST. HOURS</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours} hours</dd>
+                </div>
+              )}
 
               {showFullDetails && project.accepted_at && (
                 <div>
