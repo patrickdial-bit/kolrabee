@@ -281,6 +281,7 @@ export async function declineProject(projectId: string, slug: string) {
     .update({ status: 'declined' })
     .eq('project_id', projectId)
     .eq('subcontractor_id', appUser.id)
+    .eq('tenant_id', tenant.id)
 
   if (error) {
     return { error: 'Failed to decline project. Please try again.' }
@@ -291,6 +292,7 @@ export async function declineProject(projectId: string, slug: string) {
     .from('projects')
     .select('*')
     .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
     .single()
 
   if (project) {

@@ -24,6 +24,7 @@ export async function softDeleteSub(userId: string) {
   }
 
   revalidatePath('/admin/subcontractors')
+  revalidatePath('/admin/dashboard')
   return { success: true }
 }
 
@@ -59,6 +60,7 @@ export async function reactivateSub(userId: string) {
   }
 
   revalidatePath('/admin/subcontractors')
+  revalidatePath('/admin/dashboard')
   return { success: true }
 }
 
