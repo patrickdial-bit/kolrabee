@@ -63,6 +63,8 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
       .eq('role', 'admin')
       .eq('status', 'active')
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
       sendAcceptEmail({
@@ -75,6 +77,7 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
         address: project.address,
         startDate: project.start_date,
         payout: project.payout_amount,
+        projectUrl,
       })
     }
   }
@@ -138,6 +141,8 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
       .eq('role', 'admin')
       .eq('status', 'active')
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
       const prefs = getNotificationPrefs(admin)
@@ -149,6 +154,7 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
         notificationEmail: tenant.notification_email,
         jobNumber: cancelledProject.job_number,
         customerName: cancelledProject.customer_name,
+        projectUrl,
       })
     }
   }
@@ -295,6 +301,8 @@ export async function declineProject(projectId: string, slug: string) {
       .eq('role', 'admin')
       .eq('status', 'active')
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
       const prefs = getNotificationPrefs(admin)
@@ -306,6 +314,7 @@ export async function declineProject(projectId: string, slug: string) {
         notificationEmail: tenant.notification_email,
         jobNumber: project.job_number,
         customerName: project.customer_name,
+        projectUrl,
       })
     }
   }

@@ -21,7 +21,7 @@ type InviteEmailParams = {
   city: string
   startDate: string | null
   payout: number
-  loginUrl: string
+  projectUrl: string
 }
 
 type AcceptEmailParams = {
@@ -34,6 +34,7 @@ type AcceptEmailParams = {
   address: string
   startDate: string | null
   payout: number
+  projectUrl: string
 }
 
 type DeclineEmailParams = {
@@ -43,6 +44,7 @@ type DeclineEmailParams = {
   notificationEmail: string | null
   jobNumber: string | null
   customerName: string
+  projectUrl: string
 }
 
 type StatusUpdateEmailParams = {
@@ -63,6 +65,7 @@ type CancelEmailParams = {
   notificationEmail: string | null
   jobNumber: string | null
   customerName: string
+  projectUrl: string
 }
 
 function formatCurrency(amount: number): string {
@@ -108,7 +111,7 @@ export async function sendPlatformInviteEmail(params: {
 
 /** Email 1: Sub invited to a project */
 export async function sendInviteEmail(params: InviteEmailParams) {
-  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, city, startDate, payout, loginUrl } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, city, startDate, payout, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
@@ -127,7 +130,7 @@ export async function sendInviteEmail(params: InviteEmailParams) {
             <tr><td style="padding: 8px 0; color: #666;">Start Date</td><td style="padding: 8px 0;">${formatDate(startDate)}</td></tr>
             <tr><td style="padding: 8px 0; color: #666;">Payout</td><td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${formatCurrency(payout)}</td></tr>
           </table>
-          <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View &amp; Accept</a>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View &amp; Accept</a>
           <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee account to accept or decline this job.</p>
         </div>
       `,
@@ -139,7 +142,7 @@ export async function sendInviteEmail(params: InviteEmailParams) {
 
 /** Email 2: Sub accepted a project — notify admin */
 export async function sendAcceptEmail(params: AcceptEmailParams) {
-  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, address, startDate, payout } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, address, startDate, payout, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
@@ -159,6 +162,7 @@ export async function sendAcceptEmail(params: AcceptEmailParams) {
             <tr><td style="padding: 8px 0; color: #666;">Payout</td><td style="padding: 8px 0; font-weight: 600;">${formatCurrency(payout)}</td></tr>
             <tr><td style="padding: 8px 0; color: #666;">Subcontractor</td><td style="padding: 8px 0;">${subName}</td></tr>
           </table>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">View Project</a>
           <p style="color: #999; font-size: 13px;">Log in to your Kolrabee admin dashboard for details.</p>
         </div>
       `,
@@ -170,7 +174,7 @@ export async function sendAcceptEmail(params: AcceptEmailParams) {
 
 /** Email 3: Sub declined a project — notify admin */
 export async function sendDeclineEmail(params: DeclineEmailParams) {
-  const { to, subName, tenantName, notificationEmail, jobNumber, customerName } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
@@ -184,6 +188,7 @@ export async function sendDeclineEmail(params: DeclineEmailParams) {
           <h2 style="color: #d97706; margin-bottom: 4px;">Project Declined</h2>
           <p style="color: #666; margin-top: 0;"><strong>${subName}</strong> has declined <strong>${jobLabel}${customerName}</strong>.</p>
           <p style="color: #666;">You may want to invite another subcontractor to this project.</p>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">View Project</a>
           <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee admin dashboard to manage this project.</p>
         </div>
       `,
@@ -195,7 +200,7 @@ export async function sendDeclineEmail(params: DeclineEmailParams) {
 
 /** Email 4: Sub cancelled an accepted project — notify admin */
 export async function sendCancelEmail(params: CancelEmailParams) {
-  const { to, subName, tenantName, notificationEmail, jobNumber, customerName } = params
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
@@ -209,6 +214,7 @@ export async function sendCancelEmail(params: CancelEmailParams) {
           <h2 style="color: #dc2626; margin-bottom: 4px;">Project Cancelled</h2>
           <p style="color: #666; margin-top: 0;"><strong>${subName}</strong> has cancelled their acceptance of <strong>${jobLabel}${customerName}</strong>.</p>
           <p style="color: #666;">The project has been returned to <strong>Available</strong> status and can be reassigned.</p>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">View Project</a>
           <p style="color: #999; font-size: 13px; margin-top: 24px;">Log in to your Kolrabee admin dashboard to reassign this project.</p>
         </div>
       `,

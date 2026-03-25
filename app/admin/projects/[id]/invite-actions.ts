@@ -94,7 +94,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
   // Send invitation emails (fire-and-forget — don't block on email failures)
   if (project && subs) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
-    const loginUrl = `${siteUrl}/${tenant.slug}/login`
+    const projectUrl = `${siteUrl}/${tenant.slug}/projects/${projectId}`
     const city = extractCity(project.address)
 
     for (const sub of subs.filter((s: AppUser) => subcontractorIds.includes(s.id))) {
@@ -110,7 +110,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
         city,
         startDate: project.start_date,
         payout: project.payout_amount,
-        loginUrl,
+        projectUrl,
       })
     }
   }
