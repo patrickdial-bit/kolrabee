@@ -8,8 +8,14 @@ export async function POST(req: NextRequest) {
   try {
     const { plan } = await req.json() as { plan: PlanId }
 
-    if (!plan || !PLAN_PRICES[plan]) {
+    if (!plan || !(plan in PLAN_PRICES)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
+    }
+
+    const priceId = PLAN_PRICES[plan]
+    if (!priceId) {
+      console.error(`Stripe price ID not configured for plan: ${plan}. Set STRIPE_${plan.toUpperCase()}_PRICE_ID in your environment.`)
+      return NextResponse.json({ error: 'Billing is not configured for this plan. Please contact support.' }, { status: 500 })
     }
 
     const { appUser, tenant } = await getCurrentUser()
@@ -44,7 +50,7 @@ export async function POST(req: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: PLAN_PRICES[plan],
+          price: priceId,
           quantity: 1,
         },
       ],
