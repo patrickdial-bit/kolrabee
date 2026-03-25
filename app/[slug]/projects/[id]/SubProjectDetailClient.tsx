@@ -153,7 +153,7 @@ export default function SubProjectDetailClient({
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Header */}
           <div className="border-b border-gray-200 px-6 py-5">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div>
                 {project.job_number && (
                   <p className="text-sm font-medium text-ember">#{project.job_number}</p>
@@ -161,7 +161,7 @@ export default function SubProjectDetailClient({
                 <h1 className="mt-1 text-xl font-bold text-gray-900">{project.customer_name}</h1>
               </div>
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClasses[project.status] || 'bg-gray-100 text-gray-700'}`}
+                className={`self-start inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClasses[project.status] || 'bg-gray-100 text-gray-700'}`}
               >
                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </span>

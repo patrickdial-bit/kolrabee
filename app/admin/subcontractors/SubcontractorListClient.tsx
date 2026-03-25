@@ -246,7 +246,60 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             </p>
           </div>
         ) : (
-          <div id="tour-sub-table" className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+          <>
+          {/* Mobile cards */}
+          <div id="tour-sub-table" className="md:hidden space-y-3">
+            {filtered.map((sub) => {
+              const insuranceInfo = formatInsuranceDate(sub.insurance_expiration)
+              const compliant = isSubCompliant(sub)
+              return (
+                <div key={sub.id} className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${sub.status === 'deleted' ? 'opacity-50' : ''}`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/admin/subcontractors/${sub.id}`} className="text-sm font-semibold text-gray-900 hover:text-ember">
+                        {sub.first_name} {sub.last_name}
+                      </Link>
+                      {sub.company_name && <p className="text-xs text-gray-500">{sub.company_name}</p>}
+                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                      compliant
+                        ? 'bg-green-50 text-green-700 ring-green-600/20'
+                        : 'bg-amber-50 text-amber-700 ring-amber-600/20'
+                    }`}>
+                      {compliant ? 'Compliant' : 'Incomplete'}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-xs text-gray-500 mb-3">
+                    <p>{sub.email}</p>
+                    {sub.phone && <p>{sub.phone}</p>}
+                    <div className="flex items-center gap-3">
+                      <span>YTD: <strong className="text-gray-900">{formatCurrency(sub.ytdPaid)}</strong></span>
+                      <span>Active: <strong className="text-gray-900">{sub.activeJobs}</strong></span>
+                      {sub.crew_size && <span>Crew: <strong className="text-gray-900">{sub.crew_size}</strong></span>}
+                    </div>
+                    <p className={insuranceInfo.isExpired ? 'text-amber-600 font-medium' : ''}>
+                      Insurance: {insuranceInfo.text}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/admin/subcontractors/${sub.id}`}
+                      className="rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15">
+                      View Details
+                    </Link>
+                    {sub.w9_file_url && (
+                      <span className="text-xs text-green-600 font-medium">W-9</span>
+                    )}
+                    {sub.coi_file_url && (
+                      <span className="text-xs text-green-600 font-medium">COI</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-forest">
                 <tr>
@@ -368,6 +421,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

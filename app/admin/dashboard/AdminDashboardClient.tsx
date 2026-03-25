@@ -335,7 +335,63 @@ export default function AdminDashboardClient({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+            <>
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {filtered.map((project) => (
+                <div key={project.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/admin/projects/${project.id}`} className="text-sm font-semibold text-gray-900 hover:text-ember">
+                        {project.customer_name}
+                      </Link>
+                      {project.job_number && <span className="ml-1 text-xs text-gray-400">#{project.job_number}</span>}
+                    </div>
+                    <span className="text-sm font-bold text-gray-900 ml-2">{formatCurrency(project.payout_amount)}</span>
+                  </div>
+                  <div className="space-y-1 text-xs text-gray-500 mb-3">
+                    <p>{formatDateTime(project.start_date, project.start_time)}</p>
+                    <p className="truncate">{project.address}</p>
+                    {activeTab === 'Accepted' && project.accepted_by && subNameMap[project.accepted_by] && (
+                      <p className="text-ember font-medium">Accepted by: {subNameMap[project.accepted_by]}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {activeTab === 'Available' && (
+                      <button
+                        onClick={() => setInviteProjectId(project.id)}
+                        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                      >
+                        Invite
+                      </button>
+                    )}
+                    {activeTab === 'Accepted' && (
+                      <>
+                        <Link href={`/admin/projects/${project.id}`}
+                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
+                          Paid
+                        </Link>
+                        <Link href={`/admin/projects/${project.id}`}
+                          className="rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200">
+                          Cancel
+                        </Link>
+                      </>
+                    )}
+                    <Link href={`/admin/projects/${project.id}`}
+                      className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                      Details
+                    </Link>
+                    {project.work_order_link && (
+                      <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
+                        className="text-xs font-medium text-ember">WO</a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-forest">
                   <tr>
@@ -457,6 +513,7 @@ export default function AdminDashboardClient({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </main>

@@ -52,6 +52,7 @@ export default function SubDashboardClient({
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mobileTab, setMobileTab] = useState<typeof columnConfig[number]['key']>('available')
 
   // Organize projects into columns
   const columns = useMemo(() => {
@@ -179,8 +180,69 @@ export default function SubDashboardClient({
           </div>
         )}
 
-        {/* Kanban Board */}
-        <div id="tour-sub-kanban" className="flex gap-4 overflow-x-auto pb-4">
+        {/* Mobile: Tab-based view */}
+        <div id="tour-sub-kanban" className="md:hidden">
+          {/* Tab bar */}
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
+            {columnConfig.map((col) => {
+              const count = columns[col.key].length
+              const isActive = mobileTab === col.key
+              return (
+                <button
+                  key={col.key}
+                  onClick={() => setMobileTab(col.key)}
+                  className={`flex-shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    isActive
+                      ? `${col.color} text-white`
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {col.label}
+                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Active tab content */}
+          <div className="space-y-3">
+            {columns[mobileTab].length === 0 ? (
+              <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-8 text-center">
+                <p className="text-sm text-gray-400">
+                  {t(columnConfig.find(c => c.key === mobileTab)?.emptyKey ?? '') || 'No projects'}
+                </p>
+              </div>
+            ) : (
+              columns[mobileTab].map((project) => (
+                <KanbanCard
+                  key={project.id}
+                  project={project}
+                  column={mobileTab}
+                  slug={slug}
+                  loading={loading}
+                  showCancelConfirm={showCancelConfirm}
+                  onAccept={() => setShowAcceptModal(project)}
+                  onStartJob={() => handleMarkInProgress(project)}
+                  onMarkComplete={() => handleMarkCompleted(project)}
+                  onCancel={() =>
+                    showCancelConfirm === project.id
+                      ? handleCancel(project)
+                      : setShowCancelConfirm(project.id)
+                  }
+                  onCancelDismiss={() => setShowCancelConfirm(null)}
+                  t={t}
+                />
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Desktop: Kanban Board */}
+        <div className="hidden md:flex gap-4 overflow-x-auto pb-4">
           {columnConfig.map((col) => {
             const projects = columns[col.key]
             return (
