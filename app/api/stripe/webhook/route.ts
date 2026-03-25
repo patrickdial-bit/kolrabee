@@ -77,14 +77,15 @@ export async function POST(req: NextRequest) {
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription
       const customerId = subscription.customer as string
+      const freeLimits = PLAN_LIMITS.free
 
       await adminClient
         .from('tenants')
         .update({
-          plan: 'cancelled',
+          plan: 'free',
           stripe_subscription_id: null,
-          max_projects: 0,
-          max_subcontractors: 0,
+          max_projects: freeLimits.max_projects,
+          max_subcontractors: freeLimits.max_subcontractors,
         })
         .eq('stripe_customer_id', customerId)
 

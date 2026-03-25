@@ -1,6 +1,7 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProjectAttachment } from '@/lib/types'
+import { hasGrowthFeatures } from '@/lib/types'
 import { notFound } from 'next/navigation'
 import SubProjectDetailClient from './SubProjectDetailClient'
 
@@ -78,6 +79,7 @@ export default async function SubProjectDetailPage({
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}
       currentUserId={appUser.id}
+      hasGrowth={hasGrowthFeatures(tenant)}
     />
   )
 }

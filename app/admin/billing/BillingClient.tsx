@@ -69,6 +69,25 @@ export default function BillingClient({ tenant }: Props) {
     }
   }
 
+  async function handleCancelSubscription() {
+    if (!confirm('Are you sure you want to downgrade to the Free plan? You will lose access to Growth/Operator features immediately.')) return
+    setLoading('cancel')
+    setError(null)
+    try {
+      const res = await fetch('/api/stripe/cancel', { method: 'POST' })
+      const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+      } else {
+        window.location.reload()
+      }
+    } catch {
+      setError('Failed to cancel subscription. Please try again.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Billing & Subscription</h1>
@@ -217,31 +236,95 @@ export default function BillingClient({ tenant }: Props) {
         <p className="text-xs text-gray-400 mt-2">Leave blank to send from the default Kolrabee address.</p>
       </div>
 
-      {/* Plan Cards */}
-      {!hasSubscription && (
-        <>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            {isFree ? 'Upgrade Your Plan' : 'Choose a Plan'}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Free Plan Card */}
-            <div className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
-              isFree ? 'border-green-500' : 'border-gray-200'
-            }`}>
-              {isFree && (
+      {/* Plan Options */}
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        {hasSubscription ? 'Change Plan' : isFree ? 'Upgrade Your Plan' : 'Choose a Plan'}
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Free Plan Card */}
+        <div className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
+          isFree ? 'border-green-500' : 'border-gray-200'
+        }`}>
+          {isFree && (
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white">
+              Current Plan
+            </span>
+          )}
+
+          <h3 className="text-xl font-bold text-gray-900">{ALL_PLANS.free.name}</h3>
+          <div className="mt-2 flex items-baseline gap-1">
+            <span className="text-4xl font-bold text-gray-900">$0</span>
+            <span className="text-sm text-gray-500">/month</span>
+          </div>
+
+          <ul className="mt-6 space-y-3">
+            {ALL_PLANS.free.features.map((feature) => (
+              <li key={feature} className="flex items-start gap-2">
+                <svg className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                <span className="text-sm text-gray-600">{feature}</span>
+              </li>
+            ))}
+          </ul>
+
+          {isFree ? (
+            <button
+              disabled
+              className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
+            >
+              Current Plan
+            </button>
+          ) : hasSubscription ? (
+            <button
+              onClick={handleCancelSubscription}
+              disabled={loading === 'cancel'}
+              className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-amber-700 border-2 border-amber-300 hover:bg-amber-50 transition-colors disabled:opacity-50"
+            >
+              {loading === 'cancel' ? 'Processing...' : 'Downgrade to Free'}
+            </button>
+          ) : (
+            <button
+              disabled
+              className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
+            >
+              Free
+            </button>
+          )}
+        </div>
+
+        {/* Paid Plan Cards */}
+        {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([planId, plan]) => {
+          const isCurrent = tenant.plan === planId
+          const isUpgrade = tenant.plan === 'growth' && planId === 'operator'
+          const isDowngrade = tenant.plan === 'operator' && planId === 'growth'
+
+          return (
+            <div
+              key={planId}
+              className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
+                isCurrent ? 'border-green-500' : planId === 'operator' ? 'border-ember' : 'border-gray-200'
+              }`}
+            >
+              {isCurrent && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-green-600 px-3 py-0.5 text-xs font-semibold text-white">
                   Current Plan
                 </span>
               )}
+              {!isCurrent && planId === 'operator' && !hasSubscription && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-ember px-3 py-0.5 text-xs font-semibold text-white">
+                  Most Popular
+                </span>
+              )}
 
-              <h3 className="text-xl font-bold text-gray-900">{ALL_PLANS.free.name}</h3>
+              <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-gray-900">$0</span>
+                <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
                 <span className="text-sm text-gray-500">/month</span>
               </div>
 
               <ul className="mt-6 space-y-3">
-                {ALL_PLANS.free.features.map((feature) => (
+                {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2">
                     <svg className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -251,45 +334,30 @@ export default function BillingClient({ tenant }: Props) {
                 ))}
               </ul>
 
-              <button
-                disabled
-                className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
-              >
-                {isFree ? 'Current Plan' : 'Free'}
-              </button>
-            </div>
-
-            {/* Paid Plan Cards */}
-            {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([planId, plan]) => (
-              <div
-                key={planId}
-                className={`relative bg-white rounded-xl border-2 shadow-sm p-6 ${
-                  planId === 'operator' ? 'border-ember' : 'border-gray-200'
-                }`}
-              >
-                {planId === 'operator' && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-ember px-3 py-0.5 text-xs font-semibold text-white">
-                    Most Popular
-                  </span>
-                )}
-
-                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                  <span className="text-sm text-gray-500">/month</span>
-                </div>
-
-                <ul className="mt-6 space-y-3">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <svg className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                      </svg>
-                      <span className="text-sm text-gray-600">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
+              {isCurrent ? (
+                <button
+                  disabled
+                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
+                >
+                  Current Plan
+                </button>
+              ) : isUpgrade ? (
+                <button
+                  onClick={() => handleCheckout(planId)}
+                  disabled={loading !== null}
+                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-ember text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
+                >
+                  {loading === planId ? 'Redirecting...' : 'Upgrade to Operator'}
+                </button>
+              ) : isDowngrade ? (
+                <button
+                  onClick={() => handleCheckout(planId)}
+                  disabled={loading !== null}
+                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 border-2 border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  {loading === planId ? 'Redirecting...' : 'Downgrade to Growth'}
+                </button>
+              ) : (
                 <button
                   onClick={() => handleCheckout(planId)}
                   disabled={loading !== null}
@@ -301,11 +369,11 @@ export default function BillingClient({ tenant }: Props) {
                 >
                   {loading === planId ? 'Redirecting...' : `Upgrade to ${plan.name}`}
                 </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
