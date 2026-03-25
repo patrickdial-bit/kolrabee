@@ -83,6 +83,30 @@ export async function createProject(formData: FormData) {
     return { error: 'Failed to create project. Please try again.' }
   }
 
+  // Handle file attachments if any
+  const attachmentsJson = formData.get('attachments_json') as string
+  if (attachmentsJson) {
+    try {
+      const files = JSON.parse(attachmentsJson) as Array<{ name: string; path: string; size: number; type: string }>
+      for (const file of files.slice(0, 3)) {
+        await adminClient
+          .from('project_attachments')
+          .insert({
+            tenant_id: tenant.id,
+            project_id: project.id,
+            file_name: file.name,
+            file_url: file.path,
+            file_size: file.size,
+            file_type: file.type,
+            uploaded_by: appUser.id,
+          })
+      }
+    } catch {
+      // Non-fatal: project created but attachments may have failed
+      console.error('Failed to save attachments')
+    }
+  }
+
   revalidatePath('/admin/dashboard')
   redirect(`/admin/projects/${project.id}`)
 }

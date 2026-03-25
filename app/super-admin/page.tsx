@@ -62,7 +62,7 @@ export default async function SuperAdminPage() {
     totalTenants: tenants?.length ?? 0,
     totalSubs: userCounts?.length ?? 0,
     totalProjects: projectCounts?.length ?? 0,
-    activePlans: (tenants ?? []).filter((t) => t.plan === 'starter' || t.plan === 'pro').length,
+    activePlans: (tenants ?? []).filter((t) => t.plan === 'growth' || t.plan === 'operator').length,
   }
 
   return <SuperAdminDashboard tenants={tenantsWithStats} stats={stats} />

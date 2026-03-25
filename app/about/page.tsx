@@ -1,50 +1,67 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import KolrabeeLogo from '@/components/KolrabeeLogo'
 
 export default function AboutPage() {
+  const [mobileOpen, setMobileOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-canvas">
       {/* Nav */}
-      <nav
-        style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-          padding: '20px 48px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'rgba(240,245,245,0.92)', backdropFilter: 'blur(12px)',
-          borderBottom: '0.5px solid rgba(0,0,0,0.06)',
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '28px',
-            letterSpacing: '-0.02em', textDecoration: 'none',
-          }}
-        >
-          <span style={{ color: '#111111' }}>kol</span>
-          <span style={{ color: '#00A896' }}>ra</span>
-          <span style={{ color: '#33BFB0' }}>bee</span>
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
+        <Link href="/">
+          <KolrabeeLogo size="lg" />
         </Link>
-        <div className="hidden sm:flex" style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          <Link href="/" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>Home</Link>
-          <Link href="/about" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>About</Link>
-          <Link href="/pricing" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>Pricing</Link>
-          <Link href="/admin/login" style={{ fontSize: '14px', fontWeight: 500, color: '#888880', textDecoration: 'none' }}>Login</Link>
+        <div className="hidden md:flex items-center gap-6">
+          <Link
+            href="/about"
+            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
+          >
+            About
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/admin/login"
+            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
+          >
+            Login
+          </Link>
           <Link
             href="/admin/signup"
-            style={{
-              background: '#111111', color: '#ffffff',
-              padding: '10px 20px', borderRadius: '8px',
-              fontWeight: 600, fontSize: '14px', textDecoration: 'none',
-            }}
+            className="inline-flex items-center rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
           >
             Get Started Free
           </Link>
         </div>
+        <button
+          className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-forge/50 hover:bg-gray-100 hover:text-forge"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? (
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          ) : (
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+          )}
+        </button>
       </nav>
+      {mobileOpen && (
+        <div className="md:hidden border-t border-gray-200 bg-white px-6 py-4 space-y-1">
+          <Link href="/about" onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm font-medium text-forge/70 hover:bg-gray-50 hover:text-forge">About</Link>
+          <Link href="/pricing" onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm font-medium text-forge/70 hover:bg-gray-50 hover:text-forge">Pricing</Link>
+          <Link href="/admin/login" onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm font-medium text-forge/70 hover:bg-gray-50 hover:text-forge">Login</Link>
+          <Link href="/admin/signup" onClick={() => setMobileOpen(false)} className="block rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white text-center hover:bg-primary-700 transition-colors mt-2">Get Started Free</Link>
+        </div>
+      )}
 
-      <main className="mx-auto max-w-3xl px-6 lg:px-8 py-16" style={{ paddingTop: '100px' }}>
+      <main className="mx-auto max-w-3xl px-6 lg:px-8 py-16">
         {/* Hero */}
         <div className="text-center mb-16">
           <KolrabeeLogo size="xl" />

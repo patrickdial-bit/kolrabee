@@ -68,6 +68,19 @@ export default async function SubDetailPage({ params }: { params: { id: string }
     completionRate,
   }
 
+  // Fetch rating stats
+  const { data: ratings } = await adminClient
+    .from('sub_ratings')
+    .select('rating')
+    .eq('tenant_id', tenant.id)
+    .eq('subcontractor_id', params.id)
+
+  const ratingsList = ratings ?? []
+  const avgRating = ratingsList.length > 0
+    ? ratingsList.reduce((sum: number, r: any) => sum + r.rating, 0) / ratingsList.length
+    : null
+  const totalJobs = (projects ?? []).length
+
   return (
     <SubDetailClient
       sub={sub as AppUser}
@@ -76,6 +89,9 @@ export default async function SubDetailPage({ params }: { params: { id: string }
       reliabilityStats={reliabilityStats}
       tenantName={tenant.name}
       tenantSlug={tenant.slug}
+      avgRating={avgRating}
+      totalJobs={totalJobs}
+      totalRatings={ratingsList.length}
     />
   )
 }

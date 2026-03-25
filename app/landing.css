@@ -142,8 +142,25 @@
 @keyframes landingBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
 @keyframes landingTagFade{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 
+.landing .mobile-menu-toggle{display:none;background:none;border:none;color:#111111;cursor:pointer;padding:4px;}
+
+.landing .mobile-menu{
+  display:none;
+  position:fixed;top:60px;left:0;right:0;z-index:99;
+  background:rgba(240,245,245,0.98);backdrop-filter:blur(12px);
+  padding:16px 24px;
+  flex-direction:column;gap:4px;
+  border-bottom:1px solid rgba(0,0,0,0.08);
+}
+.landing .mobile-menu a{display:block;padding:12px 0;font-size:16px;font-weight:500;color:#888880;text-decoration:none;border-bottom:1px solid rgba(0,0,0,0.05);}
+.landing .mobile-menu a:hover{color:#111111;}
+.landing .mobile-cta{background:#111111 !important;color:#ffffff !important;text-align:center;padding:12px 20px !important;border-radius:8px !important;font-weight:600 !important;margin-top:8px;border-bottom:none !important;}
+.landing .mobile-cta:hover{background:#00A896 !important;}
+
 @media(max-width:768px){
   .landing-nav{padding:16px 24px;} .landing .nav-links{display:none;}
+  .landing .mobile-menu-toggle{display:block;}
+  .landing .mobile-menu{display:flex;}
   .landing .who-grid,.landing .steps-grid,.landing .features-grid,.landing .stats-grid,.landing .jobs-grid{grid-template-columns:1fr;}
   .landing .workflow-card{grid-template-columns:1fr;padding:36px 28px;}
   .landing section{padding:72px 24px;} .landing .realworld-section{padding:72px 24px;}

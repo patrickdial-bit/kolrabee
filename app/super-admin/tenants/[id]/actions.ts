@@ -70,7 +70,7 @@ export async function deleteTenant(tenantId: string) {
 export async function updateTenantPlan(tenantId: string, plan: string) {
   await requireSuperAdmin()
 
-  const validPlans = ['free', 'trial', 'starter', 'pro', 'cancelled']
+  const validPlans = ['free', 'trial', 'growth', 'operator', 'cancelled']
   if (!validPlans.includes(plan)) {
     return { error: 'Invalid plan.' }
   }

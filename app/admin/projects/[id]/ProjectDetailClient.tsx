@@ -7,8 +7,13 @@ import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
-import { updateProject, markCompleted, markPaid, cancelProject, deleteProject } from './actions'
+import { updateProject, markCompleted, markPaid, cancelProject, deleteProject, approveCompletion } from './actions'
+import { submitRating } from './rating-actions'
+import { addAttachment, removeAttachment, getAttachmentUrl } from './attachment-actions'
+import { sendMessage, getMessages } from './message-actions'
 import InviteSubsModal from './InviteSubsModal'
+import StarRating from '@/components/StarRating'
+import type { SubRating, ProjectAttachment } from '@/lib/types'
 
 interface InvitationWithName {
   id: string
@@ -21,18 +26,33 @@ interface InvitationWithName {
   subcontractor_email: string
 }
 
+interface MessageWithSender {
+  id: string
+  tenant_id: string
+  project_id: string
+  sender_id: string
+  body: string
+  created_at: string
+  sender_name: string
+}
+
 interface ProjectDetailClientProps {
   project: Project
   invitations: InvitationWithName[]
   acceptedByUser: { first_name: string; last_name: string; email: string } | null
   tenantName: string
   tenantId: string
+  existingRating: SubRating | null
+  attachments: ProjectAttachment[]
+  messages: MessageWithSender[]
+  currentUserId: string
 }
 
 const statusColors: Record<string, string> = {
   available: 'bg-blue-100 text-blue-700',
   accepted: 'bg-yellow-100 text-yellow-700',
   in_progress: 'bg-indigo-100 text-indigo-700',
+  pending_completion: 'bg-orange-100 text-orange-700',
   completed: 'bg-green-100 text-green-700',
   paid: 'bg-purple-100 text-purple-700',
   cancelled: 'bg-amber-100 text-amber-700',
@@ -50,6 +70,10 @@ export default function ProjectDetailClient({
   acceptedByUser,
   tenantName,
   tenantId,
+  existingRating,
+  attachments,
+  messages,
+  currentUserId,
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -57,6 +81,16 @@ export default function ProjectDetailClient({
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  // Rating state
+  const [showRatingModal, setShowRatingModal] = useState(false)
+  const [ratingValue, setRatingValue] = useState(0)
+  const [ratingNote, setRatingNote] = useState('')
+  // Attachment state
+  const [attachUploading, setAttachUploading] = useState(false)
+  const [attachError, setAttachError] = useState<string | null>(null)
+  // Message state
+  const [messageText, setMessageText] = useState('')
+  const [messagePending, setMessagePending] = useState(false)
 
   const clearMessages = () => { setError(null); setSuccessMsg(null) }
 
@@ -78,6 +112,15 @@ export default function ProjectDetailClient({
     })
   }
 
+  const handleApproveCompletion = () => {
+    clearMessages()
+    startTransition(async () => {
+      const result = await approveCompletion(project.id)
+      if (result?.error) setError(result.error)
+      else { setSuccessMsg('Completion approved.'); router.refresh() }
+    })
+  }
+
   const handleMarkPaid = () => {
     clearMessages()
     startTransition(async () => {
@@ -94,6 +137,84 @@ export default function ProjectDetailClient({
       const result = await cancelProject(project.id, project.version)
       if (result?.error) { setError(result.error); toast.error(result.error) }
       else { toast.info('Project cancelled and returned to Available.'); router.refresh() }
+    })
+  }
+
+  const handleSubmitRating = () => {
+    if (ratingValue < 1) return
+    clearMessages()
+    startTransition(async () => {
+      const result = await submitRating(project.id, ratingValue, ratingNote || null)
+      if (result?.error) setError(result.error)
+      else { setSuccessMsg('Rating submitted.'); setShowRatingModal(false); router.refresh() }
+    })
+  }
+
+  const handleDownloadAttachment = async (attachmentId: string) => {
+    const result = await getAttachmentUrl(attachmentId)
+    if (result?.error) setAttachError(result.error)
+    else if (result?.url) window.open(result.url, '_blank')
+  }
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    if (!confirm('Remove this attachment?')) return
+    startTransition(async () => {
+      const result = await removeAttachment(attachmentId)
+      if (result?.error) setError(result.error)
+      else router.refresh()
+    })
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    if (attachments.length + files.length > 3) {
+      setAttachError('Maximum 3 attachments per project.')
+      return
+    }
+    setAttachError(null)
+    setAttachUploading(true)
+    for (const file of Array.from(files)) {
+      const allowed = ['application/pdf', 'image/jpeg', 'image/png']
+      if (!allowed.includes(file.type)) {
+        setAttachError('Only PDF, JPG, and PNG files are allowed.')
+        setAttachUploading(false)
+        return
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setAttachError('File size must be under 10MB.')
+        setAttachUploading(false)
+        return
+      }
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const path = `${project.tenant_id}/projects/${project.id}/${Date.now()}-${file.name}`
+      const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
+      if (uploadError) {
+        setAttachError('Failed to upload file.')
+        setAttachUploading(false)
+        return
+      }
+      const result = await addAttachment(project.id, file.name, path, file.size, file.type)
+      if (result?.error) {
+        setAttachError(result.error)
+        setAttachUploading(false)
+        return
+      }
+    }
+    setAttachUploading(false)
+    router.refresh()
+    e.target.value = ''
+  }
+
+  const handleSendMessage = () => {
+    if (!messageText.trim()) return
+    setMessagePending(true)
+    startTransition(async () => {
+      const result = await sendMessage(project.id, messageText.trim())
+      if (result?.error) setError(result.error)
+      else { setMessageText(''); router.refresh() }
+      setMessagePending(false)
     })
   }
 
@@ -298,6 +419,20 @@ export default function ProjectDetailClient({
                       className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
                   </>
                 )}
+                {project.status === 'pending_completion' && (
+                  <>
+                    <button onClick={handleApproveCompletion} disabled={isPending}
+                      className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
+                      {isPending ? 'Processing...' : 'Approve Completion'}
+                    </button>
+                    <button onClick={handleMarkPaid} disabled={isPending}
+                      className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
+                      {isPending ? 'Processing...' : 'Mark Paid'}
+                    </button>
+                    <button onClick={handleCancel} disabled={isPending}
+                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                  </>
+                )}
                 {project.status === 'completed' && (
                   <>
                     <button onClick={handleMarkPaid} disabled={isPending}
@@ -339,7 +474,177 @@ export default function ProjectDetailClient({
             <p className="text-sm text-gray-500">No subcontractors have been invited yet.</p>
           )}
         </div>
+
+        {/* Rating */}
+        {['completed', 'paid'].includes(project.status) && project.accepted_by && (
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Sub Rating</h2>
+            {existingRating ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <StarRating value={existingRating.rating} readonly size="md" />
+                  <span className="text-sm font-medium text-gray-700">{existingRating.rating}/5</span>
+                </div>
+                {existingRating.note && (
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{existingRating.note}</p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <button
+                  onClick={() => setShowRatingModal(true)}
+                  className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                >
+                  Rate Subcontractor
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Job Documents (Attachments) */}
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Job Documents</h2>
+            {attachments.length < 3 && (
+              <label className="inline-flex items-center gap-1.5 text-sm font-medium text-ember hover:text-primary-700 cursor-pointer">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                {attachUploading ? 'Uploading...' : 'Add File'}
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={attachUploading}
+                />
+              </label>
+            )}
+          </div>
+          {attachError && (
+            <div className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-700">{attachError}</div>
+          )}
+          {attachments.length > 0 ? (
+            <ul className="divide-y divide-gray-100">
+              {attachments.map((att) => (
+                <li key={att.id} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-900">{att.file_name}</span>
+                    {att.file_size && (
+                      <span className="text-xs text-gray-400">{(att.file_size / 1024).toFixed(0)} KB</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDownloadAttachment(att.id)}
+                      className="text-xs font-medium text-ember hover:text-primary-700"
+                    >
+                      Download
+                    </button>
+                    <button
+                      onClick={() => handleRemoveAttachment(att.id)}
+                      disabled={isPending}
+                      className="text-xs font-medium text-amber-600 hover:text-amber-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">No documents attached. Add up to 3 files (PDF, JPG, PNG).</p>
+          )}
+        </div>
+
+        {/* Messages */}
+        {project.accepted_by && (
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Messages</h2>
+            {messages.length > 0 ? (
+              <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                {messages.map((msg) => {
+                  const isMe = msg.sender_id === currentUserId
+                  return (
+                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-lg px-4 py-2 ${isMe ? 'bg-ember/10 text-gray-900' : 'bg-gray-100 text-gray-900'}`}>
+                        <p className="text-xs font-medium text-gray-500 mb-1">
+                          {msg.sender_name} &middot; {new Date(msg.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        </p>
+                        <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 mb-4">No messages yet. Start the conversation.</p>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                placeholder="Type a message..."
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={messagePending || !messageText.trim()}
+                className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+              >
+                {messagePending ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Rate Subcontractor</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                <StarRating value={ratingValue} onChange={setRatingValue} size="lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
+                <textarea
+                  value={ratingNote}
+                  onChange={(e) => setRatingNote(e.target.value)}
+                  rows={3}
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
+                  placeholder="How did this sub perform?"
+                />
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={handleSubmitRating}
+                  disabled={isPending || ratingValue < 1}
+                  className="inline-flex items-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {isPending ? 'Submitting...' : 'Submit Rating'}
+                </button>
+                <button
+                  onClick={() => { setShowRatingModal(false); setRatingValue(0); setRatingNote('') }}
+                  className="inline-flex items-center rounded-md px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showInviteModal && (
         <InviteSubsModal

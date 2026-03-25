@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { SubRating, ProjectAttachment, JobMessage } from '@/lib/types'
 import ProjectDetailClient from './ProjectDetailClient'
 
 interface PageProps {
@@ -42,6 +43,37 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     acceptedByUser = user
   }
 
+  // Fetch rating for this project
+  const { data: ratingData } = await adminClient
+    .from('sub_ratings')
+    .select('*')
+    .eq('project_id', project.id)
+    .maybeSingle()
+
+  // Fetch attachments
+  const { data: attachmentsData } = await adminClient
+    .from('project_attachments')
+    .select('*')
+    .eq('project_id', project.id)
+    .order('created_at', { ascending: true })
+
+  // Fetch messages
+  const { data: messagesData } = await adminClient
+    .from('job_messages')
+    .select('*, sender:users!job_messages_sender_id_fkey(first_name, last_name)')
+    .eq('project_id', project.id)
+    .order('created_at', { ascending: true })
+
+  const messages = (messagesData ?? []).map((m: any) => ({
+    id: m.id,
+    tenant_id: m.tenant_id,
+    project_id: m.project_id,
+    sender_id: m.sender_id,
+    body: m.body,
+    created_at: m.created_at,
+    sender_name: m.sender ? `${m.sender.first_name} ${m.sender.last_name}` : 'Unknown',
+  }))
+
   const invitationsWithNames = (invitations ?? []).map((inv: any) => ({
     id: inv.id,
     project_id: inv.project_id,
@@ -62,6 +94,10 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       acceptedByUser={acceptedByUser}
       tenantName={tenant.name}
       tenantId={tenant.id}
+      existingRating={ratingData as SubRating | null}
+      attachments={(attachmentsData ?? []) as ProjectAttachment[]}
+      messages={messages}
+      currentUserId={appUser.id}
     />
   )
 }

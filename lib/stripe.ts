@@ -15,8 +15,8 @@ export function getStripe() {
 
 // Plan price IDs — set these in your .env
 export const PLAN_PRICES = {
-  starter: process.env.STRIPE_STARTER_PRICE_ID!,
-  pro: process.env.STRIPE_PRO_PRICE_ID!,
+  growth: process.env.STRIPE_GROWTH_PRICE_ID!,
+  operator: process.env.STRIPE_OPERATOR_PRICE_ID!,
 }
 
 // Re-export client-safe plan data for server-side usage

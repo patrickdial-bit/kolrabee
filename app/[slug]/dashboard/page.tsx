@@ -60,7 +60,7 @@ export default async function SubDashboardPage({
     .select('*')
     .eq('tenant_id', tenant.id)
     .eq('accepted_by', appUser.id)
-    .in('status', ['accepted', 'in_progress', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
     .order('start_date', { ascending: true, nullsFirst: false })
 
   const myJobs = (myJobsData ?? []) as Project[]

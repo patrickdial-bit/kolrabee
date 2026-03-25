@@ -1,5 +1,6 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { ProjectAttachment } from '@/lib/types'
 import { notFound } from 'next/navigation'
 import SubProjectDetailClient from './SubProjectDetailClient'
 
@@ -39,6 +40,33 @@ export default async function SubProjectDetailPage({
     notFound()
   }
 
+  // Fetch attachments
+  const { data: attachmentsData } = await adminClient
+    .from('project_attachments')
+    .select('*')
+    .eq('project_id', id)
+    .order('created_at', { ascending: true })
+
+  // Fetch messages (only if sub accepted this project)
+  let messages: any[] = []
+  if (project.accepted_by === appUser.id) {
+    const { data: messagesData } = await adminClient
+      .from('job_messages')
+      .select('*, sender:users!job_messages_sender_id_fkey(first_name, last_name)')
+      .eq('project_id', id)
+      .order('created_at', { ascending: true })
+
+    messages = (messagesData ?? []).map((m: any) => ({
+      id: m.id,
+      tenant_id: m.tenant_id,
+      project_id: m.project_id,
+      sender_id: m.sender_id,
+      body: m.body,
+      created_at: m.created_at,
+      sender_name: m.sender ? `${m.sender.first_name} ${m.sender.last_name}` : 'Unknown',
+    }))
+  }
+
   return (
     <SubProjectDetailClient
       slug={slug}
@@ -47,6 +75,9 @@ export default async function SubProjectDetailPage({
       project={project as Project}
       invitation={invitation as ProjectInvitation | null}
       isAcceptedByMe={project.accepted_by === appUser.id}
+      attachments={(attachmentsData ?? []) as ProjectAttachment[]}
+      messages={messages}
+      currentUserId={appUser.id}
     />
   )
 }

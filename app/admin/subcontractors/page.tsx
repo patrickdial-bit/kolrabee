@@ -29,12 +29,12 @@ export default async function SubcontractorsPage() {
     .eq('status', 'paid')
     .gte('paid_at', yearStart)
 
-  // Fetch active jobs (status in 'accepted','completed')
+  // Fetch active jobs (status in 'accepted','pending_completion','completed')
   const { data: activeProjects } = await adminClient
     .from('projects')
     .select('accepted_by')
     .eq('tenant_id', tenant.id)
-    .in('status', ['accepted', 'completed'])
+    .in('status', ['accepted', 'pending_completion', 'completed'])
 
   // Build lookup maps
   const ytdPaidMap = new Map<string, number>()
@@ -51,12 +51,45 @@ export default async function SubcontractorsPage() {
     }
   }
 
+  // Fetch all ratings for subs in this tenant
+  const { data: ratingsData } = await adminClient
+    .from('sub_ratings')
+    .select('subcontractor_id, rating')
+    .eq('tenant_id', tenant.id)
+
+  const ratingMap = new Map<string, { sum: number; count: number }>()
+  for (const r of ratingsData ?? []) {
+    const existing = ratingMap.get(r.subcontractor_id) ?? { sum: 0, count: 0 }
+    existing.sum += r.rating
+    existing.count += 1
+    ratingMap.set(r.subcontractor_id, existing)
+  }
+
+  // Fetch total jobs per sub
+  const { data: allProjects } = await adminClient
+    .from('projects')
+    .select('accepted_by')
+    .eq('tenant_id', tenant.id)
+    .not('accepted_by', 'is', null)
+
+  const totalJobsMap = new Map<string, number>()
+  for (const p of allProjects ?? []) {
+    if (p.accepted_by) {
+      totalJobsMap.set(p.accepted_by, (totalJobsMap.get(p.accepted_by) ?? 0) + 1)
+    }
+  }
+
   // Merge stats into subcontractors
-  const subsWithStats: SubcontractorWithStats[] = subcontractors.map((sub) => ({
-    ...sub,
-    ytdPaid: ytdPaidMap.get(sub.id) ?? 0,
-    activeJobs: activeJobsMap.get(sub.id) ?? 0,
-  }))
+  const subsWithStats: SubcontractorWithStats[] = subcontractors.map((sub) => {
+    const ratingInfo = ratingMap.get(sub.id)
+    return {
+      ...sub,
+      ytdPaid: ytdPaidMap.get(sub.id) ?? 0,
+      activeJobs: activeJobsMap.get(sub.id) ?? 0,
+      avgRating: ratingInfo ? ratingInfo.sum / ratingInfo.count : null,
+      totalJobs: totalJobsMap.get(sub.id) ?? 0,
+    }
+  })
 
   return (
     <SubcontractorListClient

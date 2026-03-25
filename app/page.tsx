@@ -13,6 +13,7 @@ const taglines = [
 export default function HomePage() {
   const [taglineIdx, setTaglineIdx] = useState(0)
   const [fadeClass, setFadeClass] = useState('')
+  const [mobileOpen, setMobileOpen] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
@@ -67,12 +68,34 @@ export default function HomePage() {
           <Link href="/">Home</Link>
           <Link href="/about">About</Link>
           <Link href="/pricing">Pricing</Link>
+          <Link href="/about">About</Link>
           <Link href="/admin/login">Login</Link>
           <Link href="/admin/signup" className="nav-cta">
             Get Started Free
           </Link>
         </div>
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
+          )}
+        </button>
       </nav>
+      {mobileOpen && (
+        <div className="mobile-menu">
+          <a href="#how" onClick={() => setMobileOpen(false)}>How it works</a>
+          <a href="#features" onClick={() => setMobileOpen(false)}>Features</a>
+          <Link href="/pricing" onClick={() => setMobileOpen(false)}>Pricing</Link>
+          <Link href="/about" onClick={() => setMobileOpen(false)}>About</Link>
+          <Link href="/admin/login" onClick={() => setMobileOpen(false)}>Login</Link>
+          <Link href="/admin/signup" className="mobile-cta" onClick={() => setMobileOpen(false)}>Get Started Free</Link>
+        </div>
+      )}
 
       <section className="hero">
         <div className="hero-eyebrow">

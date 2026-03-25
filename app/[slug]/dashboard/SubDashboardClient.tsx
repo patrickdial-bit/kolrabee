@@ -13,8 +13,7 @@ import type { Project } from '@/lib/types'
 import {
   acceptProject,
   cancelAcceptedProject,
-  markInProgress,
-  markCompleted,
+  requestCompletion,
 } from '@/app/[slug]/projects/[id]/actions'
 
 interface SubDashboardClientProps {
@@ -31,7 +30,7 @@ interface SubDashboardClientProps {
 const columnConfig = [
   { key: 'available', label: 'Available', color: 'bg-amber-500', emptyKey: 'dash.no_available' },
   { key: 'accepted', label: 'Accepted', color: 'bg-blue-500', emptyKey: 'dash.no_accepted' },
-  { key: 'in_progress', label: 'In Progress', color: 'bg-indigo-500', emptyKey: 'dash.no_in_progress' },
+  { key: 'pending_completion', label: 'Pending', color: 'bg-orange-500', emptyKey: 'dash.no_in_progress' },
   { key: 'completed', label: 'Completed', color: 'bg-green-500', emptyKey: 'dash.no_completed' },
   { key: 'paid', label: 'Paid', color: 'bg-emerald-600', emptyKey: 'dash.no_paid' },
 ] as const
@@ -57,19 +56,19 @@ export default function SubDashboardClient({
   // Organize projects into columns
   const columns = useMemo(() => {
     const accepted = myJobs.filter((p) => p.status === 'accepted')
-    const inProgress = myJobs.filter((p) => p.status === 'in_progress')
+    const pendingCompletion = myJobs.filter((p) => p.status === 'pending_completion')
     const completed = myJobs.filter((p) => p.status === 'completed')
     return {
       available: availableProjects,
       accepted,
-      in_progress: inProgress,
+      pending_completion: pendingCompletion,
       completed,
       paid: paidProjects,
     }
   }, [availableProjects, myJobs, paidProjects])
 
-  // Queue count = accepted + in_progress
-  const queueCount = columns.accepted.length + columns.in_progress.length
+  // Queue count = accepted + pending
+  const queueCount = columns.accepted.length + columns.pending_completion.length
 
   const handleAccept = async (project: Project) => {
     setLoading(true)
@@ -102,27 +101,13 @@ export default function SubDashboardClient({
     }
   }
 
-  const handleMarkInProgress = async (project: Project) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await markInProgress(project.id, project.version, slug)
-      if (result?.error) { setError(result.error); toast.error(result.error) }
-      else { toast.success('Job started! Get after it.'); router.refresh() }
-    } catch {
-      toast.error('Something went wrong. Try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleMarkCompleted = async (project: Project) => {
     setLoading(true)
     setError(null)
     try {
-      const result = await markCompleted(project.id, project.version, slug)
+      const result = await requestCompletion(project.id, project.version, slug)
       if (result?.error) { setError(result.error); toast.error(result.error) }
-      else { toast.success(`Job complete! ${formatCurrency(project.payout_amount)} — payment incoming.`); router.refresh() }
+      else { toast.success(`Completion submitted! Awaiting owner approval.`); router.refresh() }
     } catch {
       toast.error('Something went wrong. Try again.')
     } finally {
@@ -226,7 +211,7 @@ export default function SubDashboardClient({
                   loading={loading}
                   showCancelConfirm={showCancelConfirm}
                   onAccept={() => setShowAcceptModal(project)}
-                  onStartJob={() => handleMarkInProgress(project)}
+                  
                   onMarkComplete={() => handleMarkCompleted(project)}
                   onCancel={() =>
                     showCancelConfirm === project.id
@@ -271,7 +256,7 @@ export default function SubDashboardClient({
                         loading={loading}
                         showCancelConfirm={showCancelConfirm}
                         onAccept={() => setShowAcceptModal(project)}
-                        onStartJob={() => handleMarkInProgress(project)}
+                        
                         onMarkComplete={() => handleMarkCompleted(project)}
                         onCancel={() =>
                           showCancelConfirm === project.id
@@ -335,7 +320,7 @@ function KanbanCard({
   loading,
   showCancelConfirm,
   onAccept,
-  onStartJob,
+
   onMarkComplete,
   onCancel,
   onCancelDismiss,
@@ -347,7 +332,7 @@ function KanbanCard({
   loading: boolean
   showCancelConfirm: string | null
   onAccept: () => void
-  onStartJob: () => void
+
   onMarkComplete: () => void
   onCancel: () => void
   onCancelDismiss: () => void
@@ -420,11 +405,11 @@ function KanbanCard({
         {column === 'accepted' && (
           <>
             <button
-              onClick={onStartJob}
+              onClick={onMarkComplete}
               disabled={loading}
-              className="flex-1 rounded-md bg-indigo-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+              className="flex-1 rounded-md bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
             >
-              Start Job
+              {t('project.mark_complete') || 'Mark Complete'}
             </button>
             {showCancelConfirm === project.id ? (
               <div className="flex gap-1">
@@ -447,16 +432,6 @@ function KanbanCard({
               </button>
             )}
           </>
-        )}
-
-        {column === 'in_progress' && (
-          <button
-            onClick={onMarkComplete}
-            disabled={loading}
-            className="flex-1 rounded-md bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
-          >
-            Mark Complete
-          </button>
         )}
       </div>
     </div>

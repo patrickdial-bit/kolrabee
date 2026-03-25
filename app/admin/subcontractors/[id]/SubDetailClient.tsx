@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
+import StarRating from '@/components/StarRating'
 import { isSubCompliant } from '@/lib/types'
 import type { ReliabilityStats } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
@@ -15,6 +16,7 @@ import { getDocumentUrl } from './doc-actions'
 const statusColors: Record<string, string> = {
   available: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   accepted: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
+  pending_completion: 'bg-orange-50 text-orange-700 ring-orange-600/20',
   completed: 'bg-ember/10 text-ember ring-ember/20',
   paid: 'bg-green-50 text-green-700 ring-green-600/20',
   cancelled: 'bg-gray-50 text-gray-700 ring-gray-600/20',
@@ -27,9 +29,12 @@ interface Props {
   reliabilityStats: ReliabilityStats
   tenantName: string
   tenantSlug: string
+  avgRating: number | null
+  totalJobs: number
+  totalRatings: number
 }
 
-export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilityStats, tenantName, tenantSlug }: Props) {
+export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilityStats, tenantName, tenantSlug, avgRating, totalJobs, totalRatings }: Props) {
   const [isPending, startTransition] = useTransition()
   const [docLoading, setDocLoading] = useState<string | null>(null)
   const [docError, setDocError] = useState<string | null>(null)
@@ -137,6 +142,20 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
             <p className="mt-1 text-2xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Average Rating</p>
+            <div className="mt-1 flex items-center gap-2">
+              {avgRating !== null ? (
+                <>
+                  <StarRating value={Math.round(avgRating)} readonly size="sm" />
+                  <span className="text-lg font-bold text-gray-900">{avgRating.toFixed(1)}</span>
+                  <span className="text-sm text-gray-500">({totalRatings})</span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-400">No ratings yet</span>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Accept Rate</p>
             <p className={`mt-1 text-2xl font-bold ${reliabilityStats.acceptRate >= 70 ? 'text-green-600' : reliabilityStats.acceptRate >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
               {reliabilityStats.totalInvited > 0 ? `${reliabilityStats.acceptRate}%` : '—'}
@@ -149,6 +168,13 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
               {reliabilityStats.totalAccepted > 0 ? `${reliabilityStats.completionRate}%` : '—'}
             </p>
             <p className="text-xs text-gray-400">{reliabilityStats.totalCompleted} completed, {reliabilityStats.totalPaid} paid</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Jobs</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">{totalJobs}</p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Declined / Cancelled</p>

@@ -198,7 +198,113 @@ export async function sendDeclineEmail(params: DeclineEmailParams) {
   }
 }
 
-/** Email 4: Sub cancelled an accepted project — notify admin */
+/** Email 4: Sub requested completion — notify admin */
+export async function sendCompletionRequestEmail(params: {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+}) {
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `${subName} marked ${jobLabel}${customerName} as complete`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">Completion Requested</h2>
+          <p style="color: #666; margin-top: 0;"><strong>${subName}</strong> has marked <strong>${jobLabel}${customerName}</strong> as complete and is awaiting your approval.</p>
+          <p style="color: #666;">Log in to your Kolrabee admin dashboard to review and approve the completion.</p>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Once you approve, the project will move to completed status.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send completion request email:', err)
+  }
+}
+
+/** Email 5: Admin approved completion — notify sub */
+export async function sendCompletionApprovedEmail(params: {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+  payout: number
+  loginUrl: string
+}) {
+  const { to, subName, tenantName, notificationEmail, jobNumber, customerName, payout, loginUrl } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `${jobLabel}${customerName} has been approved as complete`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #16a34a; margin-bottom: 4px;">Job Completed!</h2>
+          <p style="color: #666; margin-top: 0;">Hi ${subName}, <strong>${tenantName}</strong> has approved the completion of <strong>${jobLabel}${customerName}</strong>.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr><td style="padding: 8px 0; color: #666; width: 120px;">Job</td><td style="padding: 8px 0; font-weight: 600;">${jobLabel}${customerName}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Payout</td><td style="padding: 8px 0; font-weight: 600; color: #16a34a;">${formatCurrency(payout)}</td></tr>
+          </table>
+          <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View Details</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">Your YTD earnings have been updated.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send completion approved email:', err)
+  }
+}
+
+/** Email 6: New message notification */
+export async function sendMessageNotificationEmail(params: {
+  to: string
+  senderName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+  messagePreview: string
+  loginUrl: string
+}) {
+  const { to, senderName, tenantName, notificationEmail, jobNumber, customerName, messagePreview, loginUrl } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `New message from ${senderName} on ${jobLabel}${customerName}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">New Message</h2>
+          <p style="color: #666; margin-top: 0;"><strong>${senderName}</strong> sent a message on <strong>${jobLabel}${customerName}</strong>:</p>
+          <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="color: #374151; margin: 0; white-space: pre-wrap;">${messagePreview}</p>
+          </div>
+          <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View &amp; Reply</a>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send message notification email:', err)
+  }
+}
+
+/** Email 7: Sub cancelled an accepted project — notify admin */
 export async function sendCancelEmail(params: CancelEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
@@ -224,7 +330,7 @@ export async function sendCancelEmail(params: CancelEmailParams) {
   }
 }
 
-/** Email 5: Notify sub they got paid — the money email */
+/** Email 8: Notify sub they got paid — the money email */
 export async function sendPaidEmail(params: {
   to: string
   subName: string
@@ -263,7 +369,7 @@ export async function sendPaidEmail(params: {
   }
 }
 
-/** Email 6: Sub updated project status (in_progress / completed) — notify admin with link */
+/** Email 9: Sub updated project status (in_progress / completed) — notify admin with link */
 export async function sendStatusUpdateEmail(params: StatusUpdateEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, newStatus, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''

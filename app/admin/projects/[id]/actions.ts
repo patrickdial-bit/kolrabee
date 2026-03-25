@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendPaidEmail } from '@/lib/email'
-import { getNotificationPrefs } from '@/lib/types'
+import { sendPaidEmail, sendCompletionApprovedEmail } from '@/lib/email'
+import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 
 export async function updateProject(projectId: string, formData: FormData) {
   const customerName = formData.get('customer_name') as string
@@ -85,6 +85,70 @@ export async function markCompleted(projectId: string) {
   return { success: true }
 }
 
+export async function approveCompletion(projectId: string) {
+  const { tenant } = await getCurrentUser()
+
+  if (!hasGrowthFeatures(tenant)) {
+    return { error: 'Completion approval requires the Growth plan or higher. Please upgrade.' }
+  }
+
+  const adminClient = createAdminClient()
+
+  // Get project before update to access sub info
+  const { data: proj } = await adminClient
+    .from('projects')
+    .select('*, accepted_by')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .eq('status', 'pending_completion')
+    .single()
+
+  if (!proj) {
+    return { error: 'Project not found or not pending completion.' }
+  }
+
+  const { error } = await adminClient
+    .from('projects')
+    .update({ status: 'completed' })
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .eq('status', 'pending_completion')
+
+  if (error) {
+    return { error: 'Failed to approve completion.' }
+  }
+
+  // Notify the sub
+  if (proj.accepted_by) {
+    const { data: sub } = await adminClient
+      .from('users')
+      .select('email, first_name, last_name, notification_preferences')
+      .eq('id', proj.accepted_by)
+      .single()
+
+    if (sub) {
+      const prefs = getNotificationPrefs(sub)
+      if (prefs.project_completion_approved) {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        sendCompletionApprovedEmail({
+          to: sub.email,
+          subName: sub.first_name,
+          tenantName: tenant.name,
+          notificationEmail: tenant.notification_email,
+          jobNumber: proj.job_number,
+          customerName: proj.customer_name,
+          payout: proj.payout_amount,
+          loginUrl: `${siteUrl}/${tenant.slug}/login`,
+        })
+      }
+    }
+  }
+
+  revalidatePath(`/admin/projects/${projectId}`)
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
 export async function markPaid(projectId: string) {
   const { tenant } = await getCurrentUser()
   const adminClient = createAdminClient()
@@ -96,7 +160,7 @@ export async function markPaid(projectId: string) {
     })
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
-    .in('status', ['accepted', 'in_progress', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
     .select('id, job_number, customer_name, payout_amount, accepted_by')
 
   if (error) {
@@ -154,7 +218,7 @@ export async function cancelProject(projectId: string, version: number) {
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .eq('version', version)
-    .in('status', ['accepted', 'in_progress', 'completed'])
+    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
     .select('id')
 
   if (error) {

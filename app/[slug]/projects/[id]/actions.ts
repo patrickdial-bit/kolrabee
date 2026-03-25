@@ -3,8 +3,8 @@
 import { redirect } from 'next/navigation'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail, sendStatusUpdateEmail } from '@/lib/email'
-import { getNotificationPrefs } from '@/lib/types'
+import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail, sendStatusUpdateEmail, sendCompletionRequestEmail } from '@/lib/email'
+import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
@@ -215,6 +215,65 @@ export async function markInProgress(projectId: string, expectedVersion: number,
   }
 
   return { success: true }
+}
+
+export async function requestCompletion(projectId: string, expectedVersion: number, slug: string) {
+  const { appUser, tenant } = await getCurrentSub(slug)
+
+  if (!hasGrowthFeatures(tenant)) {
+    return { error: 'Completion approval requires the Growth plan or higher.' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { data, error } = await adminClient
+    .from('projects')
+    .update({
+      status: 'pending_completion',
+      completion_requested_by: appUser.id,
+      completion_requested_at: new Date().toISOString(),
+      version: expectedVersion + 1,
+    })
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .eq('accepted_by', appUser.id)
+    .in('status', ['accepted', 'in_progress'])
+    .eq('version', expectedVersion)
+    .select('*, job_number, customer_name')
+
+  if (error) {
+    return { error: 'Failed to request completion. Please try again.' }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: 'This project has already been updated. Please refresh and try again.' }
+  }
+
+  const project = data[0]
+
+  // Notify admin(s) via email
+  const { data: admins } = await adminClient
+    .from('users')
+    .select('email, notification_preferences')
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+
+  const subName = `${appUser.first_name} ${appUser.last_name}`
+  for (const admin of admins ?? []) {
+    const prefs = getNotificationPrefs(admin)
+    if (!prefs.project_completion_requested) continue
+    sendCompletionRequestEmail({
+      to: admin.email,
+      subName,
+      tenantName: tenant.name,
+      notificationEmail: tenant.notification_email,
+      jobNumber: project.job_number,
+      customerName: project.customer_name,
+    })
+  }
+
+  redirect(`/${slug}/dashboard`)
 }
 
 export async function markCompleted(projectId: string, expectedVersion: number, slug: string) {
