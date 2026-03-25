@@ -107,14 +107,16 @@ export default function PricingPage() {
               <div className="plan-divider"></div>
               <ul className="plan-features">
                 <li className="plan-section-label">Jobs &amp; Dispatch</li>
-                <li>Up to 3 active jobs at a time</li>
+                <li>Up to 5 active jobs at a time</li>
                 <li>3 subcontractors</li>
+                <li>Manual dispatch (1 invite per job)</li>
                 <li>Multiple jobs per day, different start times</li>
                 <li>Job posting with full scope &amp; instructions</li>
                 <li>File attachments on job posts (up to 3)</li>
                 <li className="plan-section-label">Tracking</li>
                 <li>Acceptance tracking in real time</li>
                 <li>Job completion confirmation</li>
+                <li>Job history archive</li>
                 <li>YTD earnings for subs</li>
                 <li className="plan-section-label">Team</li>
                 <li>1 admin user</li>
@@ -137,7 +139,14 @@ export default function PricingPage() {
                 <li className="highlight">Unlimited active jobs</li>
                 <li className="highlight">Unlimited subcontractors</li>
                 <li>Multiple jobs per day, different start times</li>
-                <li>Race-proof assignment engine</li>
+                <li className="race-proof-callout">
+                  <span className="race-proof-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#00A896', color: '#fff', borderRadius: '6px', padding: '2px 10px', fontSize: '0.82rem', fontWeight: 600, letterSpacing: '0.01em' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    Race-proof assignment engine
+                  </span>
+                  <span style={{ display: 'block', fontSize: '0.78rem', color: '#5f6b7a', marginTop: '3px', lineHeight: 1.4 }}>First sub to accept wins. No double-booking, ever.</span>
+                </li>
+                <li>Job templates</li>
                 <li>File attachments on job posts (up to 3)</li>
                 <li className="plan-section-label">Communication</li>
                 <li className="highlight">In-app job messaging (owner &#x2194; sub)</li>
@@ -168,6 +177,7 @@ export default function PricingPage() {
                 <li className="highlight">Up to 5 company workspaces</li>
                 <li className="highlight">Separate URLs per company</li>
                 <li className="highlight">Consolidated owner dashboard</li>
+                <li>Payout export (CSV)</li>
                 <li>All Growth features across every company</li>
                 <li className="plan-section-label">Team</li>
                 <li>2 admin users included per workspace</li>
@@ -199,11 +209,12 @@ export default function PricingPage() {
             </thead>
             <tbody>
               <tr className="row-group"><td colSpan={4}>Jobs &amp; Dispatch</td></tr>
-              <tr><td>Active jobs</td><td>3</td><td>Unlimited</td><td>Unlimited</td></tr>
+              <tr><td>Active jobs</td><td>5</td><td>Unlimited</td><td>Unlimited</td></tr>
               <tr><td>Subcontractors</td><td>3</td><td>Unlimited</td><td>Unlimited</td></tr>
               <tr><td>Multiple jobs per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Different start times per day</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Day jobs &amp; multi-day jobs</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
+              <tr><td>Dispatch mode</td><td>Manual (1 sub)</td><td>Broadcast</td><td>Broadcast</td></tr>
               <tr><td>Race-proof assignments</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>File attachments on jobs</td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr className="row-group"><td colSpan={4}>Communication</td></tr>

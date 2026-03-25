@@ -62,14 +62,6 @@ export default function InviteSubsModal({
     })
   }
 
-  const toggleAll = () => {
-    if (selected.size === availableSubs.length) {
-      setSelected(new Set())
-    } else {
-      setSelected(new Set(availableSubs.map((s) => s.id)))
-    }
-  }
-
   const handleSend = () => {
     setError(null)
     startTransition(async () => {
@@ -119,16 +111,6 @@ export default function InviteSubsModal({
             <>
               {availableSubs.length > 0 && (
                 <>
-                  <label className="flex items-center gap-3 py-2 mb-2 border-b border-gray-100">
-                    <input
-                      type="checkbox"
-                      checked={selected.size === availableSubs.length && availableSubs.length > 0}
-                      onChange={toggleAll}
-                      className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Select All</span>
-                  </label>
-
                   <ul className="space-y-1">
                     {availableSubs.map((sub) => (
                       <li key={sub.id}>
