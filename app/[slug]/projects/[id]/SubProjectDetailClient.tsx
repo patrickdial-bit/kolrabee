@@ -8,7 +8,7 @@ import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { extractCity, formatCurrency, formatDate } from '@/lib/utils'
 import type { Project, ProjectInvitation } from '@/lib/types'
-import { acceptProject, cancelAcceptedProject, declineProject, markInProgress, requestCompletion } from './actions'
+import { acceptProject, cancelAcceptedProject, declineProject, markInProgress, requestCompletion, markCompleted } from './actions'
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
 import type { ProjectAttachment } from '@/lib/types'
 
@@ -30,6 +30,7 @@ interface SubProjectDetailClientProps {
   attachments: ProjectAttachment[]
   messages: MessageWithSender[]
   currentUserId: string
+  hasGrowth: boolean
 }
 
 const statusBadgeClasses: Record<string, string> = {
@@ -62,6 +63,7 @@ export default function SubProjectDetailClient({
   attachments,
   messages,
   currentUserId,
+  hasGrowth,
 }: SubProjectDetailClientProps) {
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
@@ -130,13 +132,26 @@ export default function SubProjectDetailClient({
     setError(null)
     setLoading('complete')
     try {
-      const result = await requestCompletion(project.id, project.version, slug)
-      if (result?.error) {
-        setError(result.error)
-        toast.error(result.error)
-        setShowCompleteConfirm(false)
+      if (hasGrowth) {
+        // Growth/Operator: request completion approval from admin
+        const result = await requestCompletion(project.id, project.version, slug)
+        if (result?.error) {
+          setError(result.error)
+          toast.error(result.error)
+          setShowCompleteConfirm(false)
+        } else {
+          toast.success('Completion requested! Awaiting approval.')
+        }
       } else {
-        toast.success('Completion requested! Awaiting approval.')
+        // Free plan: mark completed directly (no approval workflow)
+        const result = await markCompleted(project.id, project.version, slug)
+        if (result?.error) {
+          setError(result.error)
+          toast.error(result.error)
+          setShowCompleteConfirm(false)
+        } else {
+          toast.success('Job marked complete!')
+        }
       }
     } catch {
       toast.error('Something went wrong. Try again.')
