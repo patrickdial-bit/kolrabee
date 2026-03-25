@@ -65,7 +65,7 @@ export async function signupAction(
       plan: 'free',
       billing_email: email,
       max_projects: 3,
-      max_subcontractors: 1,
+      max_subcontractors: 3,
     })
     .select('id')
     .single()

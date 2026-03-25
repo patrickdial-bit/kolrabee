@@ -45,6 +45,18 @@ export async function joinAction(
     return { notFound: true, error: 'Company not found.' }
   }
 
+  // Enforce subcontractor plan limit
+  const { count: activeSubCount } = await adminClient
+    .from('users')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'subcontractor')
+    .eq('status', 'active')
+
+  if (activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
+    return { error: 'This company has reached its subcontractor limit. Please contact the company administrator.' }
+  }
+
   // Check if email is already registered for this tenant (including deleted)
   const { data: existingUser } = await adminClient
     .from('users')

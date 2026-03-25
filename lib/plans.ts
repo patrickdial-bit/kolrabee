@@ -8,13 +8,13 @@ export const ALL_PLANS: Record<string, { name: string; price: number; features: 
     price: 0,
     features: [
       'Up to 3 projects',
-      '1 subcontractor',
+      '3 subcontractors',
       '1 admin user',
     ],
   },
   growth: {
     name: 'Growth',
-    price: 49,
+    price: 29,
     features: [
       'Unlimited projects',
       'Unlimited subcontractors',
@@ -27,7 +27,7 @@ export const ALL_PLANS: Record<string, { name: string; price: number; features: 
   },
   operator: {
     name: 'Operator',
-    price: 99,
+    price: 49,
     features: [
       'Everything in Growth',
       'Up to 5 company workspaces',
