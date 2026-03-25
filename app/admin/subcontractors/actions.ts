@@ -29,12 +29,25 @@ export async function softDeleteSub(userId: string) {
 
 export async function reactivateSub(userId: string) {
   // Verify caller is an admin
-  const { appUser } = await getCurrentUser()
+  const { appUser, tenant } = await getCurrentUser()
   if (appUser.role !== 'admin') {
     return { error: 'Unauthorized' }
   }
 
   const adminClient = createAdminClient()
+
+  // Enforce subcontractor plan limit before reactivating
+  const { count: activeSubCount } = await adminClient
+    .from('users')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'subcontractor')
+    .eq('status', 'active')
+
+  if (activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
+    return { error: `You've reached your plan limit of ${tenant.max_subcontractors} subcontractor${tenant.max_subcontractors === 1 ? '' : 's'}. Upgrade your plan to reactivate.` }
+  }
+
   const { error } = await adminClient
     .from('users')
     .update({ status: 'active' })
@@ -55,8 +68,21 @@ export async function inviteSubToJoin(email: string, name: string) {
     return { error: 'Unauthorized' }
   }
 
-  // Check if this email already exists for the tenant
   const adminClient = createAdminClient()
+
+  // Enforce subcontractor plan limit
+  const { count: activeSubCount } = await adminClient
+    .from('users')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'subcontractor')
+    .eq('status', 'active')
+
+  if (activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
+    return { error: `You've reached your plan limit of ${tenant.max_subcontractors} subcontractor${tenant.max_subcontractors === 1 ? '' : 's'}. Upgrade your plan to invite more.` }
+  }
+
+  // Check if this email already exists for the tenant
   const { data: existing } = await adminClient
     .from('users')
     .select('id, status')
