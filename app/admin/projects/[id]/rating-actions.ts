@@ -56,7 +56,8 @@ export async function submitRating(projectId: string, rating: number, note: stri
     })
 
   if (error) {
-    return { error: 'Failed to submit rating.' }
+    console.error('Rating insert error:', error)
+    return { error: `Failed to submit rating: ${error.message}` }
   }
 
   revalidatePath(`/admin/projects/${projectId}`)

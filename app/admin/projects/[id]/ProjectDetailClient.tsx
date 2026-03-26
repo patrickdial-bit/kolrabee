@@ -147,8 +147,8 @@ export default function ProjectDetailClient({
     clearMessages()
     startTransition(async () => {
       const result = await submitRating(project.id, ratingValue, ratingNote || null)
-      if (result?.error) setError(result.error)
-      else { setSuccessMsg('Rating submitted.'); setShowRatingModal(false); router.refresh() }
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Rating submitted.'); setShowRatingModal(false); router.refresh() }
     })
   }
 
