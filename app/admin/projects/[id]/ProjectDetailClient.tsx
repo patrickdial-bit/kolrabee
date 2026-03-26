@@ -491,6 +491,16 @@ export default function ProjectDetailClient({
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">{existingRating.note}</p>
                 )}
               </div>
+            ) : tenantPlan === 'free' ? (
+              <div>
+                <button
+                  disabled
+                  className="inline-flex items-center rounded-md bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-400 cursor-not-allowed"
+                >
+                  Rate Subcontractor
+                </button>
+                <p className="mt-2 text-xs text-gray-500">Sub ratings require the <a href="/admin/billing" className="text-ember font-medium hover:underline">Growth plan</a>.</p>
+              </div>
             ) : (
               <div>
                 <button
@@ -568,42 +578,50 @@ export default function ProjectDetailClient({
         {project.accepted_by && (
           <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Messages</h2>
-            {messages.length > 0 ? (
-              <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
-                {messages.map((msg) => {
-                  const isMe = msg.sender_id === currentUserId
-                  return (
-                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-lg px-4 py-2 ${isMe ? 'bg-ember/10 text-gray-900' : 'bg-gray-100 text-gray-900'}`}>
-                        <p className="text-xs font-medium text-gray-500 mb-1">
-                          {msg.sender_name} &middot; {new Date(msg.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                        </p>
-                        <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
-                      </div>
-                    </div>
-                  )
-                })}
+            {tenantPlan === 'free' ? (
+              <div>
+                <p className="text-sm text-gray-400">In-app messaging requires the <a href="/admin/billing" className="text-ember font-medium hover:underline">Growth plan</a>.</p>
               </div>
             ) : (
-              <p className="text-sm text-gray-500 mb-4">No messages yet. Start the conversation.</p>
+              <>
+                {messages.length > 0 ? (
+                  <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                    {messages.map((msg) => {
+                      const isMe = msg.sender_id === currentUserId
+                      return (
+                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-lg px-4 py-2 ${isMe ? 'bg-ember/10 text-gray-900' : 'bg-gray-100 text-gray-900'}`}>
+                            <p className="text-xs font-medium text-gray-500 mb-1">
+                              {msg.sender_name} &middot; {new Date(msg.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            </p>
+                            <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 mb-4">No messages yet. Start the conversation.</p>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={messagePending || !messageText.trim()}
+                    className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    {messagePending ? 'Sending...' : 'Send'}
+                  </button>
+                </div>
+              </>
             )}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={messagePending || !messageText.trim()}
-                className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
-              >
-                {messagePending ? 'Sending...' : 'Send'}
-              </button>
-            </div>
           </div>
         )}
       </main>

@@ -345,7 +345,7 @@ export default function SubProjectDetailClient({
           )}
 
           {/* Messages */}
-          {isAcceptedByMe && (
+          {isAcceptedByMe && hasGrowth && (
             <div className="border-t border-gray-200 px-6 py-5">
               <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">{t('project.messages')}</dt>
               {messages.length > 0 ? (
