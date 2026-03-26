@@ -78,7 +78,7 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await acceptProject(project.id, project.version, slug)
-      if (result?.error) { setError(result.error); toast.error(result.error) }
+      if (result?.error) { setError(result.error); toast.error(result.error); router.refresh() }
       else { toast.success(`Job accepted! ${formatCurrency(project.payout_amount)} added to your queue.`); router.refresh() }
       setShowAcceptModal(null)
     } catch {
@@ -94,7 +94,7 @@ export default function SubDashboardClient({
     setError(null)
     try {
       const result = await cancelAcceptedProject(project.id, project.version, slug)
-      if (result?.error) { setError(result.error); toast.error(result.error) }
+      if (result?.error) { setError(result.error); toast.error(result.error); router.refresh() }
       else { toast.info('Job cancelled. It\'s back in the Available pool.'); router.refresh() }
       setShowCancelConfirm(null)
     } catch {
@@ -110,11 +110,11 @@ export default function SubDashboardClient({
     try {
       if (hasGrowth) {
         const result = await requestCompletion(project.id, project.version, slug)
-        if (result?.error) { setError(result.error); toast.error(result.error) }
+        if (result?.error) { setError(result.error); toast.error(result.error); router.refresh() }
         else { toast.success('Completion submitted! Awaiting owner approval.'); router.refresh() }
       } else {
         const result = await markCompleted(project.id, project.version, slug)
-        if (result?.error) { setError(result.error); toast.error(result.error) }
+        if (result?.error) { setError(result.error); toast.error(result.error); router.refresh() }
         else { toast.success('Job marked complete!'); router.refresh() }
       }
     } catch {
