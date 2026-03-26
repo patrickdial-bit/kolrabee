@@ -14,6 +14,7 @@ import {
   acceptProject,
   cancelAcceptedProject,
   requestCompletion,
+  markCompleted,
 } from '@/app/[slug]/projects/[id]/actions'
 
 interface SubDashboardClientProps {
@@ -25,6 +26,7 @@ interface SubDashboardClientProps {
   myJobs: Project[]
   paidProjects: Project[]
   subName: string
+  hasGrowth: boolean
 }
 
 const columnConfig = [
@@ -44,6 +46,7 @@ export default function SubDashboardClient({
   myJobs,
   paidProjects,
   subName,
+  hasGrowth,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -105,9 +108,15 @@ export default function SubDashboardClient({
     setLoading(true)
     setError(null)
     try {
-      const result = await requestCompletion(project.id, project.version, slug)
-      if (result?.error) { setError(result.error); toast.error(result.error) }
-      else { toast.success(`Completion submitted! Awaiting owner approval.`); router.refresh() }
+      if (hasGrowth) {
+        const result = await requestCompletion(project.id, project.version, slug)
+        if (result?.error) { setError(result.error); toast.error(result.error) }
+        else { toast.success('Completion submitted! Awaiting owner approval.'); router.refresh() }
+      } else {
+        const result = await markCompleted(project.id, project.version, slug)
+        if (result?.error) { setError(result.error); toast.error(result.error) }
+        else { toast.success('Job marked complete!'); router.refresh() }
+      }
     } catch {
       toast.error('Something went wrong. Try again.')
     } finally {

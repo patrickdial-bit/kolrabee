@@ -1,5 +1,6 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { hasGrowthFeatures } from '@/lib/types'
 import SubDashboardClient from './SubDashboardClient'
 
 export default async function SubDashboardPage({
@@ -89,6 +90,7 @@ export default async function SubDashboardPage({
       myJobs={myJobs}
       paidProjects={paidProjects}
       subName={`${appUser.first_name} ${appUser.last_name}`}
+      hasGrowth={hasGrowthFeatures(tenant)}
     />
   )
 }
