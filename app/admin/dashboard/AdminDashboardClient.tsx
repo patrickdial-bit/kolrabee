@@ -523,6 +523,7 @@ export default function AdminDashboardClient({
         <InviteSubsModal
           projectId={inviteProjectId}
           tenantId={tenantId}
+          tenantPlan={tenantPlan}
           existingInvitationSubIds={[]}
           onClose={() => {
             setInviteProjectId(null)
