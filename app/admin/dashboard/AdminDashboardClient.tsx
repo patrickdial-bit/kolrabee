@@ -30,7 +30,7 @@ interface AdminDashboardClientProps {
   platformInvites: PlatformInvite[]
 }
 
-const STATUS_TABS = ['Available', 'Accepted', 'Paid']
+const STATUS_TABS = ['Available', 'Accepted', 'Completed', 'Paid']
 
 export default function AdminDashboardClient({
   projects,
@@ -78,7 +78,8 @@ export default function AdminDashboardClient({
   const counts = useMemo(() => {
     const c: Record<string, number> = {}
     c['Available'] = projects.filter((p) => p.status === 'available').length
-    c['Accepted'] = projects.filter((p) => p.status === 'accepted' || p.status === 'in_progress' || p.status === 'pending_completion' || p.status === 'completed').length
+    c['Accepted'] = projects.filter((p) => p.status === 'accepted' || p.status === 'in_progress').length
+    c['Completed'] = projects.filter((p) => p.status === 'pending_completion' || p.status === 'completed').length
     c['Paid'] = projects.filter((p) => p.status === 'paid').length
     return c
   }, [projects])
@@ -88,7 +89,9 @@ export default function AdminDashboardClient({
     if (activeTab === 'Available') {
       result = projects.filter((p) => p.status === 'available')
     } else if (activeTab === 'Accepted') {
-      result = projects.filter((p) => p.status === 'accepted' || p.status === 'in_progress' || p.status === 'pending_completion' || p.status === 'completed')
+      result = projects.filter((p) => p.status === 'accepted' || p.status === 'in_progress')
+    } else if (activeTab === 'Completed') {
+      result = projects.filter((p) => p.status === 'pending_completion' || p.status === 'completed')
     } else {
       result = projects.filter((p) => p.status === 'paid')
     }
@@ -352,8 +355,8 @@ export default function AdminDashboardClient({
                   <div className="space-y-1 text-xs text-gray-500 mb-3">
                     <p>{formatDateTime(project.start_date, project.start_time)}</p>
                     <p className="truncate">{project.address}</p>
-                    {activeTab === 'Accepted' && project.accepted_by && subNameMap[project.accepted_by] && (
-                      <p className="text-ember font-medium">Accepted by: {subNameMap[project.accepted_by]}</p>
+                    {(activeTab === 'Accepted' || activeTab === 'Completed') && project.accepted_by && subNameMap[project.accepted_by] && (
+                      <p className="text-ember font-medium">{activeTab === 'Completed' ? 'Completed by' : 'Accepted by'}: {subNameMap[project.accepted_by]}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -368,14 +371,16 @@ export default function AdminDashboardClient({
                     {activeTab === 'Accepted' && (
                       <>
                         <Link href={`/admin/projects/${project.id}`}
-                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
-                          Paid
-                        </Link>
-                        <Link href={`/admin/projects/${project.id}`}
                           className="rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200">
                           Cancel
                         </Link>
                       </>
+                    )}
+                    {activeTab === 'Completed' && (
+                      <Link href={`/admin/projects/${project.id}`}
+                        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
+                        Mark Paid
+                      </Link>
                     )}
                     <Link href={`/admin/projects/${project.id}`}
                       className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
@@ -399,8 +404,8 @@ export default function AdminDashboardClient({
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Invite</th>
                     )}
                     <SortTh label="Project Number / ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
-                    {activeTab === 'Accepted' && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Accepted by</th>
+                    {(activeTab === 'Accepted' || activeTab === 'Completed') && (
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">{activeTab === 'Completed' ? 'Completed by' : 'Accepted by'}</th>
                     )}
                     <SortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
                     <SortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
@@ -410,10 +415,10 @@ export default function AdminDashboardClient({
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Notes</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
                     {activeTab === 'Accepted' && (
-                      <>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Paid</th>
-                      </>
+                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
+                    )}
+                    {(activeTab === 'Accepted' || activeTab === 'Completed') && (
+                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Paid</th>
                     )}
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Edit</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Delete</th>
@@ -436,7 +441,7 @@ export default function AdminDashboardClient({
                         {project.customer_name}
                         {project.job_number && <span className="ml-1 text-gray-500">#{project.job_number}</span>}
                       </td>
-                      {activeTab === 'Accepted' && (
+                      {(activeTab === 'Accepted' || activeTab === 'Completed') && (
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
                           {project.accepted_by && subNameMap[project.accepted_by]
                             ? (
@@ -479,20 +484,20 @@ export default function AdminDashboardClient({
                         ) : '—'}
                       </td>
                       {activeTab === 'Accepted' && (
-                        <>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            <Link href={`/admin/projects/${project.id}`}
-                              className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors">
-                              Cancel
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                            <Link href={`/admin/projects/${project.id}`}
-                              className="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700 transition-colors">
-                              Paid
-                            </Link>
-                          </td>
-                        </>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                          <Link href={`/admin/projects/${project.id}`}
+                            className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors">
+                            Cancel
+                          </Link>
+                        </td>
+                      )}
+                      {(activeTab === 'Accepted' || activeTab === 'Completed') && (
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                          <Link href={`/admin/projects/${project.id}`}
+                            className="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700 transition-colors">
+                            Mark Paid
+                          </Link>
+                        </td>
                       )}
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                         <Link href={`/admin/projects/${project.id}`} className="text-amber-600 hover:text-amber-800">
