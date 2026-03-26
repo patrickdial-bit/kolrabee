@@ -53,7 +53,7 @@ export async function createProject(formData: FormData) {
     .eq('tenant_id', tenant.id)
     .neq('status', 'cancelled')
 
-  if (projectCount !== null && projectCount >= tenant.max_projects) {
+  if (tenant.max_projects >= 0 && projectCount !== null && projectCount >= tenant.max_projects) {
     return { error: `You've reached your plan limit of ${tenant.max_projects} projects. Please upgrade your plan.` }
   }
 

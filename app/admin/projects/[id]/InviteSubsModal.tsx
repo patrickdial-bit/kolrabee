@@ -16,6 +16,7 @@ interface Sub {
 interface InviteSubsModalProps {
   projectId: string
   tenantId: string
+  tenantPlan: string
   existingInvitationSubIds: string[]
   onClose: () => void
 }
@@ -23,6 +24,7 @@ interface InviteSubsModalProps {
 export default function InviteSubsModal({
   projectId,
   tenantId,
+  tenantPlan,
   existingInvitationSubIds,
   onClose,
 }: InviteSubsModalProps) {
@@ -31,6 +33,9 @@ export default function InviteSubsModal({
   const [loading, setLoading] = useState(true)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  const isFreePlan = tenantPlan === 'free'
+  const isBroadcast = tenantPlan === 'growth' || tenantPlan === 'operator'
 
   useEffect(() => {
     async function load() {
@@ -54,12 +59,21 @@ export default function InviteSubsModal({
   const nonCompliantSubs = subs.filter((s) => !existingInvitationSubIds.includes(s.id) && !s.compliant)
 
   const toggleSub = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+    if (isFreePlan) {
+      // Radio behavior: only one sub at a time
+      setSelected((prev) => {
+        if (prev.has(id)) return new Set()
+        return new Set([id])
+      })
+    } else {
+      // Checkbox behavior: multi-select
+      setSelected((prev) => {
+        const next = new Set(prev)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      })
+    }
   }
 
   const handleSend = () => {
@@ -70,7 +84,10 @@ export default function InviteSubsModal({
         setError(result.error)
         toast.error(result.error)
       } else {
-        toast.success(`Invites sent to ${selected.size} subcontractor${selected.size > 1 ? 's' : ''}.`)
+        const msg = isFreePlan
+          ? `Assigned to ${selected.size} subcontractor.`
+          : `Invites sent to ${selected.size} subcontractor${selected.size > 1 ? 's' : ''}.`
+        toast.success(msg)
         onClose()
       }
     })
@@ -81,7 +98,9 @@ export default function InviteSubsModal({
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Invite Subcontractors</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {isFreePlan ? 'Assign Subcontractor' : 'Invite Subcontractors'}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -93,6 +112,18 @@ export default function InviteSubsModal({
           {error && (
             <div className="mb-4 rounded-md bg-amber-50 p-3">
               <p className="text-sm text-amber-700">{error}</p>
+            </div>
+          )}
+
+          {isFreePlan && (
+            <div className="mb-4 rounded-md bg-gray-50 border border-gray-200 p-3">
+              <p className="text-xs text-gray-600">
+                Free plan: manual dispatch — select 1 subcontractor per job.{' '}
+                <a href="/admin/billing" className="text-ember font-medium hover:underline">
+                  Upgrade to Growth
+                </a>{' '}
+                for broadcast dispatch.
+              </p>
             </div>
           )}
 
@@ -110,30 +141,29 @@ export default function InviteSubsModal({
           ) : (
             <>
               {availableSubs.length > 0 && (
-                <>
-                  <ul className="space-y-1">
-                    {availableSubs.map((sub) => (
-                      <li key={sub.id}>
-                        <label className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selected.has(sub.id)}
-                            onChange={() => toggleSub(sub.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {sub.first_name} {sub.last_name}
-                            </p>
-                            {sub.company_name && (
-                              <p className="text-xs text-gray-500 truncate">{sub.company_name}</p>
-                            )}
-                          </div>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                <ul className="space-y-1">
+                  {availableSubs.map((sub) => (
+                    <li key={sub.id}>
+                      <label className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type={isFreePlan ? 'radio' : 'checkbox'}
+                          name={isFreePlan ? 'sub-select' : undefined}
+                          checked={selected.has(sub.id)}
+                          onChange={() => toggleSub(sub.id)}
+                          className="h-4 w-4 border-gray-300 text-ember focus:ring-ember"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {sub.first_name} {sub.last_name}
+                          </p>
+                          {sub.company_name && (
+                            <p className="text-xs text-gray-500 truncate">{sub.company_name}</p>
+                          )}
+                        </div>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
               )}
 
               {/* Non-compliant subs shown as unavailable */}
@@ -145,7 +175,7 @@ export default function InviteSubsModal({
                   <ul className="space-y-1">
                     {nonCompliantSubs.map((sub) => (
                       <li key={sub.id} className="flex items-center gap-3 px-2 py-1.5 opacity-50">
-                        <input type="checkbox" disabled className="h-4 w-4 rounded border-gray-300" />
+                        <input type={isFreePlan ? 'radio' : 'checkbox'} disabled className="h-4 w-4 border-gray-300" />
                         <span className="text-sm text-gray-500">
                           {sub.first_name} {sub.last_name}
                         </span>
@@ -164,7 +194,7 @@ export default function InviteSubsModal({
                       .filter((s) => existingInvitationSubIds.includes(s.id))
                       .map((sub) => (
                         <li key={sub.id} className="flex items-center gap-3 px-2 py-1.5 opacity-50">
-                          <input type="checkbox" checked disabled className="h-4 w-4 rounded border-gray-300" />
+                          <input type={isFreePlan ? 'radio' : 'checkbox'} checked disabled className="h-4 w-4 border-gray-300" />
                           <span className="text-sm text-gray-500">{sub.first_name} {sub.last_name}</span>
                         </li>
                       ))}
@@ -182,7 +212,12 @@ export default function InviteSubsModal({
           </button>
           <button onClick={handleSend} disabled={isPending || selected.size === 0}
             className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors">
-            {isPending ? 'Sending...' : `Send Invites (${selected.size})`}
+            {isPending
+              ? 'Sending...'
+              : isFreePlan
+                ? `Assign (${selected.size})`
+                : `Send Invites (${selected.size})`
+            }
           </button>
         </div>
       </div>

@@ -42,6 +42,7 @@ interface ProjectDetailClientProps {
   acceptedByUser: { first_name: string; last_name: string; email: string } | null
   tenantName: string
   tenantId: string
+  tenantPlan: string
   existingRating: SubRating | null
   attachments: ProjectAttachment[]
   messages: MessageWithSender[]
@@ -70,6 +71,7 @@ export default function ProjectDetailClient({
   acceptedByUser,
   tenantName,
   tenantId,
+  tenantPlan,
   existingRating,
   attachments,
   messages,
@@ -650,6 +652,7 @@ export default function ProjectDetailClient({
         <InviteSubsModal
           projectId={project.id}
           tenantId={tenantId}
+          tenantPlan={tenantPlan}
           existingInvitationSubIds={invitations.map((i) => i.subcontractor_id)}
           onClose={() => { setShowInviteModal(false); router.refresh() }}
         />

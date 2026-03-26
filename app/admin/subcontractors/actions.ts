@@ -45,7 +45,7 @@ export async function reactivateSub(userId: string) {
     .eq('role', 'subcontractor')
     .eq('status', 'active')
 
-  if (activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
+  if (tenant.max_subcontractors >= 0 && activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
     return { error: `You've reached your plan limit of ${tenant.max_subcontractors} subcontractor${tenant.max_subcontractors === 1 ? '' : 's'}. Upgrade your plan to reactivate.` }
   }
 
@@ -80,7 +80,7 @@ export async function inviteSubToJoin(email: string, name: string) {
     .eq('role', 'subcontractor')
     .eq('status', 'active')
 
-  if (activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
+  if (tenant.max_subcontractors >= 0 && activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
     return { error: `You've reached your plan limit of ${tenant.max_subcontractors} subcontractor${tenant.max_subcontractors === 1 ? '' : 's'}. Upgrade your plan to invite more.` }
   }
 

@@ -70,7 +70,7 @@ export default function BillingClient({ tenant }: Props) {
   }
 
   async function handleCancelSubscription() {
-    if (!confirm('Are you sure you want to downgrade to the Free plan? You will lose access to Growth/Operator features immediately.')) return
+    if (!confirm('Are you sure? You\'ll lose access to broadcast dispatch, Race-Proof assignments, messaging, and ratings. Your plan will change to Free at the end of your current billing period.')) return
     setLoading('cancel')
     setError(null)
     try {
@@ -146,13 +146,13 @@ export default function BillingClient({ tenant }: Props) {
           <div className="rounded-md bg-gray-50 p-3">
             <p className="text-xs text-gray-500">Project Limit</p>
             <p className="text-sm font-semibold text-gray-900">
-              {tenant.max_projects >= 999999 ? 'Unlimited' : `${tenant.max_projects} projects`}
+              {tenant.max_projects < 0 || tenant.max_projects >= 999999 ? 'Unlimited' : `${tenant.max_projects} projects`}
             </p>
           </div>
           <div className="rounded-md bg-gray-50 p-3">
             <p className="text-xs text-gray-500">Subcontractor Limit</p>
             <p className="text-sm font-semibold text-gray-900">
-              {tenant.max_subcontractors >= 999999 ? 'Unlimited' : `${tenant.max_subcontractors} subcontractors`}
+              {tenant.max_subcontractors < 0 || tenant.max_subcontractors >= 999999 ? 'Unlimited' : `${tenant.max_subcontractors} subcontractors`}
             </p>
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function BillingClient({ tenant }: Props) {
             <button
               onClick={handleCancelSubscription}
               disabled={loading === 'cancel'}
-              className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-amber-700 border-2 border-amber-300 hover:bg-amber-50 transition-colors disabled:opacity-50"
+              className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               {loading === 'cancel' ? 'Processing...' : 'Downgrade to Free'}
             </button>
@@ -345,7 +345,7 @@ export default function BillingClient({ tenant }: Props) {
                 <button
                   onClick={() => handleCheckout(planId)}
                   disabled={loading !== null}
-                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold bg-ember text-white hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50" style={{ backgroundColor: '#00A896' }}
                 >
                   {loading === planId ? 'Redirecting...' : 'Upgrade to Operator'}
                 </button>
@@ -353,7 +353,7 @@ export default function BillingClient({ tenant }: Props) {
                 <button
                   onClick={() => handleCheckout(planId)}
                   disabled={loading !== null}
-                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-700 border-2 border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   {loading === planId ? 'Redirecting...' : 'Downgrade to Growth'}
                 </button>
@@ -361,11 +361,7 @@ export default function BillingClient({ tenant }: Props) {
                 <button
                   onClick={() => handleCheckout(planId)}
                   disabled={loading !== null}
-                  className={`mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
-                    planId === 'operator'
-                      ? 'bg-ember text-white hover:bg-primary-700'
-                      : 'bg-white text-ember border-2 border-ember hover:bg-ember/10'
-                  }`}
+                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50" style={{ backgroundColor: '#00A896' }}
                 >
                   {loading === planId ? 'Redirecting...' : `Upgrade to ${plan.name}`}
                 </button>
