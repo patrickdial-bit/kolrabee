@@ -13,7 +13,7 @@ export type PlatformInvite = {
 }
 
 export default async function AdminDashboardPage() {
-  const { tenant } = await getCurrentUser()
+  const { appUser, tenant } = await getCurrentUser()
 
   const adminClient = createAdminClient()
   const { data: projects } = await adminClient
@@ -74,6 +74,7 @@ export default async function AdminDashboardPage() {
       projectCount={projectCount ?? 0}
       subCount={subCount ?? 0}
       platformInvites={(platformInvites ?? []) as PlatformInvite[]}
+      currentUserId={appUser.id}
     />
   )
 }

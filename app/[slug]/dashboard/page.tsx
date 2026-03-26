@@ -91,6 +91,8 @@ export default async function SubDashboardPage({
       paidProjects={paidProjects}
       subName={`${appUser.first_name} ${appUser.last_name}`}
       hasGrowth={hasGrowthFeatures(tenant)}
+      currentUserId={appUser.id}
+      tenantPlan={tenant.plan ?? 'free'}
     />
   )
 }

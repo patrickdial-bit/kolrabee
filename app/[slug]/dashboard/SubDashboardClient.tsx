@@ -16,6 +16,8 @@ import {
   requestCompletion,
   markCompleted,
 } from '@/app/[slug]/projects/[id]/actions'
+import ChatDrawer from '@/components/ChatDrawer'
+import { sendSubMessage, getSubMessages } from '@/app/[slug]/projects/[id]/message-actions'
 
 interface SubDashboardClientProps {
   slug: string
@@ -27,6 +29,8 @@ interface SubDashboardClientProps {
   paidProjects: Project[]
   subName: string
   hasGrowth: boolean
+  currentUserId: string
+  tenantPlan: string
 }
 
 const columnConfig = [
@@ -47,12 +51,22 @@ export default function SubDashboardClient({
   paidProjects,
   subName,
   hasGrowth,
+  currentUserId,
+  tenantPlan,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
   const router = useRouter()
   const [showAcceptModal, setShowAcceptModal] = useState<Project | null>(null)
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [chatProject, setChatProject] = useState<Project | null>(null)
+
+  const handleSubSend = async (projectId: string, body: string) => {
+    return sendSubMessage(projectId, body, slug)
+  }
+  const handleSubFetch = async (projectId: string) => {
+    return getSubMessages(projectId, slug)
+  }
   const [error, setError] = useState<string | null>(null)
   const [mobileTab, setMobileTab] = useState<typeof columnConfig[number]['key']>('available')
 
@@ -228,6 +242,7 @@ export default function SubDashboardClient({
                       : setShowCancelConfirm(project.id)
                   }
                   onCancelDismiss={() => setShowCancelConfirm(null)}
+                  onChat={() => setChatProject(project)}
                   t={t}
                 />
               ))
@@ -273,6 +288,7 @@ export default function SubDashboardClient({
                             : setShowCancelConfirm(project.id)
                         }
                         onCancelDismiss={() => setShowCancelConfirm(null)}
+                        onChat={() => setChatProject(project)}
                         t={t}
                       />
                     ))
@@ -317,6 +333,18 @@ export default function SubDashboardClient({
         </div>
       )}
 
+      {/* Chat drawer */}
+      <ChatDrawer
+        isOpen={!!chatProject}
+        onClose={() => setChatProject(null)}
+        projectId={chatProject?.id ?? ''}
+        projectTitle={chatProject ? `${chatProject.customer_name}${chatProject.job_number ? ` #${chatProject.job_number}` : ''}` : ''}
+        currentUserId={currentUserId}
+        onSend={handleSubSend}
+        onFetchMessages={handleSubFetch}
+        tenantPlan={tenantPlan}
+      />
+
       <GuidedTour steps={tourSteps} tourKey="sub-dashboard" />
     </div>
   )
@@ -333,6 +361,7 @@ function KanbanCard({
   onMarkComplete,
   onCancel,
   onCancelDismiss,
+  onChat,
   t,
 }: {
   project: Project
@@ -345,6 +374,7 @@ function KanbanCard({
   onMarkComplete: () => void
   onCancel: () => void
   onCancelDismiss: () => void
+  onChat: () => void
   t: (key: string) => string
 }) {
   return (
@@ -419,6 +449,15 @@ function KanbanCard({
               className="flex-1 rounded-md bg-green-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
             >
               {t('project.mark_complete') || 'Mark Complete'}
+            </button>
+            <button
+              onClick={onChat}
+              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-gray-400 hover:text-ember hover:bg-gray-50 transition-colors"
+              title="Chat"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+              </svg>
             </button>
             {showCancelConfirm === project.id ? (
               <div className="flex gap-1">

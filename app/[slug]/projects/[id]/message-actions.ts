@@ -72,6 +72,34 @@ export async function sendSubMessage(projectId: string, body: string, slug: stri
   return { success: true }
 }
 
+export async function getSubMessages(projectId: string, slug: string) {
+  const { tenant } = await getCurrentSub(slug)
+  const adminClient = createAdminClient()
+
+  const { data, error } = await adminClient
+    .from('job_messages')
+    .select('*, sender:users!job_messages_sender_id_fkey(first_name, last_name)')
+    .eq('project_id', projectId)
+    .eq('tenant_id', tenant.id)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return { messages: [] }
+  }
+
+  return {
+    messages: (data ?? []).map((m: any) => ({
+      id: m.id,
+      tenant_id: m.tenant_id,
+      project_id: m.project_id,
+      sender_id: m.sender_id,
+      body: m.body,
+      created_at: m.created_at,
+      sender_name: m.sender ? `${m.sender.first_name} ${m.sender.last_name}` : 'Unknown',
+    })),
+  }
+}
+
 export async function getSubAttachmentUrl(attachmentId: string, slug: string) {
   const { tenant } = await getCurrentSub(slug)
   const adminClient = createAdminClient()

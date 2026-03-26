@@ -11,6 +11,8 @@ import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import type { PlatformInvite } from './page'
+import ChatDrawer from '@/components/ChatDrawer'
+import { sendMessage, getMessages } from '@/app/admin/projects/[id]/message-actions'
 
 type SortKey = 'customer_name' | 'start_date' | 'payout_amount' | 'estimated_labor_hours' | 'address'
 type SortDir = 'asc' | 'desc'
@@ -28,6 +30,7 @@ interface AdminDashboardClientProps {
   projectCount: number
   subCount: number
   platformInvites: PlatformInvite[]
+  currentUserId: string
 }
 
 const STATUS_TABS = ['Available', 'Accepted', 'Completed', 'Paid']
@@ -45,6 +48,7 @@ export default function AdminDashboardClient({
   projectCount,
   subCount,
   platformInvites,
+  currentUserId,
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState('Available')
   const [search, setSearch] = useState('')
@@ -52,6 +56,7 @@ export default function AdminDashboardClient({
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [inviteProjectId, setInviteProjectId] = useState<string | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [chatProject, setChatProject] = useState<Project | null>(null)
   const router = useRouter()
 
   const subLoginUrl = typeof window !== 'undefined'
@@ -370,6 +375,10 @@ export default function AdminDashboardClient({
                     )}
                     {activeTab === 'Accepted' && (
                       <>
+                        <button onClick={() => setChatProject(project)}
+                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                          Chat
+                        </button>
                         <Link href={`/admin/projects/${project.id}`}
                           className="rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200">
                           Cancel
@@ -377,10 +386,16 @@ export default function AdminDashboardClient({
                       </>
                     )}
                     {activeTab === 'Completed' && (
-                      <Link href={`/admin/projects/${project.id}`}
-                        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
-                        Mark Paid
-                      </Link>
+                      <>
+                        <button onClick={() => setChatProject(project)}
+                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
+                          Chat
+                        </button>
+                        <Link href={`/admin/projects/${project.id}`}
+                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
+                          Mark Paid
+                        </Link>
+                      </>
                     )}
                     <Link href={`/admin/projects/${project.id}`}
                       className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
@@ -414,6 +429,9 @@ export default function AdminDashboardClient({
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Notes</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
+                    {(activeTab === 'Accepted' || activeTab === 'Completed') && (
+                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Chat</th>
+                    )}
                     {activeTab === 'Accepted' && (
                       <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
                     )}
@@ -483,6 +501,16 @@ export default function AdminDashboardClient({
                             className="text-ember hover:text-primary-700 font-medium">Link</a>
                         ) : '—'}
                       </td>
+                      {(activeTab === 'Accepted' || activeTab === 'Completed') && (
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                          <button onClick={() => setChatProject(project)}
+                            className="text-gray-400 hover:text-ember transition-colors">
+                            <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
                       {activeTab === 'Accepted' && (
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                           <Link href={`/admin/projects/${project.id}`}
@@ -536,6 +564,18 @@ export default function AdminDashboardClient({
           }}
         />
       )}
+
+      {/* Chat drawer */}
+      <ChatDrawer
+        isOpen={!!chatProject}
+        onClose={() => setChatProject(null)}
+        projectId={chatProject?.id ?? ''}
+        projectTitle={chatProject ? `${chatProject.customer_name}${chatProject.job_number ? ` #${chatProject.job_number}` : ''}` : ''}
+        currentUserId={currentUserId}
+        onSend={sendMessage}
+        onFetchMessages={getMessages}
+        tenantPlan={tenantPlan}
+      />
 
       {/* Guided tour for first-time users */}
       <GuidedTour steps={dashboardTourSteps} tourKey="admin-dashboard" />
