@@ -81,9 +81,8 @@ export function isTenantActive(tenant: Tenant): boolean {
 // Plan limits lookup
 export const PLAN_LIMITS: Record<string, { max_projects: number; max_subcontractors: number }> = {
   free: { max_projects: 5, max_subcontractors: 3 },
-  trial: { max_projects: 10, max_subcontractors: 5 },
-  growth: { max_projects: 999999, max_subcontractors: 999999 },
-  operator: { max_projects: 999999, max_subcontractors: 999999 },
+  growth: { max_projects: -1, max_subcontractors: -1 },
+  operator: { max_projects: -1, max_subcontractors: -1 },
 }
 
 export type Project = {

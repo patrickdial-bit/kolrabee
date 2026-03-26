@@ -94,6 +94,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       acceptedByUser={acceptedByUser}
       tenantName={tenant.name}
       tenantId={tenant.id}
+      tenantPlan={tenant.plan ?? 'free'}
       existingRating={ratingData as SubRating | null}
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}

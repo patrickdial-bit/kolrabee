@@ -180,11 +180,11 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
               )}
               <div className="flex justify-between">
                 <dt className="text-gray-500">Max Projects</dt>
-                <dd className="text-gray-900">{tenant.max_projects >= 999999 ? 'Unlimited' : tenant.max_projects}</dd>
+                <dd className="text-gray-900">{tenant.max_projects < 0 || tenant.max_projects >= 999999 ? 'Unlimited' : tenant.max_projects}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-500">Max Subs</dt>
-                <dd className="text-gray-900">{tenant.max_subcontractors >= 999999 ? 'Unlimited' : tenant.max_subcontractors}</dd>
+                <dd className="text-gray-900">{tenant.max_subcontractors < 0 || tenant.max_subcontractors >= 999999 ? 'Unlimited' : tenant.max_subcontractors}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-500">Notification Email</dt>

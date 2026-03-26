@@ -53,7 +53,7 @@ export async function joinAction(
     .eq('role', 'subcontractor')
     .eq('status', 'active')
 
-  if (activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
+  if (tenant.max_subcontractors >= 0 && activeSubCount !== null && activeSubCount >= tenant.max_subcontractors) {
     return { error: 'This company has reached its subcontractor limit. Please contact the company administrator.' }
   }
 

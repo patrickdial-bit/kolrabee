@@ -219,13 +219,13 @@ export default function AdminDashboardClient({
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Used</p>
             <p className="mt-1 text-lg font-bold text-gray-900">
-              {projectCount}/{maxProjects >= 999999 ? '∞' : maxProjects}
+              {projectCount}/{maxProjects < 0 || maxProjects >= 999999 ? '∞' : maxProjects}
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractors</p>
             <p className="mt-1 text-lg font-bold text-gray-900">
-              {subCount}/{maxSubcontractors >= 999999 ? '∞' : maxSubcontractors}
+              {subCount}/{maxSubcontractors < 0 || maxSubcontractors >= 999999 ? '∞' : maxSubcontractors}
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">

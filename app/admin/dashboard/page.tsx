@@ -69,8 +69,8 @@ export default async function AdminDashboardPage() {
       tenantSlug={tenant.slug ?? ''}
       tenantPlan={tenant.plan ?? 'free'}
       trialEndsAt={tenant.trial_ends_at ?? null}
-      maxProjects={tenant.max_projects ?? 3}
-      maxSubcontractors={tenant.max_subcontractors ?? 1}
+      maxProjects={tenant.max_projects ?? 5}
+      maxSubcontractors={tenant.max_subcontractors ?? 3}
       projectCount={projectCount ?? 0}
       subCount={subCount ?? 0}
       platformInvites={(platformInvites ?? []) as PlatformInvite[]}
