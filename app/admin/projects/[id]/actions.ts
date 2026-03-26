@@ -229,6 +229,14 @@ export async function cancelProject(projectId: string, version: number) {
     return { error: 'Conflict: this project was modified by someone else. Please refresh.' }
   }
 
+  // Restore all invitations to 'invited' so subs can see the job again
+  await adminClient
+    .from('project_invitations')
+    .update({ status: 'invited' })
+    .eq('project_id', projectId)
+    .eq('tenant_id', tenant.id)
+    .in('status', ['accepted', 'declined'])
+
   revalidatePath(`/admin/projects/${projectId}`)
   revalidatePath('/admin/dashboard')
   return { success: true }
