@@ -1,5 +1,6 @@
 import { getCurrentUser, type Project } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getUnreadCounts } from '@/lib/message-reads'
 import AdminDashboardClient from './AdminDashboardClient'
 
 export type PlatformInvite = {
@@ -60,6 +61,12 @@ export default async function AdminDashboardPage() {
     .eq('tenant_id', tenant.id)
     .order('invited_at', { ascending: false })
 
+  // Get unread message counts for active projects
+  const activeProjectIds = (projects ?? [])
+    .filter((p: any) => ['accepted', 'in_progress', 'pending_completion', 'completed'].includes(p.status))
+    .map((p: any) => p.id)
+  const unreadCounts = await getUnreadCounts(appUser.id, activeProjectIds)
+
   return (
     <AdminDashboardClient
       projects={(projects ?? []) as Project[]}
@@ -75,6 +82,7 @@ export default async function AdminDashboardPage() {
       subCount={subCount ?? 0}
       platformInvites={(platformInvites ?? []) as PlatformInvite[]}
       currentUserId={appUser.id}
+      unreadCounts={unreadCounts}
     />
   )
 }

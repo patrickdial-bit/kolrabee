@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { markMessagesRead } from '@/lib/message-reads'
 
 interface Message {
   id: string
@@ -19,6 +20,7 @@ interface ChatDrawerProps {
   onSend: (projectId: string, body: string) => Promise<{ error?: string; success?: boolean }>
   onFetchMessages: (projectId: string) => Promise<{ messages: Message[] }>
   tenantPlan: string
+  onRead?: () => void
 }
 
 export default function ChatDrawer({
@@ -30,6 +32,7 @@ export default function ChatDrawer({
   onSend,
   onFetchMessages,
   tenantPlan,
+  onRead,
 }: ChatDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [messageText, setMessageText] = useState('')
@@ -47,8 +50,10 @@ export default function ChatDrawer({
         setMessages(result.messages ?? [])
         setLoading(false)
       })
+      markMessagesRead(currentUserId, projectId)
+      onRead?.()
     }
-  }, [isOpen, projectId, onFetchMessages])
+  }, [isOpen, projectId, onFetchMessages, currentUserId, onRead])
 
   useEffect(() => {
     if (scrollRef.current) {

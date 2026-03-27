@@ -33,6 +33,7 @@ interface SubDashboardClientProps {
   tenantPlan: string
   avgRating: number
   totalRatings: number
+  unreadCounts: Record<string, number>
 }
 
 const columnConfig = [
@@ -57,6 +58,7 @@ export default function SubDashboardClient({
   tenantPlan,
   avgRating,
   totalRatings,
+  unreadCounts: initialUnreadCounts,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -64,6 +66,7 @@ export default function SubDashboardClient({
   const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [chatProject, setChatProject] = useState<Project | null>(null)
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>(initialUnreadCounts)
 
   const handleSubSend = async (projectId: string, body: string) => {
     return sendSubMessage(projectId, body, slug)
@@ -262,6 +265,7 @@ export default function SubDashboardClient({
                   }
                   onCancelDismiss={() => setShowCancelConfirm(null)}
                   onChat={() => setChatProject(project)}
+                  unreadCount={unreadCounts[project.id] ?? 0}
                   t={t}
                 />
               ))
@@ -308,6 +312,7 @@ export default function SubDashboardClient({
                         }
                         onCancelDismiss={() => setShowCancelConfirm(null)}
                         onChat={() => setChatProject(project)}
+                        unreadCount={unreadCounts[project.id] ?? 0}
                         t={t}
                       />
                     ))
@@ -362,6 +367,11 @@ export default function SubDashboardClient({
         onSend={handleSubSend}
         onFetchMessages={handleSubFetch}
         tenantPlan={tenantPlan}
+        onRead={() => {
+          if (chatProject) {
+            setUnreadCounts((prev) => { const next = { ...prev }; delete next[chatProject.id]; return next })
+          }
+        }}
       />
 
       <GuidedTour steps={tourSteps} tourKey="sub-dashboard" />
@@ -381,6 +391,7 @@ function KanbanCard({
   onCancel,
   onCancelDismiss,
   onChat,
+  unreadCount,
   t,
 }: {
   project: Project
@@ -394,6 +405,7 @@ function KanbanCard({
   onCancel: () => void
   onCancelDismiss: () => void
   onChat: () => void
+  unreadCount: number
   t: (key: string) => string
 }) {
   return (
@@ -496,12 +508,17 @@ function KanbanCard({
         {(column === 'accepted' || column === 'pending_completion' || column === 'completed') && (
           <button
             onClick={onChat}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-ember hover:bg-gray-50 transition-colors flex items-center gap-1"
+            className="relative rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-ember hover:bg-gray-50 transition-colors flex items-center gap-1"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
             </svg>
             Chat
+            {unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasGrowthFeatures } from '@/lib/types'
+import { getUnreadCounts } from '@/lib/message-reads'
 import SubDashboardClient from './SubDashboardClient'
 
 export default async function SubDashboardPage({
@@ -96,6 +97,10 @@ export default async function SubDashboardPage({
       : 0
   }
 
+  // Get unread message counts
+  const myJobIds = myJobs.map(j => j.id)
+  const unreadCounts = await getUnreadCounts(appUser.id, myJobIds)
+
   return (
     <SubDashboardClient
       slug={slug}
@@ -111,6 +116,7 @@ export default async function SubDashboardPage({
       tenantPlan={tenant.plan ?? 'free'}
       avgRating={avgRating}
       totalRatings={totalRatings}
+      unreadCounts={unreadCounts}
     />
   )
 }
