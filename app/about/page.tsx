@@ -1,65 +1,11 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
+import MarketingNav from '@/components/MarketingNav'
 import KolrabeeLogo from '@/components/KolrabeeLogo'
 
 export default function AboutPage() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-
   return (
     <div className="min-h-screen bg-canvas">
-      {/* Nav */}
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-        <Link href="/">
-          <KolrabeeLogo size="lg" />
-        </Link>
-        <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/about"
-            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
-          >
-            About
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/admin/login"
-            className="text-sm font-medium text-forge/60 transition-colors hover:text-forge"
-          >
-            Login
-          </Link>
-          <Link
-            href="/admin/signup"
-            className="inline-flex items-center rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
-          >
-            Get Started Free
-          </Link>
-        </div>
-        <button
-          className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-forge/50 hover:bg-gray-100 hover:text-forge"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-          ) : (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-          )}
-        </button>
-      </nav>
-      {mobileOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white px-6 py-4 space-y-1">
-          <Link href="/about" onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm font-medium text-forge/70 hover:bg-gray-50 hover:text-forge">About</Link>
-          <Link href="/pricing" onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm font-medium text-forge/70 hover:bg-gray-50 hover:text-forge">Pricing</Link>
-          <Link href="/admin/login" onClick={() => setMobileOpen(false)} className="block rounded-md px-3 py-2 text-sm font-medium text-forge/70 hover:bg-gray-50 hover:text-forge">Login</Link>
-          <Link href="/admin/signup" onClick={() => setMobileOpen(false)} className="block rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white text-center hover:bg-primary-700 transition-colors mt-2">Get Started Free</Link>
-        </div>
-      )}
+      <MarketingNav />
 
       <main className="mx-auto max-w-3xl px-6 lg:px-8 py-16">
         {/* Hero */}

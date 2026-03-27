@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import Link from 'next/link'
+import MarketingNav from '@/components/MarketingNav'
 import './pricing.css'
 
 export default function PricingPage() {
@@ -40,35 +41,7 @@ export default function PricingPage() {
   return (
     <div className="pricing-page" style={{ fontFamily: "'DM Sans', sans-serif", background: 'var(--cream)', color: 'var(--dark)', overflowX: 'hidden' }}>
       {/* NAV */}
-      <nav>
-        <Link href="/" className="nav-logo"><span className="k">kol</span><span className="r">ra</span><span className="b">bee</span></Link>
-        <div className="nav-links">
-          <Link href="/">Home</Link>
-          <Link href="/about">About</Link>
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/admin/login">Login</Link>
-          <Link href="/admin/signup" className="nav-cta">Get Started Free</Link>
-        </div>
-        <button
-          className="mobile-menu-toggle"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h18" /></svg>
-          )}
-        </button>
-      </nav>
-      {mobileOpen && (
-        <div className="mobile-menu">
-          <Link href="/" onClick={() => setMobileOpen(false)}>Home</Link>
-          <Link href="/about" onClick={() => setMobileOpen(false)}>About</Link>
-          <Link href="/admin/login" onClick={() => setMobileOpen(false)}>Login</Link>
-          <Link href="/admin/signup" className="mobile-cta" onClick={() => setMobileOpen(false)}>Get Started Free</Link>
-        </div>
-      )}
+      <MarketingNav />
 
       {/* HERO */}
       <div className="hero">
