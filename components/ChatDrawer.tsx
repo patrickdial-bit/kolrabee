@@ -46,11 +46,16 @@ export default function ChatDrawer({
     if (isOpen && projectId) {
       setLoading(true)
       setError(null)
-      onFetchMessages(projectId).then((result) => {
-        setMessages(result.messages ?? [])
-        setLoading(false)
-      })
-      markMessagesRead(currentUserId, projectId)
+      onFetchMessages(projectId)
+        .then((result) => {
+          setMessages(result?.messages ?? [])
+          setLoading(false)
+        })
+        .catch(() => {
+          setError('Failed to load messages.')
+          setLoading(false)
+        })
+      markMessagesRead(currentUserId, projectId).catch(() => {})
       onRead?.()
     }
   }, [isOpen, projectId, onFetchMessages, currentUserId, onRead])
