@@ -80,6 +80,22 @@ export default async function SubDashboardPage({
   // All-time earnings
   const allTimeEarnings = paidProjects.reduce((sum, p) => sum + (p.payout_amount || 0), 0)
 
+  // Sub rating stats (Growth/Operator only)
+  let avgRating = 0
+  let totalRatings = 0
+  if (hasGrowthFeatures(tenant)) {
+    const { data: ratings } = await adminClient
+      .from('sub_ratings')
+      .select('rating')
+      .eq('subcontractor_id', appUser.id)
+
+    const ratingsList = ratings ?? []
+    totalRatings = ratingsList.length
+    avgRating = totalRatings > 0
+      ? ratingsList.reduce((sum: number, r: any) => sum + r.rating, 0) / totalRatings
+      : 0
+  }
+
   return (
     <SubDashboardClient
       slug={slug}
@@ -93,6 +109,8 @@ export default async function SubDashboardPage({
       hasGrowth={hasGrowthFeatures(tenant)}
       currentUserId={appUser.id}
       tenantPlan={tenant.plan ?? 'free'}
+      avgRating={avgRating}
+      totalRatings={totalRatings}
     />
   )
 }

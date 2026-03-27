@@ -31,6 +31,8 @@ interface SubDashboardClientProps {
   hasGrowth: boolean
   currentUserId: string
   tenantPlan: string
+  avgRating: number
+  totalRatings: number
 }
 
 const columnConfig = [
@@ -53,6 +55,8 @@ export default function SubDashboardClient({
   hasGrowth,
   currentUserId,
   tenantPlan,
+  avgRating,
+  totalRatings,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -180,6 +184,21 @@ export default function SubDashboardClient({
               <span className="text-lg font-bold text-indigo-600">{queueCount}</span>
             </div>
           </Tooltip>
+          {tenantPlan !== 'free' && (
+            <Tooltip text="Your average rating from completed jobs." position="bottom">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+                <span className="text-sm font-medium text-gray-500">Rating</span>
+                {totalRatings > 0 ? (
+                  <span className="text-lg font-bold text-amber-500">
+                    {'★'.repeat(Math.round(avgRating))}{'☆'.repeat(5 - Math.round(avgRating))}
+                    <span className="ml-1 text-sm font-medium text-gray-600">{avgRating.toFixed(1)} ({totalRatings})</span>
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-400">No ratings yet</span>
+                )}
+              </div>
+            </Tooltip>
+          )}
         </div>
 
         {error && (
