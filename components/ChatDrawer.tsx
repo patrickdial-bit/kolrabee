@@ -58,7 +58,8 @@ export default function ChatDrawer({
       markMessagesRead(currentUserId, projectId).catch(() => {})
       onRead?.()
     }
-  }, [isOpen, projectId, onFetchMessages, currentUserId, onRead])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, projectId])
 
   useEffect(() => {
     if (scrollRef.current) {
