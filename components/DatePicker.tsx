@@ -78,8 +78,10 @@ export function parseFlexibleDate(raw: string): string | null {
     return toISODate(d)
   }
 
-  // ISO format YYYY-MM-DD
-  const iso = lower.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+  // ISO date — match bare "YYYY-MM-DD" OR the date prefix of an ISO timestamp
+  // like "2026-04-10T00:00:00+00:00". Extracting the prefix avoids the
+  // UTC-midnight → previous-day bug in negative-offset timezones.
+  const iso = lower.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[t ]|$)/)
   if (iso) {
     return makeISO(parseInt(iso[1], 10), parseInt(iso[2], 10), parseInt(iso[3], 10))
   }
