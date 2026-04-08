@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface DatePickerProps {
   id?: string
@@ -130,7 +130,6 @@ export default function DatePicker({ id, name, defaultValue, required }: DatePic
   const [iso, setIso] = useState<string>(initialISO)
   const [text, setText] = useState<string>(initialISO ? formatForInput(initialISO) : '')
   const [invalid, setInvalid] = useState(false)
-  const nativeRef = useRef<HTMLInputElement>(null)
 
   // Keep text in sync if the form is reset externally
   useEffect(() => {
@@ -175,22 +174,6 @@ export default function DatePicker({ id, name, defaultValue, required }: DatePic
     setInvalid(false)
   }
 
-  const openNativePicker = () => {
-    const el = nativeRef.current
-    if (!el) return
-    // Try showPicker() (Chrome/Edge/Firefox), fall back to focus+click
-    if (typeof (el as unknown as { showPicker?: () => void }).showPicker === 'function') {
-      try {
-        ;(el as unknown as { showPicker: () => void }).showPicker()
-        return
-      } catch {
-        /* fall through */
-      }
-    }
-    el.focus()
-    el.click()
-  }
-
   const preview = iso ? formatForDisplay(iso) : ''
 
   return (
@@ -212,7 +195,6 @@ export default function DatePicker({ id, name, defaultValue, required }: DatePic
             }
           }}
           placeholder="MM/DD/YYYY or 'today', 'in 3 days'"
-          required={required}
           aria-invalid={invalid}
           className={`block w-full rounded-md border pl-3 pr-20 py-2 text-gray-900 placeholder-gray-400 focus:ring-1 sm:text-sm ${
             invalid
@@ -225,46 +207,43 @@ export default function DatePicker({ id, name, defaultValue, required }: DatePic
             type="button"
             onClick={clear}
             aria-label="Clear date"
-            className="absolute right-10 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="absolute right-10 top-1/2 -translate-y-1/2 z-10 flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         )}
-        <button
-          type="button"
-          onClick={openNativePicker}
-          aria-label="Open calendar"
-          className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:bg-gray-100 hover:text-ember"
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+
+        {/* Calendar icon with an invisible native date input overlaid on top.
+            Clicking the icon clicks the real input, which opens its own
+            native picker anchored to itself — and closes normally on select. */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded text-gray-500 hover:text-ember">
+          <svg className="pointer-events-none h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
             />
           </svg>
-        </button>
+          <input
+            type="date"
+            name={name}
+            value={iso}
+            onChange={(e) => {
+              const v = e.target.value
+              setIso(v)
+              setText(v ? formatForInput(v) : '')
+              setInvalid(false)
+              // Blur so the picker closes reliably across browsers
+              e.currentTarget.blur()
+            }}
+            required={required}
+            aria-label="Open calendar"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </div>
       </div>
-
-      {/* Hidden native date input for the calendar popup + form submission */}
-      <input
-        ref={nativeRef}
-        type="date"
-        name={name}
-        value={iso}
-        onChange={(e) => {
-          const v = e.target.value
-          setIso(v)
-          setText(v ? formatForInput(v) : '')
-          setInvalid(false)
-        }}
-        required={required}
-        tabIndex={-1}
-        aria-hidden="true"
-        className="sr-only"
-      />
 
       {/* Quick-pick buttons */}
       <div className="mt-2 flex flex-wrap gap-1.5">
