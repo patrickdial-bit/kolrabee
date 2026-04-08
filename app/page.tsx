@@ -112,7 +112,7 @@ export default function HomePage() {
         <div className="container">
           <div className="section-tag">A real Monday morning</div>
           <h2 className="section-title" style={{ color: 'var(--white, #ffffff)' }}>
-            5 jobs. 4 subs.
+            3 jobs. 4 subs.
             <br />
             Different start times.
             <br />
