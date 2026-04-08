@@ -13,6 +13,7 @@ import { addAttachment, removeAttachment, getAttachmentUrl } from './attachment-
 import { sendMessage, getMessages } from './message-actions'
 import InviteSubsModal from './InviteSubsModal'
 import StarRating from '@/components/StarRating'
+import DatePicker from '@/components/DatePicker'
 import type { SubRating, ProjectAttachment } from '@/lib/types'
 
 interface InvitationWithName {
@@ -279,8 +280,7 @@ export default function ProjectDetailClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input type="date" name="start_date" defaultValue={project.start_date ?? ''}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
+                  <DatePicker name="start_date" defaultValue={project.start_date} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
