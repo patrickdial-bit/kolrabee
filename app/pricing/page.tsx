@@ -50,20 +50,20 @@ export default function PricingPage() {
         <p className="hero-sub">No hidden fees. No long-term contracts. <strong>Start free and scale when you&apos;re ready.</strong></p>
       </div>
 
-      {/* COMPETITOR BAR */}
+      {/* VALUE BAR */}
       <div className="competitor-bar">
         <div className="comp-item">
-          <div className="comp-label">HeyPros Pro+ starts at</div>
-          <div className="comp-price theirs">$249</div>
-          <div className="comp-name">per month</div>
+          <div className="comp-label">Start completely free</div>
+          <div className="comp-price ours">$0</div>
+          <div className="comp-name">forever · no credit card</div>
         </div>
-        <div className="comp-vs">VS</div>
+        <div className="comp-vs">→</div>
         <div className="comp-item">
-          <div className="comp-label">Kolrabee Growth starts at</div>
+          <div className="comp-label">Scale when you&apos;re ready</div>
           <div className="comp-price ours">$29</div>
-          <div className="comp-name">per month</div>
+          <div className="comp-name">per month · cancel anytime</div>
         </div>
-        <div className="comp-note">Same features. Sub ratings, job messaging, completion approvals, file attachments — all included. 8x cheaper.</div>
+        <div className="comp-note">Unlimited subs, job messaging, ratings, and completion approvals unlock on Growth. Subs always use Kolrabee completely free.</div>
       </div>
 
       {/* PRICING CARDS */}
@@ -104,7 +104,7 @@ export default function PricingPage() {
               <div className="plan-badge badge-featured">Most Popular</div>
               <div className="plan-name">Growth</div>
               <div className="plan-price"><sup>$</sup>29</div>
-              <div className="plan-period">per month — HeyPros Pro+ is $249</div>
+              <div className="plan-period">per month · billed monthly, cancel anytime</div>
               <div className="plan-for">For owners actively scaling their sub network.</div>
               <div className="plan-divider"></div>
               <ul className="plan-features">
@@ -209,19 +209,6 @@ export default function PricingPage() {
               <tr><td>Priority support</td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Dedicated onboarding</td><td><span className="dash">&mdash;</span></td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td></tr>
               <tr><td>Early feature access</td><td><span className="dash">&mdash;</span></td><td><span className="dash">&mdash;</span></td><td><span className="check">&#x2713;</span></td></tr>
-              <tr className="row-group"><td colSpan={4}>How we compare</td></tr>
-              <tr className="heypros-row">
-                <td>HeyPros Base — $149/mo</td>
-                <td><span className="heypros-val">15 subs max</span></td>
-                <td><span className="heypros-val">no ratings, no messaging</span></td>
-                <td><span className="heypros-val">&mdash;</span></td>
-              </tr>
-              <tr className="heypros-row">
-                <td>HeyPros Pro+ — $249/mo</td>
-                <td><span className="heypros-val">30 subs max</span></td>
-                <td><span className="heypros-val">ratings &amp; messaging included</span></td>
-                <td><span className="heypros-val">&mdash;</span></td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -242,10 +229,10 @@ export default function PricingPage() {
             </div>
             <div className="faq-item">
               <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
-                How is Kolrabee different from HeyPros?
+                Does Kolrabee replace my CRM?
                 <span className="faq-icon">+</span>
               </button>
-              <div className="faq-a"><p>HeyPros Pro+ is $249/month and built for compliance tracking, Gantt charts, and complex project management — it&apos;s designed for large GCs. Kolrabee is built for small trade business owners who need fast, simple sub dispatch. Sub ratings, job messaging, file attachments, and completion approvals are all included in our $29 Growth plan. Same features that matter. 8x less cost. No bloat.</p></div>
+              <div className="faq-a"><p>No — and that&apos;s the point. Keep PaintScout, Jobber, DripJobs, or whatever you use for quoting and customer management. Kolrabee is the missing layer between your CRM and your crew: the moment a job needs to go out to a sub, it lives here. Post the job, invite subs, get acceptance in real time, track completion, pay, and rate. Your CRM wins the work; Kolrabee delivers it.</p></div>
             </div>
             <div className="faq-item">
               <button className="faq-q" onClick={(e) => toggleFaq(e.currentTarget)}>
