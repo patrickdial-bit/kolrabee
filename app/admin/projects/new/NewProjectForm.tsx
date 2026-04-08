@@ -4,6 +4,7 @@ import { useTransition, useState } from 'react'
 import Link from 'next/link'
 import { createProject } from './actions'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
+import DatePicker from '@/components/DatePicker'
 
 interface SelectedFile {
   file: File
@@ -172,8 +173,7 @@ export default function NewProjectForm() {
               <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
                 Project Start Date
               </label>
-              <input type="date" id="start_date" name="start_date"
-                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
+              <DatePicker id="start_date" name="start_date" />
             </div>
 
             <div>

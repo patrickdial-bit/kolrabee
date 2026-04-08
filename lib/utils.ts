@@ -15,9 +15,26 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+/**
+ * Parse a date string as a LOCAL date, avoiding the UTC-midnight timezone bug.
+ * - "YYYY-MM-DD" (Postgres DATE column) is parsed as local midnight so it
+ *   doesn't roll back a day in negative-offset timezones.
+ * - Full ISO timestamps with time/zone info are parsed normally.
+ */
+function parseLocalDate(value: string): Date | null {
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (m) {
+    return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10))
+  }
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? null : d
+}
+
 export function formatDate(date: string | null): string {
   if (!date) return '—'
-  return new Date(date).toLocaleDateString('en-US', {
+  const d = parseLocalDate(date)
+  if (!d) return '—'
+  return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -26,7 +43,8 @@ export function formatDate(date: string | null): string {
 
 export function formatDateTime(date: string | null, time: string | null): string {
   if (!date) return '—'
-  const d = new Date(date)
+  const d = parseLocalDate(date)
+  if (!d) return '—'
   const dateStr = d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -45,7 +63,8 @@ export function formatDateTime(date: string | null, time: string | null): string
 
 export function formatInsuranceDate(date: string | null): { text: string; isExpired: boolean } {
   if (!date) return { text: '—', isExpired: true }
-  const d = new Date(date)
+  const d = parseLocalDate(date)
+  if (!d) return { text: '—', isExpired: true }
   const now = new Date()
   const isExpired = d < now
   return {
