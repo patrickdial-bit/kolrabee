@@ -278,11 +278,11 @@ export default function HomePage() {
             <div className="stat-source">Source: U.S. Bank / Small Business Studies</div>
           </div>
           <div className="stat-card">
-            <div className="stat-num">8x</div>
+            <div className="stat-num">5 min</div>
             <div className="stat-desc">
-              <strong>cheaper than the competition.</strong> HeyPros Pro+ is $249/month. Kolrabee Growth is $29. Same features. A fraction of the price.
+              <strong>to post your first job and invite your crew.</strong> No sales calls, no onboarding fees, no contracts. Sign up and dispatch the same afternoon.
             </div>
-            <div className="stat-source">Source: HeyPros published pricing, 2026</div>
+            <div className="stat-source">Source: Kolrabee onboarding benchmark, 2026</div>
           </div>
         </div>
       </div>
