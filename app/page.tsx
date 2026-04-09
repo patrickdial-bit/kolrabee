@@ -112,7 +112,7 @@ export default function HomePage() {
         <div className="container">
           <div className="section-tag">A real Monday morning</div>
           <h2 className="section-title" style={{ color: 'var(--white, #ffffff)' }}>
-            3 jobs. 4 subs.
+            5 jobs. 4 subs.
             <br />
             Different start times.
             <br />
@@ -126,7 +126,7 @@ export default function HomePage() {
               <div className="tl-dot active">7:00</div>
               <div className="tl-content">
                 <div className="tl-time">Monday 7:00am</div>
-                <div className="tl-title">You post 3 jobs for the week</div>
+                <div className="tl-title">You post 5 jobs for the week</div>
                 <div className="tl-body">Copy the work orders from your CRM. Set payout rates. Different start times, different locations, different crew requirements. Done in under 5 minutes.</div>
               </div>
             </div>
@@ -150,14 +150,14 @@ export default function HomePage() {
               <div className="tl-dot">7:15</div>
               <div className="tl-content">
                 <div className="tl-time">Monday 7:15am</div>
-                <div className="tl-title">All 3 jobs confirmed. Week locked in.</div>
+                <div className="tl-title">All 5 jobs confirmed. Week locked in.</div>
                 <div className="tl-body">You didn&rsquo;t make a single phone call. Every sub knows exactly where to be, when to show up, and what they&rsquo;re getting paid. You get back to selling.</div>
               </div>
             </div>
           </div>
           <div className="jobs-grid">
             <div className="job-card">
-              <div className="job-card-label">Job 1 — Tuesday 8am</div>
+              <div className="job-card-label">Job 1 — Monday 8am</div>
               <div className="job-card-title">Interior repaint — 2 beds</div>
               <div className="job-card-detail">Marcus T. &middot; $380 payout &middot; 1 day</div>
               <div className="job-card-status status-accepted">&#x2713; Accepted 7:06am</div>
@@ -166,12 +166,24 @@ export default function HomePage() {
               <div className="job-card-label">Job 2 — Tuesday 9am</div>
               <div className="job-card-title">Driveway seal — commercial</div>
               <div className="job-card-detail">Diego R. &middot; $520 payout &middot; 1 day</div>
-              <div className="job-card-status status-accepted">&#x2713; Accepted 7:09am</div>
+              <div className="job-card-status status-accepted">&#x2713; Accepted 7:08am</div>
             </div>
             <div className="job-card">
               <div className="job-card-label">Job 3 — Wed–Thu</div>
               <div className="job-card-title">Full exterior — 2 day job</div>
-              <div className="job-card-detail">Two subs &middot; $850 total &middot; 2 days</div>
+              <div className="job-card-detail">Jamal K. &middot; $850 payout &middot; 2 days</div>
+              <div className="job-card-status status-accepted">&#x2713; Accepted 7:10am</div>
+            </div>
+            <div className="job-card">
+              <div className="job-card-label">Job 4 — Thursday 7am</div>
+              <div className="job-card-title">Fence repair — side lot</div>
+              <div className="job-card-detail">Rick P. &middot; $340 payout &middot; 1 day</div>
+              <div className="job-card-status status-accepted">&#x2713; Accepted 7:12am</div>
+            </div>
+            <div className="job-card">
+              <div className="job-card-label">Job 5 — Friday 8am</div>
+              <div className="job-card-title">Garage floor coat</div>
+              <div className="job-card-detail">Marcus T. (2nd job) &middot; $420 payout &middot; 1 day</div>
               <div className="job-card-status status-accepted">&#x2713; Accepted 7:14am</div>
             </div>
           </div>
