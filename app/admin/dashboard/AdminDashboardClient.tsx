@@ -480,7 +480,7 @@ export default function AdminDashboardClient({
                         {formatCurrency(project.payout_amount)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">
-                        {project.estimated_labor_hours ?? '—'}
+                        {project.estimated_labor_hours != null ? Number(project.estimated_labor_hours).toFixed(2) : '—'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate">
                         {project.address}

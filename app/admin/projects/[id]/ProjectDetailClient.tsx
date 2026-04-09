@@ -299,7 +299,7 @@ export default function ProjectDetailClient({
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Labor Hours</label>
-                  <input type="number" name="estimated_labor_hours" min="0" defaultValue={project.estimated_labor_hours ?? ''}
+                  <input type="number" name="estimated_labor_hours" min="0" step="0.01" defaultValue={project.estimated_labor_hours ?? ''}
                     className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
               </div>
@@ -351,7 +351,7 @@ export default function ProjectDetailClient({
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Estimated Labor Hours</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours ?? '—'}</dd>
+                  <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours != null ? Number(project.estimated_labor_hours).toFixed(2) : '—'}</dd>
                 </div>
                 {project.work_order_link && (
                   <div>

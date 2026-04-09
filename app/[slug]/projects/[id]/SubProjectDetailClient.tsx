@@ -269,7 +269,7 @@ export default function SubProjectDetailClient({
               {project.estimated_labor_hours && (
                 <div>
                   <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">EST. HOURS</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours} hours</dd>
+                  <dd className="mt-1 text-sm text-gray-900">{Number(project.estimated_labor_hours).toFixed(2)} hours</dd>
                 </div>
               )}
 

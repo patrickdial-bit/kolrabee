@@ -202,7 +202,7 @@ export default function NewProjectForm() {
               <label htmlFor="estimated_labor_hours" className="block text-sm font-medium text-gray-700 mb-1">
                 Estimated Labor Hours
               </label>
-              <input type="number" id="estimated_labor_hours" name="estimated_labor_hours" min="0"
+              <input type="number" id="estimated_labor_hours" name="estimated_labor_hours" min="0" step="0.01"
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
                 placeholder="Enter Estimated Labor Hours" />
             </div>
