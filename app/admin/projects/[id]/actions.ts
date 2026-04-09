@@ -33,7 +33,7 @@ export async function updateProject(projectId: string, formData: FormData) {
     return { error: 'A valid payout amount is required.' }
   }
 
-  const estimatedLaborHours = estimatedLaborHoursRaw ? parseInt(estimatedLaborHoursRaw) : null
+  const estimatedLaborHours = estimatedLaborHoursRaw ? parseFloat(estimatedLaborHoursRaw) : null
   if (estimatedLaborHours !== null && (isNaN(estimatedLaborHours) || estimatedLaborHours < 0)) {
     return { error: 'Estimated labor hours must be a positive number.' }
   }
