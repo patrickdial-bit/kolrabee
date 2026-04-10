@@ -20,7 +20,7 @@ export default function MarketingNav() {
         <Link href="/" className="flex items-center gap-0 text-xl font-bold tracking-tight" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
           <span style={{ color: '#0D1B2A' }}>kol</span>
           <span style={{ color: '#00A896' }}>ra</span>
-          <span style={{ color: '#F4A261' }}>bee</span>
+          <span style={{ color: '#33BFB0' }}>bee</span>
         </Link>
         <div className="hidden md:flex items-center gap-6">
           {links.map((link) => (
