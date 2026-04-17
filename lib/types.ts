@@ -124,6 +124,7 @@ export type SubcontractorWithStats = AppUser & {
   activeJobs: number
   avgRating: number | null
   totalJobs: number
+  timeClockEnabled?: boolean
 }
 
 export type SubRating = {
@@ -160,6 +161,11 @@ export type JobMessage = {
 
 // Check if a tenant has Growth+ features (messaging, ratings, completion approval)
 export function hasGrowthFeatures(tenant: Tenant): boolean {
+  return tenant.plan === 'growth' || tenant.plan === 'operator'
+}
+
+// Time-clock tracking is a Growth+ feature.
+export function hasTimeTracking(tenant: Tenant): boolean {
   return tenant.plan === 'growth' || tenant.plan === 'operator'
 }
 

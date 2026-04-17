@@ -15,6 +15,7 @@ interface AdminNavProps {
 const navLinks = [
   { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin/subcontractors", label: "Subcontractors" },
+  { href: "/admin/time-tracking", label: "Time Tracking" },
   { href: "/admin/billing", label: "Billing" },
 ];
 

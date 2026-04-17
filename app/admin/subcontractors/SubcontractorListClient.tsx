@@ -9,6 +9,7 @@ import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
+import { setTimeClockEnabled } from './time-clock-actions'
 import { getDocumentUrl } from './[id]/doc-actions'
 import type { SubcontractorWithStats } from '@/lib/types'
 
@@ -21,9 +22,12 @@ interface Props {
   subcontractors: SubcontractorWithStats[]
   tenantName: string
   tenantSlug: string
+  timeTrackingEnabled: boolean
 }
 
-export default function SubcontractorListClient({ subcontractors, tenantName, tenantSlug }: Props) {
+export default function SubcontractorListClient({ subcontractors, tenantName, tenantSlug, timeTrackingEnabled }: Props) {
+  // Optimistic override for time-clock toggles, keyed by sub id.
+  const [optimisticClockEnabled, setOptimisticClockEnabled] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('active')
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'compliant' | 'not_compliant'>('all')
@@ -141,6 +145,20 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
     setInviteName('')
     setInviteError('')
     setInviteSuccess(false)
+  }
+
+  async function handleToggleTimeClock(subId: string, currentEnabled: boolean) {
+    const next = !currentEnabled
+    // Optimistic update
+    setOptimisticClockEnabled((prev) => ({ ...prev, [subId]: next }))
+    const result = await setTimeClockEnabled(subId, next)
+    if (result?.error) {
+      // Rollback
+      setOptimisticClockEnabled((prev) => ({ ...prev, [subId]: currentEnabled }))
+      toast.error(result.error)
+    } else {
+      toast.success(`Time clock ${next ? 'enabled' : 'disabled'}.`)
+    }
   }
 
   async function handleViewDoc(subId: string, docType: 'w9' | 'coi') {
@@ -319,6 +337,9 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   <SubSortTh label="Rating" sortKey="rating" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">COI</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">W-9</th>
+                  {timeTrackingEnabled && (
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Time Clock</th>
+                  )}
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Edit</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Delete</th>
                 </tr>
@@ -394,6 +415,31 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                           </span>
                         )}
                       </td>
+                      {timeTrackingEnabled && (() => {
+                        const current = optimisticClockEnabled[sub.id] ?? sub.timeClockEnabled ?? false
+                        const disabled = sub.status !== 'active'
+                        return (
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={current}
+                              aria-label={`${current ? 'Disable' : 'Enable'} time clock for ${sub.first_name} ${sub.last_name}`}
+                              disabled={disabled}
+                              onClick={() => handleToggleTimeClock(sub.id, current)}
+                              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                current ? 'bg-ember' : 'bg-gray-300'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                                  current ? 'translate-x-5' : 'translate-x-0.5'
+                                }`}
+                              />
+                            </button>
+                          </td>
+                        )
+                      })()}
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         <Link href={`/admin/subcontractors/${sub.id}`} className="text-amber-600 hover:text-amber-800">
                           <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
