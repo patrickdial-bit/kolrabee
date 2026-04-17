@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/helpers'
 import type { AppUser, SubcontractorWithStats } from '@/lib/types'
+import { hasTimeTracking } from '@/lib/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import SubcontractorListClient from './SubcontractorListClient'
 
@@ -79,6 +80,18 @@ export default async function SubcontractorsPage() {
     }
   }
 
+  // Fetch time-clock settings for this tenant's subs (Growth+ only)
+  const timeClockEnabledMap = new Map<string, boolean>()
+  if (hasTimeTracking(tenant)) {
+    const { data: settings } = await adminClient
+      .from('subcontractor_settings')
+      .select('subcontractor_id, time_clock_enabled')
+      .eq('tenant_id', tenant.id)
+    for (const s of settings ?? []) {
+      timeClockEnabledMap.set(s.subcontractor_id, s.time_clock_enabled)
+    }
+  }
+
   // Merge stats into subcontractors
   const subsWithStats: SubcontractorWithStats[] = subcontractors.map((sub) => {
     const ratingInfo = ratingMap.get(sub.id)
@@ -88,6 +101,7 @@ export default async function SubcontractorsPage() {
       activeJobs: activeJobsMap.get(sub.id) ?? 0,
       avgRating: ratingInfo ? ratingInfo.sum / ratingInfo.count : null,
       totalJobs: totalJobsMap.get(sub.id) ?? 0,
+      timeClockEnabled: timeClockEnabledMap.get(sub.id) ?? false,
     }
   })
 
@@ -96,6 +110,7 @@ export default async function SubcontractorsPage() {
       subcontractors={subsWithStats}
       tenantName={tenant.name}
       tenantSlug={tenant.slug}
+      timeTrackingEnabled={hasTimeTracking(tenant)}
     />
   )
 }

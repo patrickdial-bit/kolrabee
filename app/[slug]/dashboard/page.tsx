@@ -1,6 +1,6 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { hasGrowthFeatures } from '@/lib/types'
+import { hasGrowthFeatures, hasTimeTracking } from '@/lib/types'
 import { getUnreadCounts } from '@/lib/message-reads'
 import SubDashboardClient from './SubDashboardClient'
 
@@ -101,6 +101,40 @@ export default async function SubDashboardPage({
   const myJobIds = myJobs.map(j => j.id)
   const unreadCounts = await getUnreadCounts(appUser.id, myJobIds)
 
+  // Time tracking state
+  const timeTrackingAvailable = hasTimeTracking(tenant)
+  let timeClockEnabled = false
+  let openEntry: { id: string; project_id: string; clock_in: string } | null = null
+  let staleOpenEntry: { id: string; project_id: string; clock_in: string; projectLabel: string } | null = null
+  if (timeTrackingAvailable) {
+    const { data: settings } = await adminClient
+      .from('subcontractor_settings')
+      .select('time_clock_enabled')
+      .eq('subcontractor_id', appUser.id)
+      .maybeSingle()
+    timeClockEnabled = !!settings?.time_clock_enabled
+
+    if (timeClockEnabled) {
+      const { data: open } = await adminClient
+        .from('time_entries')
+        .select('id, project_id, clock_in, projects:project_id (customer_name, job_number)')
+        .eq('subcontractor_id', appUser.id)
+        .is('clock_out', null)
+        .maybeSingle()
+      if (open) {
+        openEntry = { id: open.id, project_id: open.project_id, clock_in: open.clock_in }
+        const ageMs = Date.now() - new Date(open.clock_in).getTime()
+        if (ageMs > 12 * 60 * 60 * 1000) {
+          const p = (open as any).projects
+          staleOpenEntry = {
+            ...openEntry,
+            projectLabel: p?.job_number || p?.customer_name || 'a job',
+          }
+        }
+      }
+    }
+  }
+
   return (
     <SubDashboardClient
       slug={slug}
@@ -117,6 +151,10 @@ export default async function SubDashboardPage({
       avgRating={avgRating}
       totalRatings={totalRatings}
       unreadCounts={unreadCounts}
+      timeClockEnabled={timeTrackingAvailable && timeClockEnabled}
+      openTimeEntry={openEntry}
+      staleTimeEntry={staleOpenEntry}
+      tenantTimezone={tenant.timezone ?? 'America/New_York'}
     />
   )
 }

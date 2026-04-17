@@ -18,6 +18,9 @@ import {
 } from '@/app/[slug]/projects/[id]/actions'
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendSubMessage, getSubMessages } from '@/app/[slug]/projects/[id]/message-actions'
+import TimeClockWidget from '@/components/TimeClockWidget'
+import WeeklyTimeSummary from '@/components/WeeklyTimeSummary'
+import StaleTimeEntryPrompt from '@/components/StaleTimeEntryPrompt'
 
 interface SubDashboardClientProps {
   slug: string
@@ -34,6 +37,10 @@ interface SubDashboardClientProps {
   avgRating: number
   totalRatings: number
   unreadCounts: Record<string, number>
+  timeClockEnabled: boolean
+  openTimeEntry: { id: string; project_id: string; clock_in: string } | null
+  staleTimeEntry: { id: string; project_id: string; clock_in: string; projectLabel: string } | null
+  tenantTimezone: string
 }
 
 const columnConfig = [
@@ -59,6 +66,10 @@ export default function SubDashboardClient({
   avgRating,
   totalRatings,
   unreadCounts: initialUnreadCounts,
+  timeClockEnabled,
+  openTimeEntry,
+  staleTimeEntry,
+  tenantTimezone,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -167,6 +178,16 @@ export default function SubDashboardClient({
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('dash.title')}</h1>
 
+        {timeClockEnabled && staleTimeEntry && (
+          <StaleTimeEntryPrompt slug={slug} entry={staleTimeEntry} />
+        )}
+
+        {timeClockEnabled && (
+          <div className="mb-6 max-w-md">
+            <WeeklyTimeSummary subId={currentUserId} fallbackTimezone={tenantTimezone} />
+          </div>
+        )}
+
         {/* Stats row */}
         <div id="tour-sub-stats" className="mb-6 flex flex-wrap items-center gap-3">
           <Tooltip text={t('tip.paid_ytd')} position="bottom">
@@ -266,6 +287,9 @@ export default function SubDashboardClient({
                   onCancelDismiss={() => setShowCancelConfirm(null)}
                   onChat={() => setChatProject(project)}
                   unreadCount={unreadCounts[project.id] ?? 0}
+                  timeClockEnabled={timeClockEnabled}
+                  openTimeEntry={openTimeEntry}
+                  slugForClock={slug}
                   t={t}
                 />
               ))
@@ -314,6 +338,9 @@ export default function SubDashboardClient({
                         onChat={() => setChatProject(project)}
                         unreadCount={unreadCounts[project.id] ?? 0}
                         t={t}
+                        timeClockEnabled={timeClockEnabled}
+                        openTimeEntry={openTimeEntry}
+                        slugForClock={slug}
                       />
                     ))
                   )}
@@ -393,6 +420,9 @@ function KanbanCard({
   onChat,
   unreadCount,
   t,
+  timeClockEnabled,
+  openTimeEntry,
+  slugForClock,
 }: {
   project: Project
   column: string
@@ -407,6 +437,9 @@ function KanbanCard({
   onChat: () => void
   unreadCount: number
   t: (key: string) => string
+  timeClockEnabled: boolean
+  openTimeEntry: { id: string; project_id: string; clock_in: string } | null
+  slugForClock: string
 }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -459,6 +492,18 @@ function KanbanCard({
             className="text-xs font-medium text-ember hover:text-primary-700">{t('th.photos') || 'Photos'}</a>
         )}
       </div>
+
+      {timeClockEnabled && (column === 'accepted' || column === 'pending_completion' || column === 'completed') && (
+        <div className="mb-3">
+          <TimeClockWidget
+            slug={slugForClock}
+            projectId={project.id}
+            projectLabel={project.job_number || project.customer_name}
+            openEntry={openTimeEntry && openTimeEntry.project_id === project.id ? openTimeEntry : null}
+            otherOpenEntry={openTimeEntry && openTimeEntry.project_id !== project.id ? openTimeEntry : null}
+          />
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex gap-2">
