@@ -11,7 +11,8 @@ import StarRating from '@/components/StarRating'
 import { isSubCompliant } from '@/lib/types'
 import type { ReliabilityStats } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
-import { getDocumentUrl } from './doc-actions'
+import { getDocumentUrl, uploadDocumentForSub } from './doc-actions'
+import { createBrowserClient } from '@supabase/ssr'
 
 const statusColors: Record<string, string> = {
   available: 'bg-blue-50 text-blue-700 ring-blue-600/20',
@@ -38,6 +39,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
   const [isPending, startTransition] = useTransition()
   const [docLoading, setDocLoading] = useState<string | null>(null)
   const [docError, setDocError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState<string | null>(null)
   const router = useRouter()
 
   async function handleViewDoc(docType: 'w9' | 'coi') {
@@ -49,6 +51,45 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
       setDocError(result.error)
     } else if (result.url) {
       window.open(result.url, '_blank')
+    }
+  }
+
+  async function handleUploadDoc(docType: 'w9' | 'coi', file: File) {
+    setDocError(null)
+    setUploading(docType)
+
+    try {
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      const ext = file.name.split('.').pop()
+      const path = `${tenantSlug}/${docType}/admin-${sub.id}-${Date.now()}.${ext}`
+
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .upload(path, file, { upsert: true })
+
+      if (storageError) {
+        setDocError(`Failed to upload ${docType.toUpperCase()}: ${storageError.message}`)
+        toast.error(`Upload failed: ${storageError.message}`)
+        return
+      }
+
+      const result = await uploadDocumentForSub(sub.id, docType, path)
+      if (result.error) {
+        setDocError(result.error)
+        toast.error(result.error)
+      } else {
+        toast.success(`${docType.toUpperCase()} uploaded for ${sub.first_name} ${sub.last_name}.`)
+        router.refresh()
+      }
+    } catch {
+      setDocError('Upload failed. Please try again.')
+      toast.error('Upload failed. Please try again.')
+    } finally {
+      setUploading(null)
     }
   }
 
@@ -224,16 +265,35 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
               <p className="text-xs text-gray-500 mb-3">
                 {sub.w9_uploaded_at ? `Uploaded ${formatDate(sub.w9_uploaded_at)}` : 'Not yet uploaded'}
               </p>
-              {sub.w9_file_url && (
-                <button
-                  onClick={() => handleViewDoc('w9')}
-                  disabled={docLoading === 'w9'}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15 transition-colors disabled:opacity-50"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                  {docLoading === 'w9' ? 'Loading...' : 'View / Download'}
-                </button>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {sub.w9_file_url && (
+                  <button
+                    onClick={() => handleViewDoc('w9')}
+                    disabled={docLoading === 'w9'}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15 transition-colors disabled:opacity-50"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    {docLoading === 'w9' ? 'Loading...' : 'View / Download'}
+                  </button>
+                )}
+                <label className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
+                  uploading === 'w9' ? 'opacity-50 cursor-not-allowed' : ''
+                } ${sub.w9_file_url ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-ember text-white hover:bg-primary-700'}`}>
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 7.5m0 0l4.5 4.5M12 7.5V21" /></svg>
+                  {uploading === 'w9' ? 'Uploading...' : sub.w9_file_url ? 'Replace' : 'Upload W-9'}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    disabled={uploading === 'w9'}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUploadDoc('w9', file)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             {/* COI */}
@@ -255,16 +315,35 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
               <p className="text-xs text-gray-500 mb-3">
                 {sub.coi_uploaded_at ? `Uploaded ${formatDate(sub.coi_uploaded_at)}` : 'Not yet uploaded'}
               </p>
-              {sub.coi_file_url && (
-                <button
-                  onClick={() => handleViewDoc('coi')}
-                  disabled={docLoading === 'coi'}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15 transition-colors disabled:opacity-50"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                  {docLoading === 'coi' ? 'Loading...' : 'View / Download'}
-                </button>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {sub.coi_file_url && (
+                  <button
+                    onClick={() => handleViewDoc('coi')}
+                    disabled={docLoading === 'coi'}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15 transition-colors disabled:opacity-50"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    {docLoading === 'coi' ? 'Loading...' : 'View / Download'}
+                  </button>
+                )}
+                <label className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold cursor-pointer transition-colors ${
+                  uploading === 'coi' ? 'opacity-50 cursor-not-allowed' : ''
+                } ${sub.coi_file_url ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-ember text-white hover:bg-primary-700'}`}>
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 7.5m0 0l4.5 4.5M12 7.5V21" /></svg>
+                  {uploading === 'coi' ? 'Uploading...' : sub.coi_file_url ? 'Replace' : 'Upload COI'}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    disabled={uploading === 'coi'}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleUploadDoc('coi', file)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+              </div>
             </div>
 
             {/* Insurance */}

@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { revalidatePath } from 'next/cache'
 
 export async function getDocumentUrl(subId: string, docType: 'w9' | 'coi'): Promise<{ url?: string; error?: string }> {
   const { tenant } = await getCurrentUser()
@@ -34,4 +35,46 @@ export async function getDocumentUrl(subId: string, docType: 'w9' | 'coi'): Prom
   }
 
   return { url: data.signedUrl }
+}
+
+export async function uploadDocumentForSub(
+  subId: string,
+  docType: 'w9' | 'coi',
+  filePath: string
+): Promise<{ success?: boolean; error?: string }> {
+  const { tenant } = await getCurrentUser()
+  const adminClient = createAdminClient()
+
+  const { data: sub } = await adminClient
+    .from('users')
+    .select('id, tenant_id')
+    .eq('id', subId)
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'subcontractor')
+    .single()
+
+  if (!sub) {
+    return { error: 'Subcontractor not found.' }
+  }
+
+  const updateData: Record<string, string> = {}
+  if (docType === 'w9') {
+    updateData.w9_file_url = filePath
+    updateData.w9_uploaded_at = new Date().toISOString()
+  } else {
+    updateData.coi_file_url = filePath
+    updateData.coi_uploaded_at = new Date().toISOString()
+  }
+
+  const { error } = await adminClient
+    .from('users')
+    .update(updateData)
+    .eq('id', sub.id)
+
+  if (error) {
+    return { error: 'Failed to save document reference.' }
+  }
+
+  revalidatePath(`/admin/subcontractors/${subId}`)
+  return { success: true }
 }
