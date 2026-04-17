@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import SuperAdminNav from '@/components/SuperAdminNav'
 import { updateTenantPlan, suspendTenant, deleteTenant } from './actions'
-import { startImpersonation } from '@/app/super-admin/impersonate/actions'
+import { startImpersonation, startSubImpersonation } from '@/app/super-admin/impersonate/actions'
 import { useState, useTransition } from 'react'
 
 interface Props {
@@ -264,6 +264,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
                     <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase text-gray-500">W-9</th>
                     <th className="px-4 py-2.5 text-center text-xs font-semibold uppercase text-gray-500">COI</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase text-gray-500">Status</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase text-gray-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -279,6 +280,17 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
                         {u.coi_file_url ? <span className="text-green-600">Yes</span> : <span className="text-amber-500">No</span>}
                       </td>
                       <td className="px-4 py-2.5 text-sm capitalize text-gray-600">{u.status}</td>
+                      <td className="px-4 py-2.5 text-right">
+                        {u.status === 'active' && (
+                          <button
+                            onClick={() => startTransition(() => startSubImpersonation(u.id))}
+                            disabled={isPending}
+                            className="rounded-md bg-ember px-3 py-1 text-xs font-semibold text-white hover:bg-ember/90 transition-colors disabled:opacity-50"
+                          >
+                            Log in as
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

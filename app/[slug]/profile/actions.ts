@@ -145,7 +145,12 @@ export async function changePassword(
     return { error: 'Passwords do not match.' }
   }
 
-  await getCurrentSub(slug)
+  const { impersonating } = await getCurrentSub(slug)
+
+  if (impersonating) {
+    return { error: 'Cannot change password while impersonating.' }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.auth.updateUser({ password: newPassword })

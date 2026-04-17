@@ -7,11 +7,15 @@ import type { AppUser, Tenant } from '@/lib/types'
 export type { AppUser, Tenant } from '@/lib/types'
 export type { Project, ProjectInvitation } from '@/lib/types'
 
-// Check if the current user is a super admin impersonating a tenant
-export async function getImpersonation(): Promise<{ isSuperAdmin: boolean; impersonatingTenantId: string | null }> {
+// Check if the current user is a super admin impersonating a tenant or subcontractor
+export async function getImpersonation(): Promise<{
+  isSuperAdmin: boolean
+  impersonatingTenantId: string | null
+  impersonatingSubId: string | null
+}> {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
-  if (!authUser) return { isSuperAdmin: false, impersonatingTenantId: null }
+  if (!authUser) return { isSuperAdmin: false, impersonatingTenantId: null, impersonatingSubId: null }
 
   const adminClient = createAdminClient()
   const { data: superAdmin } = await adminClient
@@ -20,12 +24,13 @@ export async function getImpersonation(): Promise<{ isSuperAdmin: boolean; imper
     .eq('supabase_auth_id', authUser.id)
     .single()
 
-  if (!superAdmin) return { isSuperAdmin: false, impersonatingTenantId: null }
+  if (!superAdmin) return { isSuperAdmin: false, impersonatingTenantId: null, impersonatingSubId: null }
 
   const cookieStore = await cookies()
   const impersonatingTenantId = cookieStore.get('impersonate_tenant_id')?.value || null
+  const impersonatingSubId = cookieStore.get('impersonate_sub_id')?.value || null
 
-  return { isSuperAdmin: true, impersonatingTenantId }
+  return { isSuperAdmin: true, impersonatingTenantId, impersonatingSubId }
 }
 
 // Get the current authenticated user and their app user record
@@ -106,7 +111,7 @@ export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUse
 }
 
 // Get current sub user with tenant info
-export async function getCurrentSub(slug: string): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant }> {
+export async function getCurrentSub(slug: string): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant; impersonating?: boolean }> {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
@@ -129,6 +134,22 @@ export async function getCurrentSub(slug: string): Promise<{ authUser: any; appU
   if (tenant.status === 'suspended' || tenant.status === 'deleted') {
     await supabase.auth.signOut()
     redirect(`/${slug}/login?error=suspended`)
+  }
+
+  // Super admin impersonating a subcontractor: load the sub by ID
+  const { isSuperAdmin, impersonatingSubId } = await getImpersonation()
+  if (isSuperAdmin && impersonatingSubId) {
+    const { data: impersonatedSub } = await adminClient
+      .from('users')
+      .select('*')
+      .eq('id', impersonatingSubId)
+      .eq('tenant_id', tenant.id)
+      .eq('role', 'subcontractor')
+      .single()
+
+    if (impersonatedSub && impersonatedSub.status !== 'deleted') {
+      return { authUser, appUser: impersonatedSub as AppUser, tenant: tenant as Tenant, impersonating: true }
+    }
   }
 
   const { data: appUser } = await adminClient
