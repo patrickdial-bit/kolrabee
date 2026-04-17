@@ -7,6 +7,7 @@ import KolrabeeLogo from '@/components/KolrabeeLogo'
 
 const navLinks = [
   { href: '/super-admin', label: 'Tenants' },
+  { href: '/super-admin/subcontractors', label: 'Subcontractors' },
 ]
 
 export default function SuperAdminNav() {
@@ -27,7 +28,10 @@ export default function SuperAdminNav() {
 
           <div className="flex items-center gap-1">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
+              const isActive =
+                link.href === '/super-admin'
+                  ? pathname === '/super-admin' || pathname.startsWith('/super-admin/tenants')
+                  : pathname === link.href || pathname.startsWith(link.href + '/')
               return (
                 <Link
                   key={link.href}
