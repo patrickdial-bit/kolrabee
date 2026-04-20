@@ -22,18 +22,36 @@ export async function setTimeClockEnabled(subId: string, enabled: boolean) {
 
   if (!sub) return { error: 'Subcontractor not found.' }
 
-  const { error } = await adminClient
+  const { data: existing, error: selectErr } = await adminClient
     .from('subcontractor_settings')
-    .upsert(
-      {
-        tenant_id: tenant.id,
-        subcontractor_id: subId,
-        time_clock_enabled: enabled,
-      },
-      { onConflict: 'subcontractor_id' }
-    )
+    .select('id')
+    .eq('subcontractor_id', subId)
+    .maybeSingle()
 
-  if (error) return { error: 'Failed to update time clock setting.' }
+  if (selectErr) {
+    console.error('setTimeClockEnabled select error:', selectErr)
+    return { error: 'Failed to update time clock setting.' }
+  }
+
+  const mutation = existing
+    ? adminClient
+        .from('subcontractor_settings')
+        .update({ time_clock_enabled: enabled })
+        .eq('id', existing.id)
+    : adminClient
+        .from('subcontractor_settings')
+        .insert({
+          tenant_id: tenant.id,
+          subcontractor_id: subId,
+          time_clock_enabled: enabled,
+        })
+
+  const { error } = await mutation
+
+  if (error) {
+    console.error('setTimeClockEnabled mutation error:', error)
+    return { error: 'Failed to update time clock setting.' }
+  }
 
   revalidatePath('/admin/subcontractors')
   revalidatePath(`/admin/subcontractors/${subId}`)
