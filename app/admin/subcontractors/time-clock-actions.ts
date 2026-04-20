@@ -33,7 +33,10 @@ export async function setTimeClockEnabled(subId: string, enabled: boolean) {
       { onConflict: 'subcontractor_id' }
     )
 
-  if (error) return { error: 'Failed to update time clock setting.' }
+  if (error) {
+    console.error('setTimeClockEnabled upsert error:', error)
+    return { error: 'Failed to update time clock setting.' }
+  }
 
   revalidatePath('/admin/subcontractors')
   revalidatePath(`/admin/subcontractors/${subId}`)
