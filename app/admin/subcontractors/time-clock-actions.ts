@@ -35,7 +35,10 @@ export async function setTimeClockEnabled(subId: string, enabled: boolean) {
 
   if (error) {
     console.error('setTimeClockEnabled upsert error:', error)
-    return { error: 'Failed to update time clock setting.' }
+    const detail = [error.code, error.message, error.details, error.hint]
+      .filter(Boolean)
+      .join(' | ')
+    return { error: `Failed to update time clock setting: ${detail || 'unknown error'}` }
   }
 
   revalidatePath('/admin/subcontractors')
