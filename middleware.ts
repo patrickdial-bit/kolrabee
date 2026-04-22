@@ -72,8 +72,8 @@ export async function middleware(request: NextRequest) {
       const slug = parts[0]
       const subPath = parts[1]
 
-      // Public tenant routes: join, login, forgot-password
-      const publicSubRoutes = ['join', 'login', 'forgot-password']
+      // Public tenant routes: join, join-admin, login, forgot-password
+      const publicSubRoutes = ['join', 'join-admin', 'login', 'forgot-password']
       const isPublicSubRoute = publicSubRoutes.includes(subPath)
 
       // Protected tenant routes: dashboard, projects, profile
