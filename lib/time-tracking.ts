@@ -5,6 +5,7 @@ export type TimeEntry = {
   id: string
   tenant_id: string
   subcontractor_id: string
+  crew_member_id: string | null
   project_id: string
   clock_in: string
   clock_out: string | null

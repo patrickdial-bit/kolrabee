@@ -9,6 +9,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // Nav
     'nav.dashboard': 'Dashboard',
     'nav.profile': 'Profile',
+    'nav.crew': 'Crew',
     'nav.logout': 'Log out',
     'nav.tips_on': 'Tips On',
     'nav.tips_off': 'Tips Off',
@@ -149,6 +150,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // Nav
     'nav.dashboard': 'Tablero',
     'nav.profile': 'Perfil',
+    'nav.crew': 'Cuadrilla',
     'nav.logout': 'Cerrar sesion',
     'nav.tips_on': 'Ayuda On',
     'nav.tips_off': 'Ayuda Off',

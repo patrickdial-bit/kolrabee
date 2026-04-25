@@ -1,7 +1,8 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { hasGrowthFeatures, hasTimeTracking } from '@/lib/types'
+import { hasGrowthFeatures, hasTimeTracking, isCrewLeader } from '@/lib/types'
 import { getUnreadCounts } from '@/lib/message-reads'
+import type { CrewMemberLite, CrewOpenEntry } from '@/components/CrewClockPanel'
 import SubDashboardClient from './SubDashboardClient'
 
 export default async function SubDashboardPage({
@@ -106,6 +107,10 @@ export default async function SubDashboardPage({
   let timeClockEnabled = false
   let openEntry: { id: string; project_id: string; clock_in: string } | null = null
   let staleOpenEntry: { id: string; project_id: string; clock_in: string; projectLabel: string } | null = null
+  let crewMembers: CrewMemberLite[] = []
+  let crewOpenEntries: CrewOpenEntry[] = []
+  let jobTotals: Record<string, Record<string, number>> = {}
+
   if (timeTrackingAvailable) {
     const { data: settings } = await adminClient
       .from('subcontractor_settings')
@@ -115,21 +120,64 @@ export default async function SubDashboardPage({
     timeClockEnabled = !!settings?.time_clock_enabled
 
     if (timeClockEnabled) {
-      const { data: open } = await adminClient
+      // Active crew roster for this leader.
+      const { data: crewRows } = await adminClient
+        .from('crew_members')
+        .select('id, first_name, last_name')
+        .eq('crew_leader_id', appUser.id)
+        .eq('status', 'active')
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+      crewMembers = (crewRows ?? []) as CrewMemberLite[]
+
+      // All open entries owned by this leader (covers the leader and all crew members
+      // in a single query because subcontractor_id is the leader for every row).
+      const { data: openRows } = await adminClient
         .from('time_entries')
-        .select('id, project_id, clock_in, projects:project_id (customer_name, job_number)')
+        .select('id, project_id, crew_member_id, clock_in, projects:project_id (customer_name, job_number)')
         .eq('subcontractor_id', appUser.id)
         .is('clock_out', null)
-        .maybeSingle()
-      if (open) {
-        openEntry = { id: open.id, project_id: open.project_id, clock_in: open.clock_in }
-        const ageMs = Date.now() - new Date(open.clock_in).getTime()
-        if (ageMs > 12 * 60 * 60 * 1000) {
-          const p = (open as any).projects
-          staleOpenEntry = {
-            ...openEntry,
-            projectLabel: p?.job_number || p?.customer_name || 'a job',
+
+      for (const row of openRows ?? []) {
+        const r: any = row
+        const p = r.projects
+        const otherProjectLabel = p?.job_number || p?.customer_name || 'another job'
+        crewOpenEntries.push({
+          id: r.id,
+          project_id: r.project_id,
+          crew_member_id: r.crew_member_id ?? null,
+          clock_in: r.clock_in,
+          otherProjectLabel,
+        })
+        if (r.crew_member_id == null) {
+          openEntry = { id: r.id, project_id: r.project_id, clock_in: r.clock_in }
+          const ageMs = Date.now() - new Date(r.clock_in).getTime()
+          if (ageMs > 12 * 60 * 60 * 1000) {
+            staleOpenEntry = {
+              id: r.id,
+              project_id: r.project_id,
+              clock_in: r.clock_in,
+              projectLabel: otherProjectLabel,
+            }
           }
+        }
+      }
+
+      // Per-project minute aggregates for visible jobs.
+      const projectIds = myJobs.map((j) => j.id)
+      if (projectIds.length > 0) {
+        const { data: rows } = await adminClient
+          .from('time_entries')
+          .select('project_id, crew_member_id, clock_in, clock_out, duration_minutes')
+          .eq('subcontractor_id', appUser.id)
+          .in('project_id', projectIds)
+
+        for (const r of rows ?? []) {
+          const actorKey = r.crew_member_id ?? 'leader'
+          // Aggregate only stored minutes; the panel adds running-clock minutes client-side.
+          const minutes = r.duration_minutes ?? 0
+          if (!jobTotals[r.project_id]) jobTotals[r.project_id] = {}
+          jobTotals[r.project_id][actorKey] = (jobTotals[r.project_id][actorKey] ?? 0) + minutes
         }
       }
     }
@@ -155,6 +203,11 @@ export default async function SubDashboardPage({
       openTimeEntry={openEntry}
       staleTimeEntry={staleOpenEntry}
       tenantTimezone={tenant.timezone ?? 'America/New_York'}
+      isCrewLeader={isCrewLeader(appUser)}
+      leaderName={appUser.first_name}
+      crewMembers={crewMembers}
+      crewOpenEntries={crewOpenEntries}
+      jobTotals={jobTotals}
     />
   )
 }

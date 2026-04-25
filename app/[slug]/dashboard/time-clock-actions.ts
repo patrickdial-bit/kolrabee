@@ -127,3 +127,119 @@ export async function clockOut(slug: string, entryId: string, overrideClockOut?:
 export async function resolveStaleEntry(slug: string, entryId: string, actualClockOut: string) {
   return clockOut(slug, entryId, actualClockOut)
 }
+
+export async function clockInCrewMember(
+  slug: string,
+  projectId: string,
+  crewMemberId: string,
+  force = false,
+) {
+  const result = await assertClockEnabled(slug)
+  if ('error' in result) return { error: result.error }
+  const { appUser, tenant, adminClient } = result
+
+  const { data: cm } = await adminClient
+    .from('crew_members')
+    .select('id, status, crew_leader_id, first_name, last_name')
+    .eq('id', crewMemberId)
+    .eq('crew_leader_id', appUser.id)
+    .single()
+
+  if (!cm || cm.status !== 'active') {
+    return { error: 'Crew member not found.' }
+  }
+
+  const { data: project } = await adminClient
+    .from('projects')
+    .select('id, tenant_id, accepted_by, status, customer_name, job_number')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .single()
+
+  if (!project) return { error: 'Project not found.' }
+  if (project.accepted_by !== appUser.id) {
+    return { error: 'You can only clock your crew in to jobs you have accepted.' }
+  }
+
+  const { data: openEntry } = await adminClient
+    .from('time_entries')
+    .select('id, project_id, clock_in, projects:project_id (customer_name, job_number)')
+    .eq('crew_member_id', crewMemberId)
+    .is('clock_out', null)
+    .maybeSingle()
+
+  if (openEntry) {
+    if (openEntry.project_id === projectId) {
+      return { error: `${cm.first_name} is already clocked in to this job.` }
+    }
+    if (!force) {
+      const p = (openEntry as any).projects
+      const label = p?.job_number || p?.customer_name || 'another job'
+      return {
+        conflict: true as const,
+        openEntryId: openEntry.id,
+        openProjectLabel: label,
+        crewMemberName: `${cm.first_name} ${cm.last_name}`,
+      }
+    }
+    const { error: closeErr } = await adminClient
+      .from('time_entries')
+      .update({ clock_out: new Date().toISOString() })
+      .eq('id', openEntry.id)
+      .eq('crew_member_id', crewMemberId)
+    if (closeErr) return { error: 'Could not close the previous entry.' }
+  }
+
+  const { data: inserted, error } = await adminClient
+    .from('time_entries')
+    .insert({
+      tenant_id: tenant.id,
+      subcontractor_id: appUser.id,
+      crew_member_id: crewMemberId,
+      project_id: projectId,
+      clock_in: new Date().toISOString(),
+    })
+    .select('id')
+    .single()
+
+  if (error || !inserted) return { error: 'Failed to clock in crew member.' }
+
+  revalidatePath(`/${slug}/dashboard`)
+  revalidatePath(`/${slug}/projects/${projectId}`)
+  return { success: true, entryId: inserted.id }
+}
+
+export async function clockOutCrewMember(slug: string, entryId: string, overrideClockOut?: string) {
+  const result = await assertClockEnabled(slug)
+  if ('error' in result) return { error: result.error }
+  const { appUser, adminClient } = result
+
+  const { data: entry } = await adminClient
+    .from('time_entries')
+    .select('id, subcontractor_id, crew_member_id, project_id, clock_in, clock_out')
+    .eq('id', entryId)
+    .single()
+
+  if (!entry || entry.subcontractor_id !== appUser.id || entry.crew_member_id == null) {
+    return { error: 'Entry not found.' }
+  }
+  if (entry.clock_out !== null) {
+    return { error: 'Already clocked out.' }
+  }
+
+  const clockOutIso = overrideClockOut ?? new Date().toISOString()
+  if (new Date(clockOutIso) <= new Date(entry.clock_in)) {
+    return { error: 'Clock-out time must be after clock-in time.' }
+  }
+
+  const { error } = await adminClient
+    .from('time_entries')
+    .update({ clock_out: clockOutIso })
+    .eq('id', entryId)
+
+  if (error) return { error: 'Failed to clock out.' }
+
+  revalidatePath(`/${slug}/dashboard`)
+  revalidatePath(`/${slug}/projects/${entry.project_id}`)
+  return { success: true }
+}

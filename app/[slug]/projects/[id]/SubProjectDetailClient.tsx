@@ -11,6 +11,8 @@ import type { Project, ProjectInvitation } from '@/lib/types'
 import { acceptProject, cancelAcceptedProject, declineProject, markInProgress, requestCompletion, markCompleted } from './actions'
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
 import type { ProjectAttachment } from '@/lib/types'
+import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
+import { formatMinutes } from '@/lib/time-tracking'
 
 interface MessageWithSender {
   id: string
@@ -31,6 +33,20 @@ interface SubProjectDetailClientProps {
   messages: MessageWithSender[]
   currentUserId: string
   hasGrowth: boolean
+  isCrewLeader: boolean
+  timeClockEnabled: boolean
+  leaderName: string
+  crewMembers: CrewMemberLite[]
+  crewOpenEntries: CrewOpenEntry[]
+  jobTotalsByActor: Record<string, number>
+  crewHistory: Array<{
+    id: string
+    actorKey: string
+    actorName: string
+    clock_in: string
+    clock_out: string | null
+    duration_minutes: number | null
+  }>
 }
 
 const statusBadgeClasses: Record<string, string> = {
@@ -64,6 +80,13 @@ export default function SubProjectDetailClient({
   messages,
   currentUserId,
   hasGrowth,
+  isCrewLeader,
+  timeClockEnabled,
+  leaderName,
+  crewMembers,
+  crewOpenEntries,
+  jobTotalsByActor,
+  crewHistory,
 }: SubProjectDetailClientProps) {
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
@@ -201,7 +224,7 @@ export default function SubProjectDetailClient({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} />
+      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
 
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link */}
@@ -341,6 +364,45 @@ export default function SubProjectDetailClient({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Crew time tracking */}
+          {isAcceptedByMe && timeClockEnabled && (
+            <div className="border-t border-gray-200 px-6 py-5">
+              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Crew time</dt>
+              <CrewClockPanel
+                slug={slug}
+                projectId={project.id}
+                projectLabel={project.job_number || project.customer_name}
+                leaderName={leaderName}
+                members={crewMembers}
+                openEntries={crewOpenEntries}
+                jobTotalsByActor={jobTotalsByActor}
+              />
+              {crewHistory.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Recent entries</p>
+                  <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                    {crewHistory.map((h) => (
+                      <li key={h.id} className="flex items-center justify-between px-3 py-2 text-xs">
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{h.actorName}</p>
+                          <p className="text-gray-500">
+                            {new Date(h.clock_in).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            {h.clock_out
+                              ? ` → ${new Date(h.clock_out).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                              : ' · open'}
+                          </p>
+                        </div>
+                        <span className="font-mono tabular-nums text-gray-700">
+                          {h.duration_minutes != null ? formatMinutes(h.duration_minutes) : '—'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
