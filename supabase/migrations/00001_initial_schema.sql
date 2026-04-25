@@ -6,7 +6,7 @@
 -- =============================================================================
 
 -- TENANTS (each company using TradeTap)
-CREATE TABLE tenants (
+CREATE TABLE IF NOT EXISTS tenants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(100) UNIQUE NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE tenants (
 );
 
 -- USERS (admins and subcontractors)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   supabase_auth_id UUID UNIQUE,
   tenant_id UUID NOT NULL REFERENCES tenants(id),
@@ -31,7 +31,7 @@ CREATE TABLE users (
 );
 
 -- PROJECTS (jobs posted by admin)
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
   created_by UUID NOT NULL REFERENCES users(id),
@@ -58,7 +58,7 @@ CREATE TABLE projects (
 );
 
 -- PROJECT INVITATIONS
-CREATE TABLE project_invitations (
+CREATE TABLE IF NOT EXISTS project_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id),
   project_id UUID NOT NULL REFERENCES projects(id),
@@ -69,18 +69,25 @@ CREATE TABLE project_invitations (
 );
 
 -- Add FK from tenants.owner_user_id to users after users table exists
-ALTER TABLE tenants ADD CONSTRAINT fk_tenants_owner FOREIGN KEY (owner_user_id) REFERENCES users(id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_tenants_owner'
+  ) THEN
+    ALTER TABLE tenants ADD CONSTRAINT fk_tenants_owner FOREIGN KEY (owner_user_id) REFERENCES users(id);
+  END IF;
+END $$;
 
 -- =============================================================================
 -- INDEXES
 -- =============================================================================
 
-CREATE INDEX idx_users_tenant ON users(tenant_id);
-CREATE INDEX idx_users_supabase_auth ON users(supabase_auth_id);
-CREATE INDEX idx_projects_tenant_status ON projects(tenant_id, status);
-CREATE INDEX idx_projects_accepted_by ON projects(accepted_by);
-CREATE INDEX idx_invitations_sub ON project_invitations(subcontractor_id);
-CREATE INDEX idx_invitations_project ON project_invitations(project_id);
+CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_users_supabase_auth ON users(supabase_auth_id);
+CREATE INDEX IF NOT EXISTS idx_projects_tenant_status ON projects(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_projects_accepted_by ON projects(accepted_by);
+CREATE INDEX IF NOT EXISTS idx_invitations_sub ON project_invitations(subcontractor_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_project ON project_invitations(project_id);
 
 -- =============================================================================
 -- ROW LEVEL SECURITY
@@ -118,6 +125,7 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 -- -----------------------------------------------------------------------------
 -- tenants
 -- -----------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can read own tenant" ON tenants;
 CREATE POLICY "Users can read own tenant"
   ON tenants FOR SELECT
   USING (id = auth_tenant_id());
@@ -125,22 +133,26 @@ CREATE POLICY "Users can read own tenant"
 -- -----------------------------------------------------------------------------
 -- users
 -- -----------------------------------------------------------------------------
+DROP POLICY IF EXISTS "Users can read tenant members" ON users;
 CREATE POLICY "Users can read tenant members"
   ON users FOR SELECT
   USING (tenant_id = auth_tenant_id());
 
+DROP POLICY IF EXISTS "Users can update own record" ON users;
 CREATE POLICY "Users can update own record"
   ON users FOR UPDATE
   USING (supabase_auth_id = auth.uid())
   WITH CHECK (supabase_auth_id = auth.uid());
 
 -- Admins can update users in their tenant (for soft delete)
+DROP POLICY IF EXISTS "Admins can update tenant users" ON users;
 CREATE POLICY "Admins can update tenant users"
   ON users FOR UPDATE
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
   WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
 -- Allow inserts (service role will handle signup)
+DROP POLICY IF EXISTS "Allow insert for signup" ON users;
 CREATE POLICY "Allow insert for signup"
   ON users FOR INSERT
   WITH CHECK (true);
@@ -149,24 +161,29 @@ CREATE POLICY "Allow insert for signup"
 -- projects
 -- -----------------------------------------------------------------------------
 -- Admins: full CRUD on tenant projects
+DROP POLICY IF EXISTS "Admins can select projects" ON projects;
 CREATE POLICY "Admins can select projects"
   ON projects FOR SELECT
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins can insert projects" ON projects;
 CREATE POLICY "Admins can insert projects"
   ON projects FOR INSERT
   WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins can update projects" ON projects;
 CREATE POLICY "Admins can update projects"
   ON projects FOR UPDATE
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
   WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins can delete projects" ON projects;
 CREATE POLICY "Admins can delete projects"
   ON projects FOR DELETE
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
 -- Subs: can see projects they're invited to or accepted
+DROP POLICY IF EXISTS "Subs can see invited projects" ON projects;
 CREATE POLICY "Subs can see invited projects"
   ON projects FOR SELECT
   USING (
@@ -181,6 +198,7 @@ CREATE POLICY "Subs can see invited projects"
   );
 
 -- Subs can update projects (for accepting)
+DROP POLICY IF EXISTS "Subs can update available projects" ON projects;
 CREATE POLICY "Subs can update available projects"
   ON projects FOR UPDATE
   USING (
@@ -200,29 +218,35 @@ CREATE POLICY "Subs can update available projects"
 -- project_invitations
 -- -----------------------------------------------------------------------------
 -- Admins: full CRUD
+DROP POLICY IF EXISTS "Admins can select invitations" ON project_invitations;
 CREATE POLICY "Admins can select invitations"
   ON project_invitations FOR SELECT
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins can insert invitations" ON project_invitations;
 CREATE POLICY "Admins can insert invitations"
   ON project_invitations FOR INSERT
   WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins can update invitations" ON project_invitations;
 CREATE POLICY "Admins can update invitations"
   ON project_invitations FOR UPDATE
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
   WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins can delete invitations" ON project_invitations;
 CREATE POLICY "Admins can delete invitations"
   ON project_invitations FOR DELETE
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
 -- Subs can see their own invitations
+DROP POLICY IF EXISTS "Subs can see own invitations" ON project_invitations;
 CREATE POLICY "Subs can see own invitations"
   ON project_invitations FOR SELECT
   USING (subcontractor_id = auth_user_id());
 
 -- Subs can update their own invitations (accept/decline)
+DROP POLICY IF EXISTS "Subs can update own invitations" ON project_invitations;
 CREATE POLICY "Subs can update own invitations"
   ON project_invitations FOR UPDATE
   USING (subcontractor_id = auth_user_id())

@@ -5,7 +5,7 @@
 -- TABLES
 -- =============================================================================
 
-CREATE TABLE subcontractor_settings (
+CREATE TABLE IF NOT EXISTS subcontractor_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   subcontractor_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -14,9 +14,9 @@ CREATE TABLE subcontractor_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_subcontractor_settings_tenant ON subcontractor_settings(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_subcontractor_settings_tenant ON subcontractor_settings(tenant_id);
 
-CREATE TABLE time_entries (
+CREATE TABLE IF NOT EXISTS time_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   subcontractor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -37,12 +37,12 @@ CREATE TABLE time_entries (
   CONSTRAINT clock_out_after_clock_in CHECK (clock_out IS NULL OR clock_out > clock_in)
 );
 
-CREATE INDEX idx_time_entries_sub_clock_in     ON time_entries(subcontractor_id, clock_in DESC);
-CREATE INDEX idx_time_entries_project_clock_in ON time_entries(project_id, clock_in DESC);
-CREATE INDEX idx_time_entries_tenant           ON time_entries(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_time_entries_sub_clock_in     ON time_entries(subcontractor_id, clock_in DESC);
+CREATE INDEX IF NOT EXISTS idx_time_entries_project_clock_in ON time_entries(project_id, clock_in DESC);
+CREATE INDEX IF NOT EXISTS idx_time_entries_tenant           ON time_entries(tenant_id);
 
 -- One open entry per sub.
-CREATE UNIQUE INDEX idx_time_entries_one_open_per_sub
+CREATE UNIQUE INDEX IF NOT EXISTS idx_time_entries_one_open_per_sub
   ON time_entries(subcontractor_id)
   WHERE clock_out IS NULL;
 
@@ -58,10 +58,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_subcontractor_settings_updated_at ON subcontractor_settings;
 CREATE TRIGGER trg_subcontractor_settings_updated_at
   BEFORE UPDATE ON subcontractor_settings
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_time_entries_updated_at ON time_entries;
 CREATE TRIGGER trg_time_entries_updated_at
   BEFORE UPDATE ON time_entries
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -74,20 +76,24 @@ ALTER TABLE subcontractor_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE time_entries           ENABLE ROW LEVEL SECURITY;
 
 -- subcontractor_settings ----------------------------------------------------
+DROP POLICY IF EXISTS "Admins manage settings" ON subcontractor_settings;
 CREATE POLICY "Admins manage settings"
   ON subcontractor_settings FOR ALL
   USING      (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
   WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Subs read own settings" ON subcontractor_settings;
 CREATE POLICY "Subs read own settings"
   ON subcontractor_settings FOR SELECT
   USING (subcontractor_id = auth_user_id());
 
 -- time_entries --------------------------------------------------------------
+DROP POLICY IF EXISTS "Subs read own entries" ON time_entries;
 CREATE POLICY "Subs read own entries"
   ON time_entries FOR SELECT
   USING (subcontractor_id = auth_user_id());
 
+DROP POLICY IF EXISTS "Subs insert own entries" ON time_entries;
 CREATE POLICY "Subs insert own entries"
   ON time_entries FOR INSERT
   WITH CHECK (
@@ -96,15 +102,18 @@ CREATE POLICY "Subs insert own entries"
     AND auth_role()  = 'subcontractor'
   );
 
+DROP POLICY IF EXISTS "Subs update own entries" ON time_entries;
 CREATE POLICY "Subs update own entries"
   ON time_entries FOR UPDATE
   USING      (subcontractor_id = auth_user_id())
   WITH CHECK (subcontractor_id = auth_user_id());
 
+DROP POLICY IF EXISTS "Admins read tenant entries" ON time_entries;
 CREATE POLICY "Admins read tenant entries"
   ON time_entries FOR SELECT
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins update tenant entries" ON time_entries;
 CREATE POLICY "Admins update tenant entries"
   ON time_entries FOR UPDATE
   USING      (tenant_id = auth_tenant_id() AND auth_role() = 'admin')

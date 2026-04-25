@@ -3,7 +3,7 @@
 
 -- 1. Add expires_at to project_invitations
 ALTER TABLE project_invitations
-  ADD COLUMN expires_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 
 -- Backfill existing project invitations (7 days from invited_at)
 UPDATE project_invitations
@@ -16,7 +16,7 @@ ALTER TABLE project_invitations
 
 -- 2. Add expires_at to platform_invites
 ALTER TABLE platform_invites
-  ADD COLUMN expires_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 
 -- Backfill existing platform invites (30 days from invited_at)
 UPDATE platform_invites
@@ -29,4 +29,4 @@ ALTER TABLE platform_invites
 
 -- 3. Add notification_preferences JSONB to users
 ALTER TABLE users
-  ADD COLUMN notification_preferences JSONB DEFAULT '{"project_invites": true, "project_updates": true, "project_accepted": true, "project_cancelled": true}'::jsonb;
+  ADD COLUMN IF NOT EXISTS notification_preferences JSONB DEFAULT '{"project_invites": true, "project_updates": true, "project_accepted": true, "project_cancelled": true}'::jsonb;

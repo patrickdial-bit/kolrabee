@@ -1,5 +1,5 @@
 -- Super admin table — platform-level access
-CREATE TABLE super_admins (
+CREATE TABLE IF NOT EXISTS super_admins (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   supabase_auth_id UUID NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL,

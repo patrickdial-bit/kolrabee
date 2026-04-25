@@ -6,25 +6,25 @@
 -- =============================================================================
 
 ALTER TABLE users
-  ADD COLUMN company_name VARCHAR(255),
-  ADD COLUMN crew_size INT DEFAULT 1,
-  ADD COLUMN address TEXT,
-  ADD COLUMN years_in_business INT,
-  ADD COLUMN insurance_provider VARCHAR(255),
-  ADD COLUMN insurance_expiration DATE,
-  ADD COLUMN w9_file_url TEXT,
-  ADD COLUMN w9_uploaded_at TIMESTAMPTZ,
-  ADD COLUMN coi_file_url TEXT,
-  ADD COLUMN coi_uploaded_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS company_name VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS crew_size INT DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS address TEXT,
+  ADD COLUMN IF NOT EXISTS years_in_business INT,
+  ADD COLUMN IF NOT EXISTS insurance_provider VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS insurance_expiration DATE,
+  ADD COLUMN IF NOT EXISTS w9_file_url TEXT,
+  ADD COLUMN IF NOT EXISTS w9_uploaded_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS coi_file_url TEXT,
+  ADD COLUMN IF NOT EXISTS coi_uploaded_at TIMESTAMPTZ;
 
 -- =============================================================================
 -- ALTER PROJECTS TABLE: Add estimated labor hours, work order link, start_time
 -- =============================================================================
 
 ALTER TABLE projects
-  ADD COLUMN estimated_labor_hours INT,
-  ADD COLUMN work_order_link TEXT,
-  ADD COLUMN start_time TIME;
+  ADD COLUMN IF NOT EXISTS estimated_labor_hours INT,
+  ADD COLUMN IF NOT EXISTS work_order_link TEXT,
+  ADD COLUMN IF NOT EXISTS start_time TIME;
 
 -- =============================================================================
 -- STORAGE BUCKETS for document uploads
@@ -36,6 +36,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies: Admins can read all documents in their tenant
 -- Subs can upload/read their own documents
+DROP POLICY IF EXISTS "Admins can read tenant documents" ON storage.objects;
 CREATE POLICY "Admins can read tenant documents"
   ON storage.objects FOR SELECT
   USING (
@@ -43,6 +44,7 @@ CREATE POLICY "Admins can read tenant documents"
     AND auth.role() = 'authenticated'
   );
 
+DROP POLICY IF EXISTS "Users can upload own documents" ON storage.objects;
 CREATE POLICY "Users can upload own documents"
   ON storage.objects FOR INSERT
   WITH CHECK (
@@ -50,6 +52,7 @@ CREATE POLICY "Users can upload own documents"
     AND auth.role() = 'authenticated'
   );
 
+DROP POLICY IF EXISTS "Users can update own documents" ON storage.objects;
 CREATE POLICY "Users can update own documents"
   ON storage.objects FOR UPDATE
   USING (
