@@ -40,6 +40,90 @@ const LEADER_KEY = 'leader'
 
 type RowConflict = { actorKey: string; openProjectLabel: string }
 
+function ActorRow({
+  label,
+  open,
+  elsewhere,
+  rowConflict,
+  totalMinutes,
+  busy,
+  now,
+  onIn,
+  onOut,
+  onCancelConflict,
+}: {
+  label: string
+  open: CrewOpenEntry | undefined
+  elsewhere: CrewOpenEntry | undefined
+  rowConflict: RowConflict | null
+  totalMinutes: number
+  busy: boolean
+  now: Date
+  onIn: (force: boolean) => void
+  onOut: () => void
+  onCancelConflict: () => void
+}) {
+  const elapsed = open
+    ? Math.max(0, now.getTime() - new Date(open.clock_in).getTime())
+    : 0
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-2">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-gray-900 truncate">{label}</p>
+        {open ? (
+          <p className="font-mono text-xs text-emerald-700 tabular-nums">
+            {formatElapsed(elapsed)} on the clock · {formatMinutes(totalMinutes)} total
+          </p>
+        ) : elsewhere ? (
+          <p className="text-xs text-amber-700">
+            On the clock at {elsewhere.otherProjectLabel || 'another job'} · {formatMinutes(totalMinutes)} total
+          </p>
+        ) : (
+          <p className="text-xs text-gray-500">{formatMinutes(totalMinutes)} total</p>
+        )}
+      </div>
+
+      {rowConflict ? (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-amber-800 max-w-[140px] truncate">
+            At {rowConflict.openProjectLabel}
+          </span>
+          <button
+            onClick={() => onIn(true)}
+            disabled={busy}
+            className="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+          >
+            {busy ? '…' : 'Switch'}
+          </button>
+          <button
+            onClick={onCancelConflict}
+            className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : open ? (
+        <button
+          onClick={onOut}
+          disabled={busy}
+          className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {busy ? 'Clocking out…' : 'Clock Out'}
+        </button>
+      ) : (
+        <button
+          onClick={() => onIn(false)}
+          disabled={busy}
+          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+        >
+          {busy ? 'Clocking in…' : 'Clock In'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function CrewClockPanel({
   slug,
   projectId,
@@ -89,10 +173,6 @@ export default function CrewClockPanel({
   }, [jobTotalsByActor, openHere, now])
 
   const onClockCount = openHere.size
-
-  function elapsedMs(entry: CrewOpenEntry): number {
-    return Math.max(0, now.getTime() - new Date(entry.clock_in).getTime())
-  }
 
   function actorMinutes(key: string): number {
     const stored = jobTotalsByActor[key] ?? 0
@@ -159,80 +239,6 @@ export default function CrewClockPanel({
     })
   }
 
-  function ActorRow({
-    actorKey,
-    label,
-    onIn,
-    onOut,
-  }: {
-    actorKey: string
-    label: string
-    onIn: (force: boolean) => void
-    onOut: () => void
-  }) {
-    const open = openHere.get(actorKey)
-    const elsewhere = openElsewhere.get(actorKey)
-    const rowConflict = conflict?.actorKey === actorKey ? conflict : null
-    const minutes = actorMinutes(actorKey)
-    const busy = isPending && pendingActor === actorKey
-
-    return (
-      <div className="flex items-center justify-between gap-3 py-2">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{label}</p>
-          {open ? (
-            <p className="font-mono text-xs text-emerald-700 tabular-nums">
-              {formatElapsed(elapsedMs(open))} on the clock · {formatMinutes(minutes)} total
-            </p>
-          ) : elsewhere ? (
-            <p className="text-xs text-amber-700">
-              On the clock at {elsewhere.otherProjectLabel || 'another job'} · {formatMinutes(minutes)} total
-            </p>
-          ) : (
-            <p className="text-xs text-gray-500">{formatMinutes(minutes)} total</p>
-          )}
-        </div>
-
-        {rowConflict ? (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-amber-800 max-w-[140px] truncate">
-              At {rowConflict.openProjectLabel}
-            </span>
-            <button
-              onClick={() => onIn(true)}
-              disabled={busy}
-              className="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-            >
-              {busy ? '…' : 'Switch'}
-            </button>
-            <button
-              onClick={() => setConflict(null)}
-              className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : open ? (
-          <button
-            onClick={onOut}
-            disabled={busy}
-            className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            {busy ? 'Clocking out…' : 'Clock Out'}
-          </button>
-        ) : (
-          <button
-            onClick={() => onIn(false)}
-            disabled={busy}
-            className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
-          >
-            {busy ? 'Clocking in…' : 'Clock In'}
-          </button>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
       <button
@@ -266,18 +272,30 @@ export default function CrewClockPanel({
       {expanded && (
         <div className="mt-2 divide-y divide-gray-200 border-t border-gray-200">
           <ActorRow
-            actorKey={LEADER_KEY}
             label={leaderName + ' (you)'}
+            open={openHere.get(LEADER_KEY)}
+            elsewhere={openElsewhere.get(LEADER_KEY)}
+            rowConflict={conflict?.actorKey === LEADER_KEY ? conflict : null}
+            totalMinutes={actorMinutes(LEADER_KEY)}
+            busy={isPending && pendingActor === LEADER_KEY}
+            now={now}
             onIn={handleClockInLeader}
             onOut={handleClockOutLeader}
+            onCancelConflict={() => setConflict(null)}
           />
           {members.map((m) => (
             <ActorRow
               key={m.id}
-              actorKey={m.id}
               label={`${m.first_name} ${m.last_name}`}
+              open={openHere.get(m.id)}
+              elsewhere={openElsewhere.get(m.id)}
+              rowConflict={conflict?.actorKey === m.id ? conflict : null}
+              totalMinutes={actorMinutes(m.id)}
+              busy={isPending && pendingActor === m.id}
+              now={now}
               onIn={(force) => handleClockInMember(m, force)}
               onOut={() => handleClockOutMember(m)}
+              onCancelConflict={() => setConflict(null)}
             />
           ))}
           {!compact && (

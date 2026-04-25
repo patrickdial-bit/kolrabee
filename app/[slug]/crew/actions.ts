@@ -68,6 +68,8 @@ export async function updateCrewMember(
     update.phone = patch.phone?.trim() || null
   }
 
+  if (Object.keys(update).length === 0) return { success: true }
+
   const { error } = await r.adminClient
     .from('crew_members')
     .update(update)

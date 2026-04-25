@@ -8,21 +8,28 @@
 -- =============================================================================
 
 ALTER TABLE users
-  ADD COLUMN is_crew_leader BOOLEAN NOT NULL DEFAULT FALSE;
+  ADD COLUMN IF NOT EXISTS is_crew_leader BOOLEAN NOT NULL DEFAULT FALSE;
 
 UPDATE users
   SET is_crew_leader = TRUE
   WHERE role = 'subcontractor' AND status = 'active';
 
-ALTER TABLE users
-  ADD CONSTRAINT users_crew_leader_only_for_subs
-  CHECK (is_crew_leader = FALSE OR role = 'subcontractor');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_crew_leader_only_for_subs'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_crew_leader_only_for_subs
+      CHECK (is_crew_leader = FALSE OR role = 'subcontractor');
+  END IF;
+END $$;
 
 -- =============================================================================
 -- crew_members
 -- =============================================================================
 
-CREATE TABLE crew_members (
+CREATE TABLE IF NOT EXISTS crew_members (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id       UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   crew_leader_id  UUID NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
@@ -35,10 +42,11 @@ CREATE TABLE crew_members (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_crew_members_leader_active
+CREATE INDEX IF NOT EXISTS idx_crew_members_leader_active
   ON crew_members(crew_leader_id) WHERE status = 'active';
-CREATE INDEX idx_crew_members_tenant ON crew_members(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_crew_members_tenant ON crew_members(tenant_id);
 
+DROP TRIGGER IF EXISTS trg_crew_members_updated_at ON crew_members;
 CREATE TRIGGER trg_crew_members_updated_at
   BEFORE UPDATE ON crew_members
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -48,20 +56,20 @@ CREATE TRIGGER trg_crew_members_updated_at
 -- =============================================================================
 
 ALTER TABLE time_entries
-  ADD COLUMN crew_member_id UUID REFERENCES crew_members(id) ON DELETE RESTRICT;
+  ADD COLUMN IF NOT EXISTS crew_member_id UUID REFERENCES crew_members(id) ON DELETE RESTRICT;
 
-CREATE INDEX idx_time_entries_crew_member
+CREATE INDEX IF NOT EXISTS idx_time_entries_crew_member
   ON time_entries(crew_member_id, clock_in DESC)
   WHERE crew_member_id IS NOT NULL;
 
 -- Replace the single "one open entry per sub" index with two scoped variants.
 DROP INDEX IF EXISTS idx_time_entries_one_open_per_sub;
 
-CREATE UNIQUE INDEX idx_time_entries_one_open_per_leader
+CREATE UNIQUE INDEX IF NOT EXISTS idx_time_entries_one_open_per_leader
   ON time_entries(subcontractor_id)
   WHERE clock_out IS NULL AND crew_member_id IS NULL;
 
-CREATE UNIQUE INDEX idx_time_entries_one_open_per_member
+CREATE UNIQUE INDEX IF NOT EXISTS idx_time_entries_one_open_per_member
   ON time_entries(crew_member_id)
   WHERE clock_out IS NULL AND crew_member_id IS NOT NULL;
 
@@ -92,6 +100,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_time_entries_crew_integrity ON time_entries;
 CREATE TRIGGER trg_time_entries_crew_integrity
   BEFORE INSERT OR UPDATE ON time_entries
   FOR EACH ROW EXECUTE FUNCTION enforce_crew_member_entry_integrity();
@@ -102,15 +111,18 @@ CREATE TRIGGER trg_time_entries_crew_integrity
 
 ALTER TABLE crew_members ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Leaders manage own crew" ON crew_members;
 CREATE POLICY "Leaders manage own crew"
   ON crew_members FOR ALL
   USING      (crew_leader_id = auth_user_id() AND tenant_id = auth_tenant_id())
   WITH CHECK (crew_leader_id = auth_user_id() AND tenant_id = auth_tenant_id());
 
+DROP POLICY IF EXISTS "Admins read tenant crew" ON crew_members;
 CREATE POLICY "Admins read tenant crew"
   ON crew_members FOR SELECT
   USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
 
+DROP POLICY IF EXISTS "Admins update tenant crew" ON crew_members;
 CREATE POLICY "Admins update tenant crew"
   ON crew_members FOR UPDATE
   USING      (tenant_id = auth_tenant_id() AND auth_role() = 'admin')

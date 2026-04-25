@@ -469,7 +469,7 @@ function KanbanCard({
       <div className="flex items-start justify-between mb-2">
         <Link
           href={`/${slug}/projects/${project.id}`}
-          className="text-sm font-semibold text-ember hover:text-primary-700 underline-offset-2 hover:underline transition-colors line-clamp-1"
+          className="text-sm font-semibold text-primary-700 hover:text-primary-800 underline-offset-2 hover:underline transition-colors line-clamp-1"
         >
           {project.customer_name}
         </Link>
