@@ -100,11 +100,13 @@ export async function clockOut(slug: string, entryId: string, overrideClockOut?:
 
   const { data: entry } = await adminClient
     .from('time_entries')
-    .select('id, subcontractor_id, clock_in, clock_out')
+    .select('id, subcontractor_id, crew_member_id, clock_in, clock_out')
     .eq('id', entryId)
     .single()
 
-  if (!entry || entry.subcontractor_id !== appUser.id) {
+  // Self clock-out only. Crew entries must go through clockOutCrewMember so
+  // the UI flow and any future crew-specific bookkeeping stay separate.
+  if (!entry || entry.subcontractor_id !== appUser.id || entry.crew_member_id !== null) {
     return { error: 'Entry not found.' }
   }
   if (entry.clock_out !== null) {
