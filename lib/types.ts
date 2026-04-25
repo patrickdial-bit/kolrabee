@@ -24,7 +24,24 @@ export type AppUser = {
     project_accepted: boolean
     project_cancelled: boolean
   } | null
+  is_crew_leader: boolean
   created_at: string
+}
+
+export type CrewMember = {
+  id: string
+  tenant_id: string
+  crew_leader_id: string
+  first_name: string
+  last_name: string
+  phone: string | null
+  status: 'active' | 'archived'
+  created_at: string
+  updated_at: string
+}
+
+export function isCrewLeader(user: Pick<AppUser, 'role' | 'is_crew_leader'>): boolean {
+  return user.role === 'subcontractor' && user.is_crew_leader === true
 }
 
 export type NotificationPreferences = {

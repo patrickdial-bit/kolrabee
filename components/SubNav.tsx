@@ -12,9 +12,10 @@ interface SubNavProps {
   slug: string
   tenantName: string
   subName: string
+  isCrewLeader?: boolean
 }
 
-export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
+export default function SubNav({ slug, tenantName, subName, isCrewLeader = false }: SubNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
   const { enabled: tooltipsOn, toggle: toggleTooltips } = useTooltips()
@@ -22,6 +23,7 @@ export default function SubNav({ slug, tenantName, subName }: SubNavProps) {
 
   const navLinks = [
     { href: `/${slug}/dashboard`, label: t('nav.dashboard') },
+    ...(isCrewLeader ? [{ href: `/${slug}/crew`, label: t('nav.crew') }] : []),
     { href: `/${slug}/profile`, label: t('nav.profile') },
   ]
 

@@ -1,7 +1,8 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { ProjectAttachment } from '@/lib/types'
-import { hasGrowthFeatures } from '@/lib/types'
+import type { ProjectAttachment, CrewMember } from '@/lib/types'
+import { hasGrowthFeatures, hasTimeTracking, isCrewLeader } from '@/lib/types'
+import type { CrewMemberLite, CrewOpenEntry } from '@/components/CrewClockPanel'
 import { notFound } from 'next/navigation'
 import SubProjectDetailClient from './SubProjectDetailClient'
 
@@ -68,6 +69,98 @@ export default async function SubProjectDetailPage({
     }))
   }
 
+  // Crew + time tracking data (only when this sub has accepted the project).
+  const isAccepted = project.accepted_by === appUser.id
+  let timeClockEnabled = false
+  let crewMembers: CrewMemberLite[] = []
+  let crewOpenEntries: CrewOpenEntry[] = []
+  let jobTotalsByActor: Record<string, number> = {}
+  let crewHistory: Array<{
+    id: string
+    actorKey: string
+    actorName: string
+    clock_in: string
+    clock_out: string | null
+    duration_minutes: number | null
+  }> = []
+
+  if (isAccepted && hasTimeTracking(tenant)) {
+    const { data: settings } = await adminClient
+      .from('subcontractor_settings')
+      .select('time_clock_enabled')
+      .eq('subcontractor_id', appUser.id)
+      .maybeSingle()
+    timeClockEnabled = !!settings?.time_clock_enabled
+
+    if (timeClockEnabled) {
+      const { data: crewRows } = await adminClient
+        .from('crew_members')
+        .select('*')
+        .eq('crew_leader_id', appUser.id)
+        .eq('status', 'active')
+        .order('last_name')
+        .order('first_name')
+      const allCrew = (crewRows ?? []) as CrewMember[]
+      crewMembers = allCrew.map((m) => ({ id: m.id, first_name: m.first_name, last_name: m.last_name }))
+      const memberNameById = new Map<string, string>(
+        allCrew.map((m) => [m.id, `${m.first_name} ${m.last_name}`]),
+      )
+
+      // All open entries owned by this leader.
+      const { data: openRows } = await adminClient
+        .from('time_entries')
+        .select('id, project_id, crew_member_id, clock_in, projects:project_id (customer_name, job_number)')
+        .eq('subcontractor_id', appUser.id)
+        .is('clock_out', null)
+      for (const row of openRows ?? []) {
+        const r: any = row
+        const p = r.projects
+        crewOpenEntries.push({
+          id: r.id,
+          project_id: r.project_id,
+          crew_member_id: r.crew_member_id ?? null,
+          clock_in: r.clock_in,
+          otherProjectLabel: p?.job_number || p?.customer_name || 'another job',
+        })
+      }
+
+      // Per-actor stored minutes for THIS project.
+      const { data: thisProjectRows } = await adminClient
+        .from('time_entries')
+        .select('crew_member_id, duration_minutes')
+        .eq('subcontractor_id', appUser.id)
+        .eq('project_id', id)
+      for (const r of thisProjectRows ?? []) {
+        const actorKey = (r as any).crew_member_id ?? 'leader'
+        jobTotalsByActor[actorKey] = (jobTotalsByActor[actorKey] ?? 0) + ((r as any).duration_minutes ?? 0)
+      }
+
+      // History (most recent 20) — leader plus crew, this project.
+      const { data: historyRows } = await adminClient
+        .from('time_entries')
+        .select('id, crew_member_id, clock_in, clock_out, duration_minutes')
+        .eq('subcontractor_id', appUser.id)
+        .eq('project_id', id)
+        .order('clock_in', { ascending: false })
+        .limit(20)
+      const leaderName = `${appUser.first_name} ${appUser.last_name}`
+      for (const r of historyRows ?? []) {
+        const actorKey = (r as any).crew_member_id ?? 'leader'
+        const actorName = actorKey === 'leader'
+          ? `${leaderName} (you)`
+          : memberNameById.get(actorKey) ?? 'Crew member'
+        crewHistory.push({
+          id: (r as any).id,
+          actorKey,
+          actorName,
+          clock_in: (r as any).clock_in,
+          clock_out: (r as any).clock_out,
+          duration_minutes: (r as any).duration_minutes,
+        })
+      }
+    }
+  }
+
   return (
     <SubProjectDetailClient
       slug={slug}
@@ -75,11 +168,18 @@ export default async function SubProjectDetailPage({
       subName={`${appUser.first_name} ${appUser.last_name}`}
       project={project as Project}
       invitation={invitation as ProjectInvitation | null}
-      isAcceptedByMe={project.accepted_by === appUser.id}
+      isAcceptedByMe={isAccepted}
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}
       currentUserId={appUser.id}
       hasGrowth={hasGrowthFeatures(tenant)}
+      isCrewLeader={isCrewLeader(appUser)}
+      timeClockEnabled={timeClockEnabled}
+      leaderName={appUser.first_name}
+      crewMembers={crewMembers}
+      crewOpenEntries={crewOpenEntries}
+      jobTotalsByActor={jobTotalsByActor}
+      crewHistory={crewHistory}
     />
   )
 }

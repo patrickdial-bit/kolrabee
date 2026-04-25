@@ -2,6 +2,8 @@
 
 This repo treats `supabase/migrations/*.sql` as the single source of truth for the Kolrabee production database schema. Keep them in order and don't edit a migration that's already been applied.
 
+The `supabase/bootstrap/combined_schema.sql` file is a one-shot, idempotent dump of the full schema for pasting into the Supabase Dashboard SQL Editor on a brand-new project. It is **not** part of the ordered migrations — Supabase Branching only runs `supabase/migrations/*.sql` sequentially, and including the bootstrap there causes table collisions with `00001_initial_schema.sql`.
+
 ## Project ref
 
 Production Supabase project ref: `qjejzoyyulzbancykpad`
@@ -42,7 +44,7 @@ Two files with the same version prefix (e.g. two files starting with `00002_`) c
 
 ## What's already tracked on prod
 
-As of the initial sync (2026-04-22), every migration in this folder from `00000` through `00015a` is marked applied on prod. Two older rows from an unrelated "Fieldy" project exist in the tracking table and are intentionally left alone.
+As of the initial sync (2026-04-22), every migration in this folder from `00001` through `00015a` is marked applied on prod. Two older rows from an unrelated "Fieldy" project exist in the tracking table and are intentionally left alone. The `00000` row in `schema_migrations` corresponds to the original combined-schema bootstrap (now under `supabase/bootstrap/`) and should remain tracked but never re-applied.
 
 ## Access token hygiene
 

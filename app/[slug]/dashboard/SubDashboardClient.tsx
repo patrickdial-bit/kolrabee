@@ -18,9 +18,9 @@ import {
 } from '@/app/[slug]/projects/[id]/actions'
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendSubMessage, getSubMessages } from '@/app/[slug]/projects/[id]/message-actions'
-import TimeClockWidget from '@/components/TimeClockWidget'
 import WeeklyTimeSummary from '@/components/WeeklyTimeSummary'
 import StaleTimeEntryPrompt from '@/components/StaleTimeEntryPrompt'
+import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
 
 interface SubDashboardClientProps {
   slug: string
@@ -41,6 +41,11 @@ interface SubDashboardClientProps {
   openTimeEntry: { id: string; project_id: string; clock_in: string } | null
   staleTimeEntry: { id: string; project_id: string; clock_in: string; projectLabel: string } | null
   tenantTimezone: string
+  isCrewLeader: boolean
+  leaderName: string
+  crewMembers: CrewMemberLite[]
+  crewOpenEntries: CrewOpenEntry[]
+  jobTotals: Record<string, Record<string, number>>
 }
 
 const columnConfig = [
@@ -70,6 +75,11 @@ export default function SubDashboardClient({
   openTimeEntry,
   staleTimeEntry,
   tenantTimezone,
+  isCrewLeader,
+  leaderName,
+  crewMembers,
+  crewOpenEntries,
+  jobTotals,
 }: SubDashboardClientProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -173,7 +183,7 @@ export default function SubDashboardClient({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} />
+      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
 
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('dash.title')}</h1>
@@ -288,8 +298,11 @@ export default function SubDashboardClient({
                   onChat={() => setChatProject(project)}
                   unreadCount={unreadCounts[project.id] ?? 0}
                   timeClockEnabled={timeClockEnabled}
-                  openTimeEntry={openTimeEntry}
                   slugForClock={slug}
+                  leaderName={leaderName}
+                  crewMembers={crewMembers}
+                  crewOpenEntries={crewOpenEntries}
+                  jobTotals={jobTotals}
                   t={t}
                 />
               ))
@@ -339,8 +352,11 @@ export default function SubDashboardClient({
                         unreadCount={unreadCounts[project.id] ?? 0}
                         t={t}
                         timeClockEnabled={timeClockEnabled}
-                        openTimeEntry={openTimeEntry}
                         slugForClock={slug}
+                        leaderName={leaderName}
+                        crewMembers={crewMembers}
+                        crewOpenEntries={crewOpenEntries}
+                        jobTotals={jobTotals}
                       />
                     ))
                   )}
@@ -421,8 +437,11 @@ function KanbanCard({
   unreadCount,
   t,
   timeClockEnabled,
-  openTimeEntry,
   slugForClock,
+  leaderName,
+  crewMembers,
+  crewOpenEntries,
+  jobTotals,
 }: {
   project: Project
   column: string
@@ -438,8 +457,11 @@ function KanbanCard({
   unreadCount: number
   t: (key: string) => string
   timeClockEnabled: boolean
-  openTimeEntry: { id: string; project_id: string; clock_in: string } | null
   slugForClock: string
+  leaderName: string
+  crewMembers: CrewMemberLite[]
+  crewOpenEntries: CrewOpenEntry[]
+  jobTotals: Record<string, Record<string, number>>
 }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:shadow-md transition-shadow">
@@ -447,7 +469,7 @@ function KanbanCard({
       <div className="flex items-start justify-between mb-2">
         <Link
           href={`/${slug}/projects/${project.id}`}
-          className="text-sm font-semibold text-gray-900 hover:text-ember transition-colors line-clamp-1"
+          className="text-sm font-semibold text-primary-700 hover:text-primary-800 underline-offset-2 hover:underline transition-colors line-clamp-1"
         >
           {project.customer_name}
         </Link>
@@ -495,12 +517,15 @@ function KanbanCard({
 
       {timeClockEnabled && (column === 'accepted' || column === 'pending_completion' || column === 'completed') && (
         <div className="mb-3">
-          <TimeClockWidget
+          <CrewClockPanel
             slug={slugForClock}
             projectId={project.id}
             projectLabel={project.job_number || project.customer_name}
-            openEntry={openTimeEntry && openTimeEntry.project_id === project.id ? openTimeEntry : null}
-            otherOpenEntry={openTimeEntry && openTimeEntry.project_id !== project.id ? openTimeEntry : null}
+            leaderName={leaderName}
+            members={crewMembers}
+            openEntries={crewOpenEntries}
+            jobTotalsByActor={jobTotals[project.id] ?? {}}
+            compact
           />
         </div>
       )}

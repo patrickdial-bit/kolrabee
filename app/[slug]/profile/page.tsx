@@ -1,4 +1,5 @@
 import { getCurrentSub } from '@/lib/helpers'
+import { isCrewLeader } from '@/lib/types'
 import ProfileClient from './ProfileClient'
 
 export default async function SubProfilePage({
@@ -21,6 +22,7 @@ export default async function SubProfilePage({
       slug={slug}
       tenantName={tenant.name}
       subName={`${appUser.first_name} ${appUser.last_name}`}
+      isCrewLeader={isCrewLeader(appUser)}
       notificationPreferences={notifPrefs}
       initialValues={{
         firstName: appUser.first_name,

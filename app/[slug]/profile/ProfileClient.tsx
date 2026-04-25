@@ -27,6 +27,7 @@ interface Props {
   slug: string
   tenantName: string
   subName: string
+  isCrewLeader: boolean
   notificationPreferences: {
     project_invites: boolean
     project_updates: boolean
@@ -49,7 +50,7 @@ interface Props {
   }
 }
 
-export default function ProfileClient({ slug, tenantName, subName, notificationPreferences, initialValues }: Props) {
+export default function ProfileClient({ slug, tenantName, subName, isCrewLeader, notificationPreferences, initialValues }: Props) {
   const { t } = useI18n()
   const [profileState, profileAction] = useFormState(updateProfile, null as any)
   const [passwordState, passwordAction] = useFormState(changePassword, null)
@@ -112,7 +113,7 @@ export default function ProfileClient({ slug, tenantName, subName, notificationP
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} />
+      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
 
       <main className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('profile.title')}</h1>
