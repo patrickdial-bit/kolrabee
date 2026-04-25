@@ -43,12 +43,15 @@ export async function clockIn(slug: string, projectId: string, force = false) {
     return { error: 'You can only clock in to jobs you have accepted.' }
   }
 
-  // Check for an existing open entry.
+  // Check for an existing open SELF entry (crew_member_id IS NULL).
+  // Open crew-member entries also live under this leader's subcontractor_id,
+  // and must not be treated as "the leader is already clocked in".
   const { data: openEntry } = await adminClient
     .from('time_entries')
     .select('id, project_id, clock_in, projects:project_id (customer_name, job_number)')
     .eq('subcontractor_id', appUser.id)
     .is('clock_out', null)
+    .is('crew_member_id', null)
     .maybeSingle()
 
   if (openEntry) {
