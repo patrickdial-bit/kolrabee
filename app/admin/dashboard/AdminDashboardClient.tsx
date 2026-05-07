@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import AdminNav from '@/components/AdminNav'
 import StatusTabs from '@/components/StatusTabs'
 import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
@@ -13,6 +14,7 @@ import type { Project } from '@/lib/types'
 import type { PlatformInvite } from './page'
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendMessage, getMessages } from '@/app/admin/projects/[id]/message-actions'
+import { cancelSubInvite, editSubInvite } from '@/app/admin/subcontractors/actions'
 
 type SortKey = 'customer_name' | 'start_date' | 'payout_amount' | 'estimated_labor_hours' | 'address'
 type SortDir = 'asc' | 'desc'
@@ -60,7 +62,49 @@ export default function AdminDashboardClient({
   const [linkCopied, setLinkCopied] = useState(false)
   const [chatProject, setChatProject] = useState<Project | null>(null)
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>(initialUnreadCounts)
+  const [editingInviteId, setEditingInviteId] = useState<string | null>(null)
+  const [editInviteEmail, setEditInviteEmail] = useState('')
+  const [editInviteName, setEditInviteName] = useState('')
+  const [, startInviteAction] = useTransition()
   const router = useRouter()
+
+  function startEditInvite(invite: PlatformInvite) {
+    setEditingInviteId(invite.id)
+    setEditInviteEmail(invite.email)
+    setEditInviteName(invite.name ?? '')
+  }
+
+  function cancelEditInvite() {
+    setEditingInviteId(null)
+    setEditInviteEmail('')
+    setEditInviteName('')
+  }
+
+  function saveEditInvite(inviteId: string) {
+    startInviteAction(async () => {
+      const result = await editSubInvite(inviteId, editInviteEmail, editInviteName)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Invite updated and re-sent.')
+        cancelEditInvite()
+        router.refresh()
+      }
+    })
+  }
+
+  function handleCancelInvite(invite: PlatformInvite) {
+    if (!confirm(`Cancel the invite for ${invite.email}?`)) return
+    startInviteAction(async () => {
+      const result = await cancelSubInvite(invite.id)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(`Invite for ${invite.email} cancelled.`)
+        router.refresh()
+      }
+    })
+  }
 
   const subLoginUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/${tenantSlug}/login`
@@ -90,6 +134,17 @@ export default function AdminDashboardClient({
     c['Completed'] = projects.filter((p) => p.status === 'pending_completion' || p.status === 'completed').length
     c['Paid'] = projects.filter((p) => p.status === 'paid').length
     return c
+  }, [projects])
+
+  const totals = useMemo(() => {
+    const sumPayout = (filter: (p: Project) => boolean) =>
+      projects.filter(filter).reduce((sum, p) => sum + (p.payout_amount ?? 0), 0)
+    return {
+      Available: sumPayout((p) => p.status === 'available'),
+      Accepted: sumPayout((p) => p.status === 'accepted' || p.status === 'in_progress'),
+      Completed: sumPayout((p) => p.status === 'pending_completion' || p.status === 'completed'),
+      Paid: sumPayout((p) => p.status === 'paid'),
+    }
   }, [projects])
 
   const filtered = useMemo(() => {
@@ -205,6 +260,30 @@ export default function AdminDashboardClient({
           </div>
         </div>
 
+        {/* Project value totals */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Available</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(totals.Available)}</p>
+            <p className="text-xs text-gray-400">{counts['Available']} project{counts['Available'] === 1 ? '' : 's'}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Accepted / In-Progress</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(totals.Accepted)}</p>
+            <p className="text-xs text-gray-400">{counts['Accepted']} project{counts['Accepted'] === 1 ? '' : 's'}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</p>
+            <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(totals.Completed)}</p>
+            <p className="text-xs text-gray-400">{counts['Completed']} project{counts['Completed'] === 1 ? '' : 's'}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</p>
+            <p className="mt-1 text-2xl font-bold text-ember">{formatCurrency(totals.Paid)}</p>
+            <p className="text-xs text-gray-400">{counts['Paid']} project{counts['Paid'] === 1 ? '' : 's'}</p>
+          </div>
+        </div>
+
         {/* Trial Banner */}
         {tenantPlan === 'trial' && trialEndsAt && (() => {
           const daysLeft = Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -300,31 +379,79 @@ export default function AdminDashboardClient({
                   <tr>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Email</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Invited</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {platformInvites.map((invite) => (
-                    <tr key={invite.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2.5 text-sm text-gray-900">{invite.name || '—'}</td>
-                      <td className="px-4 py-2.5 text-sm text-gray-600">{invite.email}</td>
-                      <td className="px-4 py-2.5">
-                        {invite.status === 'accepted' ? (
-                          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                            Accepted
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-                            Pending
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-sm text-gray-500">
-                        {new Date(invite.invited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </td>
-                    </tr>
-                  ))}
+                  {platformInvites.map((invite) => {
+                    const isEditing = editingInviteId === invite.id
+                    return (
+                      <tr key={invite.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2.5 text-sm text-gray-900">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editInviteName}
+                              onChange={(e) => setEditInviteName(e.target.value)}
+                              placeholder="Name (optional)"
+                              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
+                            />
+                          ) : (
+                            invite.name || '—'
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-gray-600">
+                          {isEditing ? (
+                            <input
+                              type="email"
+                              value={editInviteEmail}
+                              onChange={(e) => setEditInviteEmail(e.target.value)}
+                              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
+                            />
+                          ) : (
+                            invite.email
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm text-gray-500">
+                          {new Date(invite.invited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          {isEditing ? (
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={() => saveEditInvite(invite.id)}
+                                className="rounded-md bg-ember px-2.5 py-1 text-xs font-semibold text-white hover:bg-primary-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={cancelEditInvite}
+                                className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={() => startEditInvite(invite)}
+                                className="rounded-md bg-ember/10 px-2.5 py-1 text-xs font-semibold text-ember hover:bg-ember/15"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleCancelInvite(invite)}
+                                className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                              >
+                                Cancel invite
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
