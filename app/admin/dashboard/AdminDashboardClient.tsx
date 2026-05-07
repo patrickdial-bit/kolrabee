@@ -304,8 +304,8 @@ export default function AdminDashboardClient({
           )
         })()}
 
-        {/* Usage & Money Display */}
-        <div id="tour-usage-stats" className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        {/* Plan Usage */}
+        <div id="tour-usage-stats" className="grid grid-cols-2 gap-4 mb-6">
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Used</p>
             <p className="mt-1 text-lg font-bold text-gray-900">
@@ -316,18 +316,6 @@ export default function AdminDashboardClient({
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractors</p>
             <p className="mt-1 text-lg font-bold text-gray-900">
               {subCount}/{maxSubcontractors < 0 || maxSubcontractors >= 999999 ? '∞' : maxSubcontractors}
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">In Progress</p>
-            <p className="mt-1 text-lg font-bold text-indigo-600">
-              {formatCurrency(projects.filter(p => p.status === 'accepted' || p.status === 'in_progress' || p.status === 'completed').reduce((sum, p) => sum + (p.payout_amount ?? 0), 0))}
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</p>
-            <p className="mt-1 text-lg font-bold text-green-600">
-              {formatCurrency(projects.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.payout_amount ?? 0), 0))}
             </p>
           </div>
         </div>
