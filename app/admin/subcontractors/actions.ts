@@ -131,3 +131,115 @@ export async function inviteSubToJoin(email: string, name: string) {
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
+
+export async function cancelSubInvite(inviteId: string) {
+  const { appUser } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { error } = await adminClient
+    .from('platform_invites')
+    .delete()
+    .eq('id', inviteId)
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'subcontractor')
+    .eq('status', 'pending')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+export async function editSubInvite(inviteId: string, email: string, name: string) {
+  const { appUser, tenant } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const normalizedEmail = email.toLowerCase().trim()
+  if (!normalizedEmail) {
+    return { error: 'Email is required.' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { data: invite } = await adminClient
+    .from('platform_invites')
+    .select('id, email, status')
+    .eq('id', inviteId)
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'subcontractor')
+    .single()
+
+  if (!invite) {
+    return { error: 'Invite not found.' }
+  }
+  if (invite.status !== 'pending') {
+    return { error: 'This invite has already been accepted.' }
+  }
+
+  // If email changed, make sure the new one isn't already in use.
+  if (normalizedEmail !== invite.email) {
+    const { data: existingUser } = await adminClient
+      .from('users')
+      .select('id, status')
+      .eq('tenant_id', appUser.tenant_id)
+      .eq('email', normalizedEmail)
+      .maybeSingle()
+
+    if (existingUser) {
+      return existingUser.status === 'active'
+        ? { error: 'A subcontractor with this email already exists.' }
+        : { error: 'This email belongs to a deleted subcontractor. Reactivate them from the list instead.' }
+    }
+
+    const { data: existingInvite } = await adminClient
+      .from('platform_invites')
+      .select('id')
+      .eq('tenant_id', appUser.tenant_id)
+      .eq('email', normalizedEmail)
+      .neq('id', inviteId)
+      .maybeSingle()
+
+    if (existingInvite) {
+      return { error: 'Another invite for this email already exists.' }
+    }
+  }
+
+  const trimmedName = name.trim()
+  const { error } = await adminClient
+    .from('platform_invites')
+    .update({
+      email: normalizedEmail,
+      name: trimmedName || null,
+    })
+    .eq('id', inviteId)
+    .eq('tenant_id', appUser.tenant_id)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Re-send the invite email so the recipient (especially if email changed) gets the updated link.
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const params = new URLSearchParams({ email: normalizedEmail })
+  if (trimmedName) params.set('name', trimmedName)
+  const joinUrl = `${baseUrl}/${tenant.slug}/join?${params.toString()}`
+
+  await sendPlatformInviteEmail({
+    to: normalizedEmail,
+    name: trimmedName,
+    tenantName: tenant.name,
+    notificationEmail: tenant.notification_email ?? null,
+    joinUrl,
+  })
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}

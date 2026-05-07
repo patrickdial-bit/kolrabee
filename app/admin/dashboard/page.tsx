@@ -54,11 +54,13 @@ export default async function AdminDashboardPage() {
     .eq('role', 'subcontractor')
     .eq('status', 'active')
 
-  // Fetch platform invites
+  // Fetch pending subcontractor invites (accepted ones are hidden — they show up in the subcontractor list instead)
   const { data: platformInvites } = await adminClient
     .from('platform_invites')
     .select('*')
     .eq('tenant_id', tenant.id)
+    .eq('role', 'subcontractor')
+    .eq('status', 'pending')
     .order('invited_at', { ascending: false })
 
   // Get unread message counts for active projects
