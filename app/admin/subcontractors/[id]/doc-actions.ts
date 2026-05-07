@@ -42,7 +42,11 @@ export async function uploadDocumentForSub(
   docType: 'w9' | 'coi',
   filePath: string
 ): Promise<{ success?: boolean; error?: string }> {
-  const { tenant } = await getCurrentUser()
+  const { appUser, tenant } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
   const adminClient = createAdminClient()
 
   const { data: sub } = await adminClient
@@ -73,6 +77,56 @@ export async function uploadDocumentForSub(
 
   if (error) {
     return { error: 'Failed to save document reference.' }
+  }
+
+  revalidatePath(`/admin/subcontractors/${subId}`)
+  return { success: true }
+}
+
+export async function updateInsuranceForSub(
+  subId: string,
+  provider: string | null,
+  expiration: string | null
+): Promise<{ success?: boolean; error?: string }> {
+  const { appUser, tenant } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { data: sub } = await adminClient
+    .from('users')
+    .select('id')
+    .eq('id', subId)
+    .eq('tenant_id', tenant.id)
+    .eq('role', 'subcontractor')
+    .single()
+
+  if (!sub) {
+    return { error: 'Subcontractor not found.' }
+  }
+
+  let expirationValue: string | null = null
+  if (expiration && expiration.trim() !== '') {
+    const d = new Date(expiration)
+    if (isNaN(d.getTime())) {
+      return { error: 'Invalid expiration date.' }
+    }
+    expirationValue = expiration
+  }
+
+  const trimmedProvider = provider?.trim() ?? ''
+  const { error } = await adminClient
+    .from('users')
+    .update({
+      insurance_provider: trimmedProvider === '' ? null : trimmedProvider,
+      insurance_expiration: expirationValue,
+    })
+    .eq('id', sub.id)
+
+  if (error) {
+    return { error: 'Failed to save insurance details.' }
   }
 
   revalidatePath(`/admin/subcontractors/${subId}`)
