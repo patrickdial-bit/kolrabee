@@ -11,8 +11,20 @@ import StarRating from '@/components/StarRating'
 import { isSubCompliant } from '@/lib/types'
 import type { ReliabilityStats } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
-import { getDocumentUrl, uploadDocumentForSub } from './doc-actions'
+import { getDocumentUrl, uploadDocumentForSub, updateDocumentReviewDate, updateInsuranceForSub } from './doc-actions'
 import { createBrowserClient } from '@supabase/ssr'
+
+function toDateInputValue(value: string | null): string {
+  if (!value) return ''
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return ''
+  const y = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${mo}-${day}`
+}
 
 const statusColors: Record<string, string> = {
   available: 'bg-blue-50 text-blue-700 ring-blue-600/20',
@@ -40,7 +52,18 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
   const [docLoading, setDocLoading] = useState<string | null>(null)
   const [docError, setDocError] = useState<string | null>(null)
   const [uploading, setUploading] = useState<string | null>(null)
+  const [savingField, setSavingField] = useState<string | null>(null)
+  const [w9Date, setW9Date] = useState(toDateInputValue(sub.w9_uploaded_at))
+  const [coiDate, setCoiDate] = useState(toDateInputValue(sub.coi_uploaded_at))
+  const [insuranceProvider, setInsuranceProvider] = useState(sub.insurance_provider ?? '')
+  const [insuranceExpiration, setInsuranceExpiration] = useState(toDateInputValue(sub.insurance_expiration))
   const router = useRouter()
+
+  const w9Dirty = w9Date !== toDateInputValue(sub.w9_uploaded_at)
+  const coiDirty = coiDate !== toDateInputValue(sub.coi_uploaded_at)
+  const insuranceDirty =
+    insuranceProvider !== (sub.insurance_provider ?? '') ||
+    insuranceExpiration !== toDateInputValue(sub.insurance_expiration)
 
   async function handleViewDoc(docType: 'w9' | 'coi') {
     setDocError(null)
@@ -77,7 +100,8 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
         return
       }
 
-      const result = await uploadDocumentForSub(sub.id, docType, path)
+      const reviewedAt = docType === 'w9' ? w9Date : coiDate
+      const result = await uploadDocumentForSub(sub.id, docType, path, reviewedAt || null)
       if (result.error) {
         setDocError(result.error)
         toast.error(result.error)
@@ -90,6 +114,39 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
       toast.error('Upload failed. Please try again.')
     } finally {
       setUploading(null)
+    }
+  }
+
+  async function handleSaveDate(docType: 'w9' | 'coi') {
+    setDocError(null)
+    setSavingField(docType)
+    const value = docType === 'w9' ? w9Date : coiDate
+    const result = await updateDocumentReviewDate(sub.id, docType, value || null)
+    setSavingField(null)
+    if (result.error) {
+      setDocError(result.error)
+      toast.error(result.error)
+    } else {
+      toast.success(`${docType.toUpperCase()} review date saved.`)
+      router.refresh()
+    }
+  }
+
+  async function handleSaveInsurance() {
+    setDocError(null)
+    setSavingField('insurance')
+    const result = await updateInsuranceForSub(
+      sub.id,
+      insuranceProvider.trim() || null,
+      insuranceExpiration || null
+    )
+    setSavingField(null)
+    if (result.error) {
+      setDocError(result.error)
+      toast.error(result.error)
+    } else {
+      toast.success('Insurance details saved.')
+      router.refresh()
     }
   }
 
@@ -262,9 +319,29 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mb-3">
-                {sub.w9_uploaded_at ? `Uploaded ${formatDate(sub.w9_uploaded_at)}` : 'Not yet uploaded'}
-              </p>
+              <div className="mb-3">
+                <label className="block text-xs text-gray-500 mb-1">Reviewed on</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={w9Date}
+                    onChange={(e) => setW9Date(e.target.value)}
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
+                  />
+                  {w9Dirty && sub.w9_file_url && (
+                    <button
+                      onClick={() => handleSaveDate('w9')}
+                      disabled={savingField === 'w9'}
+                      className="rounded-md bg-ember px-2 py-1 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                    >
+                      {savingField === 'w9' ? 'Saving...' : 'Save'}
+                    </button>
+                  )}
+                </div>
+                {!sub.w9_file_url && (
+                  <p className="mt-1 text-[11px] text-gray-400">Upload a file to save the review date.</p>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {sub.w9_file_url && (
                   <button
@@ -312,9 +389,29 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mb-3">
-                {sub.coi_uploaded_at ? `Uploaded ${formatDate(sub.coi_uploaded_at)}` : 'Not yet uploaded'}
-              </p>
+              <div className="mb-3">
+                <label className="block text-xs text-gray-500 mb-1">Reviewed on</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={coiDate}
+                    onChange={(e) => setCoiDate(e.target.value)}
+                    className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
+                  />
+                  {coiDirty && sub.coi_file_url && (
+                    <button
+                      onClick={() => handleSaveDate('coi')}
+                      disabled={savingField === 'coi'}
+                      className="rounded-md bg-ember px-2 py-1 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                    >
+                      {savingField === 'coi' ? 'Saving...' : 'Save'}
+                    </button>
+                  )}
+                </div>
+                {!sub.coi_file_url && (
+                  <p className="mt-1 text-[11px] text-gray-400">Upload a file to save the review date.</p>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {sub.coi_file_url && (
                   <button
@@ -362,16 +459,36 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
                   </span>
                 )}
               </div>
-              <dl className="text-xs text-gray-500 space-y-1">
+              <div className="space-y-2">
                 <div>
-                  <dt className="inline">Provider: </dt>
-                  <dd className="inline font-medium text-gray-700">{sub.insurance_provider ?? '—'}</dd>
+                  <label className="block text-xs text-gray-500 mb-1">Provider</label>
+                  <input
+                    type="text"
+                    value={insuranceProvider}
+                    onChange={(e) => setInsuranceProvider(e.target.value)}
+                    placeholder="e.g. Acord"
+                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
+                  />
                 </div>
                 <div>
-                  <dt className="inline">Expires: </dt>
-                  <dd className="inline font-medium text-gray-700">{sub.insurance_expiration ? formatDate(sub.insurance_expiration) : '—'}</dd>
+                  <label className="block text-xs text-gray-500 mb-1">Expires</label>
+                  <input
+                    type="date"
+                    value={insuranceExpiration}
+                    onChange={(e) => setInsuranceExpiration(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
+                  />
                 </div>
-              </dl>
+                {insuranceDirty && (
+                  <button
+                    onClick={handleSaveInsurance}
+                    disabled={savingField === 'insurance'}
+                    className="w-full rounded-md bg-ember px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    {savingField === 'insurance' ? 'Saving...' : 'Save insurance'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
