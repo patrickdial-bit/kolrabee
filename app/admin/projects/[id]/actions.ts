@@ -40,11 +40,13 @@ export async function updateProject(projectId: string, formData: FormData) {
 
   const { appUser, tenant } = await getCurrentUser()
 
+  const trimmedJobNumber = jobNumber?.trim() || null
+
   const adminClient = createAdminClient()
   const { error } = await adminClient
     .from('projects')
     .update({
-      job_number: jobNumber?.trim() || null,
+      job_number: trimmedJobNumber,
       customer_name: customerName.trim(),
       address: address.trim(),
       start_date: startDate || null,
@@ -60,6 +62,9 @@ export async function updateProject(projectId: string, formData: FormData) {
     .eq('tenant_id', tenant.id)
 
   if (error) {
+    if (error.code === '23505' && trimmedJobNumber) {
+      return { error: `A project with job number "${trimmedJobNumber}" already exists. Pick a different number or cancel the existing project first.` }
+    }
     return { error: 'Failed to update project.' }
   }
 

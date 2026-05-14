@@ -13,6 +13,12 @@ export type PlatformInvite = {
   accepted_at: string | null
 }
 
+export type ProjectInviteSummary = {
+  id: string
+  status: 'invited' | 'accepted' | 'declined'
+  subcontractor_name: string
+}
+
 export default async function AdminDashboardPage() {
   const { appUser, tenant } = await getCurrentUser()
 
@@ -69,6 +75,29 @@ export default async function AdminDashboardPage() {
     .map((p: any) => p.id)
   const unreadCounts = await getUnreadCounts(appUser.id, activeProjectIds)
 
+  // Fetch project-level invitations for projects still awaiting acceptance, so
+  // the dashboard can show admins who they've invited at a glance.
+  const availableProjectIds = (projects ?? [])
+    .filter((p: any) => p.status === 'available')
+    .map((p: any) => p.id)
+  const projectInvites: Record<string, ProjectInviteSummary[]> = {}
+  if (availableProjectIds.length > 0) {
+    const { data: rawInvites } = await adminClient
+      .from('project_invitations')
+      .select('id, project_id, status, subcontractor:users!project_invitations_subcontractor_id_fkey(first_name, last_name)')
+      .in('project_id', availableProjectIds)
+      .order('invited_at', { ascending: true })
+    for (const inv of rawInvites ?? []) {
+      const sub = (inv as any).subcontractor
+      const list = projectInvites[inv.project_id] ?? (projectInvites[inv.project_id] = [])
+      list.push({
+        id: inv.id,
+        status: inv.status as 'invited' | 'accepted' | 'declined',
+        subcontractor_name: sub ? `${sub.first_name} ${sub.last_name}` : 'Unknown',
+      })
+    }
+  }
+
   return (
     <AdminDashboardClient
       projects={(projects ?? []) as Project[]}
@@ -85,6 +114,7 @@ export default async function AdminDashboardPage() {
       platformInvites={(platformInvites ?? []) as PlatformInvite[]}
       currentUserId={appUser.id}
       unreadCounts={unreadCounts}
+      projectInvites={projectInvites}
     />
   )
 }
