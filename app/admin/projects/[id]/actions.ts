@@ -210,7 +210,7 @@ export async function cancelProject(projectId: string, version: number) {
   const { data, error } = await adminClient
     .from('projects')
     .update({
-      status: 'available',
+      status: 'cancelled',
       accepted_by: null,
       accepted_at: null,
       version: version + 1,
@@ -218,7 +218,7 @@ export async function cancelProject(projectId: string, version: number) {
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .eq('version', version)
-    .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
+    .in('status', ['available', 'accepted', 'in_progress', 'pending_completion', 'completed'])
     .select('id')
 
   if (error) {
@@ -229,13 +229,13 @@ export async function cancelProject(projectId: string, version: number) {
     return { error: 'Conflict: this project was modified by someone else. Please refresh.' }
   }
 
-  // Restore all invitations to 'invited' so subs can see the job again
+  // Withdraw outstanding invitations so the project disappears from every sub's board
   await adminClient
     .from('project_invitations')
-    .update({ status: 'invited' })
+    .update({ status: 'declined' })
     .eq('project_id', projectId)
     .eq('tenant_id', tenant.id)
-    .in('status', ['accepted', 'declined'])
+    .in('status', ['invited', 'accepted'])
 
   revalidatePath(`/admin/projects/${projectId}`)
   revalidatePath('/admin/dashboard')
@@ -250,7 +250,7 @@ export async function deleteProject(projectId: string) {
     .delete()
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
-    .eq('status', 'available')
+    .in('status', ['available', 'cancelled'])
     .select('id')
 
   if (error) {
@@ -258,7 +258,7 @@ export async function deleteProject(projectId: string) {
   }
 
   if (!data || data.length === 0) {
-    return { error: 'Only available projects can be deleted.' }
+    return { error: 'Only available or cancelled projects can be deleted.' }
   }
 
   revalidatePath('/admin/dashboard')

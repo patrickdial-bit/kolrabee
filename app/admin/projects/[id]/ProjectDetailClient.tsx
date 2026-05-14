@@ -135,11 +135,11 @@ export default function ProjectDetailClient({
 
   const handleCancel = () => {
     clearMessages()
-    if (!confirm('Cancel this project? It will return to Available status.')) return
+    if (!confirm('Cancel this project? Subs will no longer see it and it cannot be re-listed (a new project would have to be created).')) return
     startTransition(async () => {
       const result = await cancelProject(project.id, project.version)
       if (result?.error) { setError(result.error); toast.error(result.error) }
-      else { toast.info('Project cancelled and returned to Available.'); router.refresh() }
+      else { toast.info('Project cancelled.'); router.refresh() }
     })
   }
 
@@ -444,6 +444,10 @@ export default function ProjectDetailClient({
                     <button onClick={handleCancel} disabled={isPending}
                       className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
                   </>
+                )}
+                {project.status === 'cancelled' && (
+                  <button onClick={handleDelete} disabled={isPending}
+                    className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
                 )}
               </div>
             </>
