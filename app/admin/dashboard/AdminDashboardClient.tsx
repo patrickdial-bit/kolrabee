@@ -11,7 +11,7 @@ import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
-import type { PlatformInvite } from './page'
+import type { PlatformInvite, ProjectInviteSummary } from './page'
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendMessage, getMessages } from '@/app/admin/projects/[id]/message-actions'
 import { cancelSubInvite, editSubInvite } from '@/app/admin/subcontractors/actions'
@@ -34,6 +34,7 @@ interface AdminDashboardClientProps {
   platformInvites: PlatformInvite[]
   currentUserId: string
   unreadCounts: Record<string, number>
+  projectInvites: Record<string, ProjectInviteSummary[]>
 }
 
 const STATUS_TABS = ['Available', 'Accepted', 'Completed', 'Paid']
@@ -53,6 +54,7 @@ export default function AdminDashboardClient({
   platformInvites,
   currentUserId,
   unreadCounts: initialUnreadCounts,
+  projectInvites,
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState('Available')
   const [search, setSearch] = useState('')
@@ -226,6 +228,33 @@ export default function AdminDashboardClient({
       placement: 'top',
     },
   ]
+
+  function renderInviteSummary(projectId: string) {
+    const invites = projectInvites[projectId] ?? []
+    if (invites.length === 0) return null
+    const pending = invites.filter((i) => i.status === 'invited')
+    const declined = invites.filter((i) => i.status === 'declined')
+    const tooltipParts: string[] = []
+    if (pending.length > 0) {
+      tooltipParts.push(`Pending: ${pending.map((i) => i.subcontractor_name).join(', ')}`)
+    }
+    if (declined.length > 0) {
+      tooltipParts.push(`Declined: ${declined.map((i) => i.subcontractor_name).join(', ')}`)
+    }
+    const tooltipText = tooltipParts.join('  ·  ') || 'No invitations'
+    return (
+      <Tooltip text={tooltipText} position="bottom">
+        <Link
+          href={`/admin/projects/${projectId}`}
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-ember whitespace-nowrap"
+        >
+          {pending.length > 0 && <span>{pending.length} pending</span>}
+          {pending.length > 0 && declined.length > 0 && <span className="text-gray-300">·</span>}
+          {declined.length > 0 && <span className="text-red-600">{declined.length} declined</span>}
+        </Link>
+      </Tooltip>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -484,12 +513,15 @@ export default function AdminDashboardClient({
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     {activeTab === 'Available' && (
-                      <button
-                        onClick={() => setInviteProjectId(project.id)}
-                        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
-                      >
-                        Invite
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setInviteProjectId(project.id)}
+                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+                        >
+                          Invite
+                        </button>
+                        {renderInviteSummary(project.id)}
+                      </>
                     )}
                     {activeTab === 'Accepted' && (
                       <>
@@ -565,12 +597,15 @@ export default function AdminDashboardClient({
                     <tr key={project.id} className="hover:bg-gray-50 transition-colors">
                       {activeTab === 'Available' && (
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <button
-                            onClick={() => setInviteProjectId(project.id)}
-                            className="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
-                          >
-                            Invite
-                          </button>
+                          <div className="flex flex-col items-start gap-1.5">
+                            <button
+                              onClick={() => setInviteProjectId(project.id)}
+                              className="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
+                            >
+                              Invite
+                            </button>
+                            {renderInviteSummary(project.id)}
+                          </div>
                         </td>
                       )}
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
