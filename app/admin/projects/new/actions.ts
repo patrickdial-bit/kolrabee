@@ -57,12 +57,14 @@ export async function createProject(formData: FormData) {
     return { error: `You've reached your plan limit of ${tenant.max_projects} projects. Please upgrade your plan.` }
   }
 
+  const trimmedJobNumber = jobNumber?.trim() || null
+
   const { data: project, error } = await adminClient
     .from('projects')
     .insert({
       tenant_id: tenant.id,
       created_by: appUser.id,
-      job_number: jobNumber?.trim() || null,
+      job_number: trimmedJobNumber,
       customer_name: customerName.trim(),
       address: address.trim(),
       start_date: startDate || null,
@@ -80,6 +82,9 @@ export async function createProject(formData: FormData) {
     .single()
 
   if (error) {
+    if (error.code === '23505' && trimmedJobNumber) {
+      return { error: `A project with job number "${trimmedJobNumber}" already exists. Pick a different number or cancel the existing project first.` }
+    }
     return { error: 'Failed to create project. Please try again.' }
   }
 
