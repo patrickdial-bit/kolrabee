@@ -1,10 +1,4 @@
 # TradeTap MVP — Simplified Specification
-
-> **ARCHIVED (2026-05-01).** This project is no longer under active development.
-> The Supabase backend (project `kolrabee`, ID `csxnbeexzynyrcsnhrmx`) is scheduled
-> to pause due to inactivity and can be unpaused from the Supabase dashboard within
-> 90 days of the pause date. After that, only data export is available.
-
 ## Build this first. Add everything else later.
 ---
 ## WHAT THIS APP DOES (One Sentence)

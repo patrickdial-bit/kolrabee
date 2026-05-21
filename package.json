@@ -2,7 +2,6 @@
   "name": "kolrabee",
   "version": "0.1.0",
   "private": true,
-  "description": "ARCHIVED: TradeTap MVP. Supabase backend scheduled to pause due to inactivity.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
