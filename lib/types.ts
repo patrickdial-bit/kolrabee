@@ -51,6 +51,7 @@ export type NotificationPreferences = {
   project_cancelled: boolean
   project_completion_requested: boolean
   project_completion_approved: boolean
+  project_rescheduled: boolean
   new_message: boolean
 }
 
@@ -61,6 +62,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   project_cancelled: true,
   project_completion_requested: true,
   project_completion_approved: true,
+  project_rescheduled: true,
   new_message: true,
 }
 
@@ -123,6 +125,10 @@ export type Project = {
   paid_at: string | null
   completion_requested_by: string | null
   completion_requested_at: string | null
+  schedule_changed_at: string | null
+  previous_start_date: string | null
+  previous_start_time: string | null
+  schedule_change_acknowledged_at: string | null
   version: number
   created_at: string
 }

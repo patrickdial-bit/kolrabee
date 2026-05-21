@@ -1,10 +1,30 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail, sendStatusUpdateEmail, sendCompletionRequestEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+
+export async function acknowledgeScheduleChange(projectId: string, slug: string) {
+  const { appUser, tenant } = await getCurrentSub(slug)
+  const adminClient = createAdminClient()
+
+  const { error } = await adminClient
+    .from('projects')
+    .update({ schedule_change_acknowledged_at: new Date().toISOString() })
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .eq('accepted_by', appUser.id)
+
+  if (error) {
+    return { error: 'Failed to acknowledge schedule change.' }
+  }
+
+  revalidatePath(`/${slug}/projects/${projectId}`)
+  return { success: true }
+}
 
 export async function acceptProject(projectId: string, expectedVersion: number, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
