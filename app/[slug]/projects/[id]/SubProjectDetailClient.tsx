@@ -6,9 +6,9 @@ import { toast } from 'sonner'
 import SubNav from '@/components/SubNav'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
-import { extractCity, formatCurrency, formatDate } from '@/lib/utils'
+import { extractCity, formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import type { Project, ProjectInvitation } from '@/lib/types'
-import { acceptProject, cancelAcceptedProject, declineProject, markInProgress, requestCompletion, markCompleted } from './actions'
+import { acceptProject, acknowledgeScheduleChange, cancelAcceptedProject, declineProject, markInProgress, requestCompletion, markCompleted } from './actions'
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
 import type { ProjectAttachment } from '@/lib/types'
 import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
@@ -222,6 +222,23 @@ export default function SubProjectDetailClient({
     }
   }
 
+  async function handleAcknowledgeSchedule() {
+    setLoading('acknowledge')
+    try {
+      const result = await acknowledgeScheduleChange(project.id, slug)
+      if (result?.error) toast.error(result.error)
+      else toast.success('Schedule change acknowledged.')
+    } catch {
+      toast.error('Something went wrong. Try again.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const showScheduleAlert = isAcceptedByMe
+    && !!project.schedule_changed_at
+    && !project.schedule_change_acknowledged_at
+
   return (
     <div className="min-h-screen bg-gray-50">
       <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
@@ -241,6 +258,35 @@ export default function SubProjectDetailClient({
         {error && (
           <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
             <p className="text-sm text-amber-700">{error}</p>
+          </div>
+        )}
+
+        {showScheduleAlert && (
+          <div className="mb-6 rounded-lg border-2 border-yellow-300 bg-yellow-50 p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <svg className="h-6 w-6 flex-shrink-0 text-yellow-700 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-yellow-900">Schedule changed by {tenantName}</p>
+                <p className="mt-1 text-sm text-yellow-800">
+                  This job has been moved from{' '}
+                  <span className="line-through">{formatDateTime(project.previous_start_date, project.previous_start_time)}</span>
+                  {' '}to{' '}
+                  <span className="font-bold">{formatDateTime(project.start_date, project.start_time)}</span>.
+                </p>
+                <p className="mt-1 text-xs text-yellow-700">
+                  Changed on {formatDate(project.schedule_changed_at)}. Please update your calendar.
+                </p>
+                <button
+                  onClick={handleAcknowledgeSchedule}
+                  disabled={loading === 'acknowledge'}
+                  className="mt-3 inline-flex items-center rounded-md bg-yellow-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yellow-800 disabled:opacity-50"
+                >
+                  {loading === 'acknowledge' ? 'Acknowledging...' : 'Got it'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -274,7 +320,7 @@ export default function SubProjectDetailClient({
 
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('project.start_date')}</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatDate(project.start_date)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{formatDateTime(project.start_date, project.start_time)}</dd>
               </div>
 
               <div>

@@ -4,8 +4,53 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendPaidEmail, sendCompletionApprovedEmail } from '@/lib/email'
+import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+
+function siteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL
+    || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+}
+
+async function notifyAssignedSubOfReschedule(args: {
+  projectId: string
+  tenantId: string
+  tenantSlug: string
+  tenantName: string
+  tenantNotificationEmail: string | null
+  acceptedById: string
+  jobNumber: string | null
+  customerName: string
+  previousStartDate: string | null
+  previousStartTime: string | null
+  newStartDate: string | null
+  newStartTime: string | null
+}) {
+  const adminClient = createAdminClient()
+  const { data: sub } = await adminClient
+    .from('users')
+    .select('email, first_name, notification_preferences')
+    .eq('id', args.acceptedById)
+    .single()
+
+  if (!sub) return
+  const prefs = getNotificationPrefs(sub)
+  if (!prefs.project_rescheduled) return
+
+  sendScheduleChangedEmail({
+    to: sub.email,
+    subName: sub.first_name,
+    tenantName: args.tenantName,
+    notificationEmail: args.tenantNotificationEmail,
+    jobNumber: args.jobNumber,
+    customerName: args.customerName,
+    previousStartDate: args.previousStartDate,
+    previousStartTime: args.previousStartTime,
+    newStartDate: args.newStartDate,
+    newStartTime: args.newStartTime,
+    projectUrl: `${siteUrl()}/${args.tenantSlug}/projects/${args.projectId}`,
+  })
+}
 
 export async function updateProject(projectId: string, formData: FormData) {
   const customerName = formData.get('customer_name') as string
@@ -43,21 +88,44 @@ export async function updateProject(projectId: string, formData: FormData) {
   const trimmedJobNumber = jobNumber?.trim() || null
 
   const adminClient = createAdminClient()
+
+  const { data: existing } = await adminClient
+    .from('projects')
+    .select('start_date, start_time, accepted_by, job_number, customer_name')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .single()
+
+  const newStartDate = startDate || null
+  const newStartTime = startTime || null
+  const scheduleChanged = !!existing
+    && (existing.start_date !== newStartDate || (existing.start_time ?? null) !== newStartTime)
+  const subAssigned = !!existing?.accepted_by
+
+  const update: Record<string, unknown> = {
+    job_number: trimmedJobNumber,
+    customer_name: customerName.trim(),
+    address: address.trim(),
+    start_date: newStartDate,
+    start_time: newStartTime,
+    payout_amount: payoutAmount,
+    estimated_labor_hours: estimatedLaborHours,
+    work_order_link: normalizeUrl(workOrderLink),
+    companycam_link: normalizeUrl(companycamLink),
+    notes: notes?.trim() || null,
+    admin_notes: adminNotes?.trim() || null,
+  }
+
+  if (scheduleChanged && subAssigned) {
+    update.schedule_changed_at = new Date().toISOString()
+    update.previous_start_date = existing!.start_date
+    update.previous_start_time = existing!.start_time
+    update.schedule_change_acknowledged_at = null
+  }
+
   const { error } = await adminClient
     .from('projects')
-    .update({
-      job_number: trimmedJobNumber,
-      customer_name: customerName.trim(),
-      address: address.trim(),
-      start_date: startDate || null,
-      start_time: startTime || null,
-      payout_amount: payoutAmount,
-      estimated_labor_hours: estimatedLaborHours,
-      work_order_link: normalizeUrl(workOrderLink),
-      companycam_link: normalizeUrl(companycamLink),
-      notes: notes?.trim() || null,
-      admin_notes: adminNotes?.trim() || null,
-    })
+    .update(update)
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
 
@@ -68,8 +136,106 @@ export async function updateProject(projectId: string, formData: FormData) {
     return { error: 'Failed to update project.' }
   }
 
+  if (scheduleChanged && subAssigned && existing) {
+    await notifyAssignedSubOfReschedule({
+      projectId,
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      tenantName: tenant.name,
+      tenantNotificationEmail: tenant.notification_email,
+      acceptedById: existing.accepted_by!,
+      jobNumber: trimmedJobNumber,
+      customerName: customerName.trim(),
+      previousStartDate: existing.start_date,
+      previousStartTime: existing.start_time,
+      newStartDate,
+      newStartTime,
+    })
+  }
+
   revalidatePath(`/admin/projects/${projectId}`)
-  return { success: true }
+  return { success: true, scheduleChanged: scheduleChanged && subAssigned }
+}
+
+export async function rescheduleProject(projectId: string, formData: FormData) {
+  const newStartDateRaw = formData.get('start_date') as string
+  const newStartTimeRaw = formData.get('start_time') as string
+  const newStartDate = newStartDateRaw || null
+  const newStartTime = newStartTimeRaw || null
+
+  if (!newStartDate) {
+    return { error: 'A start date is required.' }
+  }
+
+  const { tenant } = await getCurrentUser()
+  const adminClient = createAdminClient()
+
+  const { data: existing, error: fetchErr } = await adminClient
+    .from('projects')
+    .select('start_date, start_time, accepted_by, status, job_number, customer_name')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .single()
+
+  if (fetchErr || !existing) {
+    return { error: 'Project not found.' }
+  }
+
+  if (['paid', 'cancelled'].includes(existing.status)) {
+    return { error: 'Cannot reschedule a paid or cancelled project.' }
+  }
+
+  const scheduleChanged = existing.start_date !== newStartDate
+    || (existing.start_time ?? null) !== newStartTime
+
+  if (!scheduleChanged) {
+    return { error: 'The date and time are unchanged.' }
+  }
+
+  const subAssigned = !!existing.accepted_by
+
+  const update: Record<string, unknown> = {
+    start_date: newStartDate,
+    start_time: newStartTime,
+  }
+
+  if (subAssigned) {
+    update.schedule_changed_at = new Date().toISOString()
+    update.previous_start_date = existing.start_date
+    update.previous_start_time = existing.start_time
+    update.schedule_change_acknowledged_at = null
+  }
+
+  const { error } = await adminClient
+    .from('projects')
+    .update(update)
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+
+  if (error) {
+    return { error: 'Failed to update schedule.' }
+  }
+
+  if (subAssigned) {
+    await notifyAssignedSubOfReschedule({
+      projectId,
+      tenantId: tenant.id,
+      tenantSlug: tenant.slug,
+      tenantName: tenant.name,
+      tenantNotificationEmail: tenant.notification_email,
+      acceptedById: existing.accepted_by!,
+      jobNumber: existing.job_number,
+      customerName: existing.customer_name,
+      previousStartDate: existing.start_date,
+      previousStartTime: existing.start_time,
+      newStartDate,
+      newStartTime,
+    })
+  }
+
+  revalidatePath(`/admin/projects/${projectId}`)
+  revalidatePath('/admin/dashboard')
+  return { success: true, subNotified: subAssigned }
 }
 
 export async function markCompleted(projectId: string) {

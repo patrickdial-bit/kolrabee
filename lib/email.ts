@@ -401,6 +401,90 @@ export async function sendPaidEmail(params: {
   }
 }
 
+function formatTime(time: string | null): string {
+  if (!time) return ''
+  const parts = time.split(':').map(Number)
+  const h = parts[0]
+  const m = parts[1]
+  if (isNaN(h) || isNaN(m)) return ''
+  const ampm = h >= 12 ? 'pm' : 'am'
+  const h12 = h % 12 || 12
+  const mStr = m.toString().padStart(2, '0')
+  return `${h12}:${mStr} ${ampm}`
+}
+
+function formatDateTimeForEmail(date: string | null, time: string | null): string {
+  if (!date) return 'TBD'
+  const dateStr = formatDate(date)
+  const timeStr = formatTime(time)
+  return timeStr ? `${dateStr} at ${timeStr}` : dateStr
+}
+
+/** Email: Admin rescheduled a project — notify the assigned subcontractor */
+export async function sendScheduleChangedEmail(params: {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+  previousStartDate: string | null
+  previousStartTime: string | null
+  newStartDate: string | null
+  newStartTime: string | null
+  projectUrl: string
+}) {
+  const {
+    to,
+    subName,
+    tenantName,
+    notificationEmail,
+    jobNumber,
+    customerName,
+    previousStartDate,
+    previousStartTime,
+    newStartDate,
+    newStartTime,
+    projectUrl,
+  } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+  const oldWhen = formatDateTimeForEmail(previousStartDate, previousStartTime)
+  const newWhen = formatDateTimeForEmail(newStartDate, newStartTime)
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `Schedule change: ${jobLabel}${customerName} moved to ${newWhen}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <p style="color: #92400e; margin: 0; font-weight: 600;">⚠️ Schedule Changed</p>
+          </div>
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">Your job has been rescheduled</h2>
+          <p style="color: #666; margin-top: 0;">Hi ${subName}, <strong>${tenantName}</strong> has changed the start date/time for <strong>${jobLabel}${customerName}</strong>. Please update your calendar.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+              <td style="padding: 10px 12px; background: #f9fafb; color: #6b7280; width: 140px; border-radius: 6px 0 0 6px;">Previous</td>
+              <td style="padding: 10px 12px; background: #f9fafb; color: #374151; text-decoration: line-through; border-radius: 0 6px 6px 0;">${oldWhen}</td>
+            </tr>
+            <tr><td style="height: 6px;"></td></tr>
+            <tr>
+              <td style="padding: 10px 12px; background: #ecfdf5; color: #047857; font-weight: 600; width: 140px; border-radius: 6px 0 0 6px;">New</td>
+              <td style="padding: 10px 12px; background: #ecfdf5; color: #064e3b; font-weight: 700; border-radius: 0 6px 6px 0;">${newWhen}</td>
+            </tr>
+          </table>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View Project</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">If this new schedule doesn't work for you, please contact ${tenantName} as soon as possible.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send schedule changed email:', err)
+  }
+}
+
 /** Email 9: Sub updated project status (in_progress / completed) — notify admin with link */
 export async function sendStatusUpdateEmail(params: StatusUpdateEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, newStatus, projectUrl } = params
