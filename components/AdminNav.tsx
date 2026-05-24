@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/admin/dashboard/actions";
@@ -22,8 +22,28 @@ const navLinks = [
 
 export default function AdminNav({ companyName }: AdminNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adsEnabled, setAdsEnabled] = useState(false);
   const pathname = usePathname();
   const { enabled: tooltipsOn, toggle: toggleTooltips } = useTooltips();
+
+  // The Ads Agent link only appears once a super-admin enables the add-on
+  // for this tenant (spec §6: hidden from nav unless enabled).
+  useEffect(() => {
+    let active = true;
+    fetch("/api/ads/addon-status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d?.enabled) setAdsEnabled(true);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const links = adsEnabled
+    ? [...navLinks, { href: "/admin/ads", label: "Ads Agent" }]
+    : navLinks;
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-30">
@@ -42,7 +62,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
 
           {/* Center: desktop links */}
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
+            {links.map((link) => {
               const isActive = pathname.startsWith(link.href);
               return (
                 <Link
@@ -129,7 +149,7 @@ export default function AdminNav({ companyName }: AdminNavProps) {
             {companyName}
           </div>
           <div className="space-y-1 px-2 py-2">
-            {navLinks.map((link) => {
+            {links.map((link) => {
               const isActive = pathname.startsWith(link.href);
               return (
                 <Link

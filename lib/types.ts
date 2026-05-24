@@ -203,6 +203,136 @@ export type ReliabilityStats = {
   completionRate: number
 }
 
+// =============================================================================
+// Ads Agent (creative-generation add-on)
+// =============================================================================
+
+export type AdComplianceStatus = 'testing_only' | 'cleared_for_paid'
+
+export type AdAddonSettings = {
+  id: string
+  tenant_id: string
+  enabled: boolean
+  enabled_at: string | null
+  enabled_by: string | null
+  compliance_status: AdComplianceStatus
+  monthly_run_limit: number
+  runs_this_month: number
+  created_at: string
+  updated_at: string
+}
+
+export type AdSeedImageSource = {
+  url: string
+  source: 'scraped' | 'uploaded'
+  original_url?: string
+  uploaded_at: string
+}
+
+export type AdBrandKit = {
+  id: string
+  tenant_id: string
+  brand_name: string
+  service_line: string
+  brand_website_url: string | null
+  primary_color_hex: string
+  secondary_color_hex: string
+  accent_color_hex: string | null
+  font_family: string
+  brand_voice: string
+  value_props: string[]
+  target_geo: string
+  target_audience: string
+  seed_image_urls: string[]
+  seed_image_sources: AdSeedImageSource[]
+  logo_url: string | null
+  competitor_page_urls: string[]
+  created_at: string
+  updated_at: string
+}
+
+export type AdRunStatus =
+  | 'queued'
+  | 'scraping'
+  | 'synthesizing'
+  | 'generating_images'
+  | 'writing_copy'
+  | 'ready_for_review'
+  | 'failed'
+
+// Ordered pipeline steps for rendering a progress indicator.
+export const AD_RUN_STEPS: { status: AdRunStatus; label: string }[] = [
+  { status: 'scraping', label: 'Researching competitors' },
+  { status: 'synthesizing', label: 'Synthesizing ad angles' },
+  { status: 'generating_images', label: 'Generating imagery' },
+  { status: 'writing_copy', label: 'Writing ad copy' },
+  { status: 'ready_for_review', label: 'Ready for review' },
+]
+
+export type AdAngle = {
+  name: string
+  hook: string
+  emotional_driver: 'price' | 'speed' | 'trust' | 'quality' | 'transformation'
+  visual_direction: string
+}
+
+export type AdGenerationRun = {
+  id: string
+  tenant_id: string
+  brand_kit_id: string | null
+  status: AdRunStatus
+  error_message: string | null
+  triggered_by: string | null
+  competitor_scrape_summary: unknown | null
+  synthesized_angles: AdAngle[] | null
+  total_cost_cents: number
+  concepts_generated: number
+  concepts_approved: number
+  concepts_exported: number
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+}
+
+export type AdVariantType = 'lifestyle' | 'studio' | 'testimonial_style' | 'before_after'
+
+export const AD_VARIANT_TYPES: AdVariantType[] = [
+  'lifestyle',
+  'studio',
+  'testimonial_style',
+  'before_after',
+]
+
+export const AD_VARIANT_LABELS: Record<AdVariantType, string> = {
+  lifestyle: 'Lifestyle',
+  studio: 'Studio',
+  testimonial_style: 'Testimonial',
+  before_after: 'Before / After',
+}
+
+export type AdConceptStatus = 'draft' | 'approved' | 'rejected'
+
+export type AdConcept = {
+  id: string
+  tenant_id: string
+  run_id: string
+  angle: string
+  variant_index: number
+  variant_type: AdVariantType
+  headline: string
+  primary_text: string
+  image_url: string | null
+  image_prompt: string
+  status: AdConceptStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
+// Meta ad copy limits used for client-side validation hints.
+export const AD_HEADLINE_MAX = 40
+export const AD_PRIMARY_TEXT_MAX = 125
+
 // Helper to check if a sub is compliant (has current W-9 and non-expired COI)
 export function isSubCompliant(sub: AppUser): boolean {
   const hasW9 = !!sub.w9_file_url

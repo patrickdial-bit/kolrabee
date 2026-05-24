@@ -8,6 +8,7 @@ import KolrabeeLogo from '@/components/KolrabeeLogo'
 const navLinks = [
   { href: '/super-admin', label: 'Tenants' },
   { href: '/super-admin/subcontractors', label: 'Subcontractors' },
+  { href: '/super-admin/ads', label: 'Ads Agent' },
 ]
 
 export default function SuperAdminNav() {
