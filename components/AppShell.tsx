@@ -79,6 +79,14 @@ export default function AppShell(props: AppShellProps) {
           { href: '/admin/billing', label: 'Billing', icon: 'billing', active: pathname.startsWith('/admin/billing') },
         ],
       },
+      {
+        label: 'Photos',
+        items: [
+          { href: '/admin/photos/galleries', label: 'Galleries', icon: 'galleries', active: pathname.startsWith('/admin/photos/galleries') },
+          { href: '/admin/photos', label: 'All Photos', icon: 'photos', active: pathname === '/admin/photos' },
+          { href: '/admin/photos/tags', label: 'Tags', icon: 'tags', active: pathname.startsWith('/admin/photos/tags') },
+        ],
+      },
     ]
     footer = (
       <div className="space-y-1">

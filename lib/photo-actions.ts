@@ -53,6 +53,49 @@ function sanitizeTags(tags: unknown): string[] {
   return Array.from(new Set(cleaned)).slice(0, MAX_TAGS)
 }
 
+// Keep the normalized photo_tags in sync with the jsonb tag list (Phase 2).
+// The jsonb column stays as the capture-time write, but photo_tags is the
+// source of truth for filtering — so every tag edit reconciles both. Canonical
+// tags are upserted into the tenant's `tags` vocabulary as needed.
+async function syncPhotoTags(
+  adminClient: ReturnType<typeof createAdminClient>,
+  photoId: string,
+  tenantId: string,
+  names: string[],
+): Promise<void> {
+  const { data: existing } = await adminClient
+    .from('tags')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+  const idByName = new Map<string, string>()
+  for (const t of existing ?? []) idByName.set((t as any).name.toLowerCase(), (t as any).id)
+
+  const missing = names.filter((n) => !idByName.has(n))
+  if (missing.length > 0) {
+    const { data: inserted } = await adminClient
+      .from('tags')
+      .insert(missing.map((n) => ({ tenant_id: tenantId, name: n })))
+      .select('id, name')
+    for (const t of inserted ?? []) idByName.set((t as any).name.toLowerCase(), (t as any).id)
+  }
+
+  const desiredIds = names.map((n) => idByName.get(n)).filter((x): x is string => !!x)
+  const desired = new Set(desiredIds)
+
+  const { data: current } = await adminClient.from('photo_tags').select('tag_id').eq('photo_id', photoId)
+  const currentIds = new Set<string>((current ?? []).map((r: any) => r.tag_id))
+
+  const toAdd = desiredIds.filter((id) => !currentIds.has(id))
+  const toRemove = Array.from(currentIds).filter((id) => !desired.has(id))
+
+  if (toAdd.length > 0) {
+    await adminClient.from('photo_tags').insert(toAdd.map((tag_id) => ({ photo_id: photoId, tag_id })))
+  }
+  if (toRemove.length > 0) {
+    await adminClient.from('photo_tags').delete().eq('photo_id', photoId).in('tag_id', toRemove)
+  }
+}
+
 export type RecordPhotoInput = {
   projectId: string
   photoId: string
@@ -216,12 +259,14 @@ export async function updatePhotoMeta(
   }
 
   const update: Record<string, unknown> = {}
+  let cleanedTags: string[] | undefined
   if (meta.caption !== undefined) {
     const trimmed = meta.caption?.trim() ?? ''
     update.caption = trimmed.length > 0 ? trimmed.slice(0, 500) : null
   }
   if (meta.tags !== undefined) {
-    update.tags = sanitizeTags(meta.tags)
+    cleanedTags = sanitizeTags(meta.tags)
+    update.tags = cleanedTags
   }
   if (Object.keys(update).length === 0) return { success: true }
 
@@ -231,6 +276,11 @@ export async function updatePhotoMeta(
     .eq('id', photoId)
     .eq('tenant_id', tenantId)
   if (error) return { error: 'Failed to save changes.' }
+
+  // Reconcile the normalized photo_tags with the jsonb tags just written.
+  if (cleanedTags !== undefined) {
+    await syncPhotoTags(adminClient, photoId, tenantId, cleanedTags)
+  }
   return { success: true }
 }
 

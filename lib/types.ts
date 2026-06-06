@@ -203,6 +203,43 @@ export type PhotoWithUrl = Photo & {
   uploader_name: string
 }
 
+// ---------------------------------------------------------------------------
+// Normalized tags (Phase 2) — canonical, tenant-scoped vocabulary that powers
+// the Tags dropdown and is the search spine for both Galleries and Photos.
+// ---------------------------------------------------------------------------
+export type Tag = {
+  id: string
+  tenant_id: string
+  name: string
+  color: string | null
+  created_at: string
+}
+
+// Lightweight tag shape attached to a project/photo for chip rendering.
+export type TagRef = {
+  id: string
+  name: string
+  color: string | null
+}
+
+// A project as shown in the Galleries (documentation lens) list.
+export type GalleryProject = {
+  id: string
+  customer_name: string
+  address: string
+  photo_count: number
+  tags: TagRef[]
+  recent_thumb_urls: string[] // up to 4 signed thumbnail URLs, newest first
+  last_activity: string // ISO — latest photo time, falling back to project created_at
+}
+
+// A photo as shown in the All Photos grid / per-project lens. The jsonb `tags`
+// string[] is replaced by the normalized TagRef[] (photo_tags).
+export type PhotoListItem = Omit<PhotoWithUrl, 'tags'> & {
+  project_name: string
+  tags: TagRef[]
+}
+
 export type JobMessage = {
   id: string
   tenant_id: string
