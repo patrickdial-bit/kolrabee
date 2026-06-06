@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Skip internal routes for tenant matching
-  const skipPrefixes = ['/_next', '/api', '/admin', '/super-admin', '/favicon.ico']
+  const skipPrefixes = ['/_next', '/api', '/admin', '/super-admin', '/share', '/favicon.ico']
   const shouldSkip = skipPrefixes.some((p) => pathname.startsWith(p)) || pathname === '/'
 
   if (!shouldSkip) {
