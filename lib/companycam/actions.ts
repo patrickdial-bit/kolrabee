@@ -14,7 +14,7 @@ import {
 
 const BUCKET = 'jobsite-photos'
 const PROJECTS_PER_PAGE = 50
-const PHOTOS_PER_CHUNK = 12 // bounded so one processChunk call stays well under serverless timeout
+const PHOTOS_PER_CHUNK = 6 // bounded so one processChunk call stays well under serverless timeout
 
 type Session = {
   appUser: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string }
@@ -144,9 +144,17 @@ export async function startImport(): Promise<{ job?: ImportJob; error?: string }
 }
 
 async function downloadBytes(url: string): Promise<Uint8Array> {
-  const res = await fetch(url, { cache: 'no-store' })
-  if (!res.ok) throw new Error(`download ${res.status}`)
-  return new Uint8Array(await res.arrayBuffer())
+  // Abort a hung CDN URL instead of letting it stall the whole chunk until the
+  // serverless function times out.
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), 20000)
+  try {
+    const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal })
+    if (!res.ok) throw new Error(`download ${res.status}`)
+    return new Uint8Array(await res.arrayBuffer())
+  } finally {
+    clearTimeout(t)
+  }
 }
 
 // Processes one bounded unit of work and returns the updated job snapshot. The
