@@ -14,7 +14,8 @@ import { sendMessage, getMessages } from './message-actions'
 import InviteSubsModal from './InviteSubsModal'
 import StarRating from '@/components/StarRating'
 import DatePicker from '@/components/DatePicker'
-import type { SubRating, ProjectAttachment } from '@/lib/types'
+import ProjectPhotos from '@/components/ProjectPhotos'
+import type { SubRating, ProjectAttachment, PhotoWithUrl } from '@/lib/types'
 
 interface InvitationWithName {
   id: string
@@ -48,6 +49,7 @@ interface ProjectDetailClientProps {
   attachments: ProjectAttachment[]
   messages: MessageWithSender[]
   currentUserId: string
+  photos: PhotoWithUrl[]
 }
 
 const statusColors: Record<string, string> = {
@@ -77,6 +79,7 @@ export default function ProjectDetailClient({
   attachments,
   messages,
   currentUserId,
+  photos,
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -640,6 +643,15 @@ export default function ProjectDetailClient({
             <p className="text-sm text-gray-500">No documents attached. Add up to 3 files (PDF, JPG, PNG).</p>
           )}
         </div>
+
+        {/* Jobsite Photos */}
+        <ProjectPhotos
+          projectId={project.id}
+          tenantId={tenantId}
+          initialPhotos={photos}
+          canDelete={true}
+          currentUserId={currentUserId}
+        />
 
         {/* Messages */}
         {project.accepted_by && (

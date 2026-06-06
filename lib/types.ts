@@ -173,6 +173,36 @@ export type ProjectAttachment = {
   created_at: string
 }
 
+// Jobsite photos (Phase 1 photo module). Tags are an open-ended jsonb list so
+// Phase 3 AI can write before/after tags + captions without a schema change.
+export const PHOTO_TAGS = ['before', 'after', 'prep', 'damage', 'materials'] as const
+export type PhotoTag = (typeof PHOTO_TAGS)[number]
+
+export type Photo = {
+  id: string
+  tenant_id: string
+  project_id: string
+  uploaded_by: string
+  storage_path: string
+  thumb_path: string
+  taken_at: string | null
+  lat: number | null
+  lng: number | null
+  caption: string | null
+  tags: string[]
+  width: number | null
+  height: number | null
+  bytes: number | null
+  created_at: string
+}
+
+// A photo enriched for gallery rendering: short-TTL signed thumbnail URL plus
+// the uploader's display name. Full-size URLs are fetched on demand (lightbox).
+export type PhotoWithUrl = Photo & {
+  thumb_url: string | null
+  uploader_name: string
+}
+
 export type JobMessage = {
   id: string
   tenant_id: string

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SubRating, ProjectAttachment, JobMessage } from '@/lib/types'
+import { getProjectPhotos } from '@/lib/photo-actions'
 import ProjectDetailClient from './ProjectDetailClient'
 
 interface PageProps {
@@ -74,6 +75,9 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     sender_name: m.sender ? `${m.sender.first_name} ${m.sender.last_name}` : 'Unknown',
   }))
 
+  // Jobsite photos with signed thumbnail URLs for the gallery.
+  const photos = await getProjectPhotos(project.id)
+
   const invitationsWithNames = (invitations ?? []).map((inv: any) => ({
     id: inv.id,
     project_id: inv.project_id,
@@ -99,6 +103,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}
       currentUserId={appUser.id}
+      photos={photos}
     />
   )
 }

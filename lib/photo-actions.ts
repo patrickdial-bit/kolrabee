@@ -1,0 +1,266 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import type { AppUser, Photo, PhotoWithUrl } from '@/lib/types'
+
+const BUCKET = 'jobsite-photos'
+const THUMB_TTL = 60 * 60 // 1 hour — gallery thumbnails
+const FULL_TTL = 60 * 5 // 5 minutes — full-size, only opened in the lightbox
+const MAX_TAGS = 12
+
+// Resolve the current app user + tenant from the auth session, independent of
+// the admin/sub route helpers (which redirect). Works for both an admin viewing
+// a project and a crew member (subcontractor) viewing their assigned job.
+async function resolveSessionUser(): Promise<{ appUser: AppUser; tenantId: string } | null> {
+  const supabase = await createClient()
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+  if (!authUser) return null
+
+  const adminClient = createAdminClient()
+  const { data: appUser } = await adminClient
+    .from('users')
+    .select('*')
+    .eq('supabase_auth_id', authUser.id)
+    .single()
+
+  if (!appUser || appUser.status === 'deleted') return null
+  return { appUser: appUser as AppUser, tenantId: appUser.tenant_id }
+}
+
+// Confirm a project exists within the caller's tenant. Tenant scoping is the
+// security boundary; route-level checks already gate which projects a sub can
+// reach. Returns the project's tenant_id (== caller tenant) or null.
+async function assertProjectInTenant(projectId: string, tenantId: string): Promise<boolean> {
+  const adminClient = createAdminClient()
+  const { data } = await adminClient
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+  return !!data
+}
+
+function sanitizeTags(tags: unknown): string[] {
+  if (!Array.isArray(tags)) return []
+  const cleaned = tags
+    .filter((t): t is string => typeof t === 'string')
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t.length > 0 && t.length <= 32)
+  return Array.from(new Set(cleaned)).slice(0, MAX_TAGS)
+}
+
+export type RecordPhotoInput = {
+  projectId: string
+  photoId: string
+  storagePath: string
+  thumbPath: string
+  takenAt: string | null
+  lat: number | null
+  lng: number | null
+  width: number | null
+  height: number | null
+  bytes: number | null
+}
+
+// Insert the photos row after the client has uploaded both objects to storage.
+// The DB write goes through the service-role client (matching this codebase's
+// mutation pattern) after an explicit tenant check.
+export async function recordPhoto(
+  input: RecordPhotoInput,
+): Promise<{ photo?: PhotoWithUrl; error?: string }> {
+  const session = await resolveSessionUser()
+  if (!session) return { error: 'Not authenticated.' }
+  const { appUser, tenantId } = session
+
+  if (!(await assertProjectInTenant(input.projectId, tenantId))) {
+    return { error: 'Project not found.' }
+  }
+
+  // The storage key must live under this tenant's folder — defense in depth
+  // against a tampered client sending another tenant's path.
+  const expectedPrefix = `${tenantId}/${input.projectId}/`
+  if (!input.storagePath.startsWith(expectedPrefix) || !input.thumbPath.startsWith(expectedPrefix)) {
+    return { error: 'Invalid storage path.' }
+  }
+
+  const adminClient = createAdminClient()
+  const { data, error } = await adminClient
+    .from('photos')
+    .insert({
+      id: input.photoId,
+      tenant_id: tenantId,
+      project_id: input.projectId,
+      uploaded_by: appUser.id,
+      storage_path: input.storagePath,
+      thumb_path: input.thumbPath,
+      taken_at: input.takenAt,
+      lat: input.lat,
+      lng: input.lng,
+      width: input.width,
+      height: input.height,
+      bytes: input.bytes,
+    })
+    .select()
+    .single()
+
+  if (error || !data) {
+    // Best-effort cleanup so we don't leave orphaned objects in storage.
+    await adminClient.storage.from(BUCKET).remove([input.storagePath, input.thumbPath])
+    return { error: 'Failed to save photo.' }
+  }
+
+  const photo = data as Photo
+  const { data: signed } = await adminClient.storage
+    .from(BUCKET)
+    .createSignedUrl(photo.thumb_path, THUMB_TTL)
+
+  return {
+    photo: {
+      ...photo,
+      thumb_url: signed?.signedUrl ?? null,
+      uploader_name: `${appUser.first_name} ${appUser.last_name}`,
+    },
+  }
+}
+
+// Load a project's photos with short-TTL signed thumbnail URLs and uploader
+// names, newest first. One batched createSignedUrls call for the whole page.
+export async function getProjectPhotos(projectId: string): Promise<PhotoWithUrl[]> {
+  const session = await resolveSessionUser()
+  if (!session) return []
+  const { tenantId } = session
+  if (!(await assertProjectInTenant(projectId, tenantId))) return []
+
+  const adminClient = createAdminClient()
+  const { data: rows } = await adminClient
+    .from('photos')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+
+  const photos = (rows ?? []) as Photo[]
+  if (photos.length === 0) return []
+
+  const thumbPaths = photos.map((p) => p.thumb_path)
+  const { data: signedList } = await adminClient.storage.from(BUCKET).createSignedUrls(thumbPaths, THUMB_TTL)
+  const urlByPath = new Map<string, string>()
+  for (const s of signedList ?? []) {
+    if (s.path && s.signedUrl) urlByPath.set(s.path, s.signedUrl)
+  }
+
+  const uploaderIds = Array.from(new Set(photos.map((p) => p.uploaded_by)))
+  const { data: users } = await adminClient
+    .from('users')
+    .select('id, first_name, last_name')
+    .in('id', uploaderIds)
+  const nameById = new Map<string, string>()
+  for (const u of users ?? []) {
+    nameById.set((u as any).id, `${(u as any).first_name} ${(u as any).last_name}`)
+  }
+
+  return photos.map((p) => ({
+    ...p,
+    thumb_url: urlByPath.get(p.thumb_path) ?? null,
+    uploader_name: nameById.get(p.uploaded_by) ?? 'Unknown',
+  }))
+}
+
+// On-demand signed URL for the full-size image (opened in the lightbox only, to
+// keep egress down — thumbs everywhere, full-size only when tapped).
+export async function getPhotoFullUrl(photoId: string): Promise<{ url?: string; error?: string }> {
+  const session = await resolveSessionUser()
+  if (!session) return { error: 'Not authenticated.' }
+  const { tenantId } = session
+
+  const adminClient = createAdminClient()
+  const { data: photo } = await adminClient
+    .from('photos')
+    .select('storage_path')
+    .eq('id', photoId)
+    .eq('tenant_id', tenantId)
+    .single()
+  if (!photo) return { error: 'Photo not found.' }
+
+  const { data, error } = await adminClient.storage
+    .from(BUCKET)
+    .createSignedUrl(photo.storage_path, FULL_TTL)
+  if (error || !data?.signedUrl) return { error: 'Could not load photo.' }
+  return { url: data.signedUrl }
+}
+
+// Edit caption / tags. Allowed for the uploader or any tenant admin.
+export async function updatePhotoMeta(
+  photoId: string,
+  meta: { caption?: string | null; tags?: string[] },
+): Promise<{ success?: boolean; error?: string }> {
+  const session = await resolveSessionUser()
+  if (!session) return { error: 'Not authenticated.' }
+  const { appUser, tenantId } = session
+
+  const adminClient = createAdminClient()
+  const { data: photo } = await adminClient
+    .from('photos')
+    .select('uploaded_by')
+    .eq('id', photoId)
+    .eq('tenant_id', tenantId)
+    .single()
+  if (!photo) return { error: 'Photo not found.' }
+
+  if (photo.uploaded_by !== appUser.id && appUser.role !== 'admin') {
+    return { error: 'You can only edit your own photos.' }
+  }
+
+  const update: Record<string, unknown> = {}
+  if (meta.caption !== undefined) {
+    const trimmed = meta.caption?.trim() ?? ''
+    update.caption = trimmed.length > 0 ? trimmed.slice(0, 500) : null
+  }
+  if (meta.tags !== undefined) {
+    update.tags = sanitizeTags(meta.tags)
+  }
+  if (Object.keys(update).length === 0) return { success: true }
+
+  const { error } = await adminClient
+    .from('photos')
+    .update(update)
+    .eq('id', photoId)
+    .eq('tenant_id', tenantId)
+  if (error) return { error: 'Failed to save changes.' }
+  return { success: true }
+}
+
+// Delete a photo (DB row + both storage objects). Admins only — crews must not
+// be able to nuke job evidence.
+export async function deletePhoto(photoId: string): Promise<{ success?: boolean; error?: string }> {
+  const session = await resolveSessionUser()
+  if (!session) return { error: 'Not authenticated.' }
+  const { appUser, tenantId } = session
+
+  if (appUser.role !== 'admin') {
+    return { error: 'Only an admin can delete photos.' }
+  }
+
+  const adminClient = createAdminClient()
+  const { data: photo } = await adminClient
+    .from('photos')
+    .select('storage_path, thumb_path')
+    .eq('id', photoId)
+    .eq('tenant_id', tenantId)
+    .single()
+  if (!photo) return { error: 'Photo not found.' }
+
+  await adminClient.storage.from(BUCKET).remove([photo.storage_path, photo.thumb_path])
+
+  const { error } = await adminClient
+    .from('photos')
+    .delete()
+    .eq('id', photoId)
+    .eq('tenant_id', tenantId)
+  if (error) return { error: 'Failed to delete photo.' }
+  return { success: true }
+}

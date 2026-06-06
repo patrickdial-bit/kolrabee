@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProjectAttachment, CrewMember } from '@/lib/types'
 import { hasGrowthFeatures, hasTimeTracking, isCrewLeader } from '@/lib/types'
 import type { CrewMemberLite, CrewOpenEntry } from '@/components/CrewClockPanel'
+import { getProjectPhotos } from '@/lib/photo-actions'
 import { notFound } from 'next/navigation'
 import SubProjectDetailClient from './SubProjectDetailClient'
 
@@ -161,6 +162,9 @@ export default async function SubProjectDetailPage({
     }
   }
 
+  // Jobsite photos for the gallery (crews capture and view here).
+  const photos = await getProjectPhotos(id)
+
   return (
     <SubProjectDetailClient
       slug={slug}
@@ -172,6 +176,8 @@ export default async function SubProjectDetailPage({
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}
       currentUserId={appUser.id}
+      tenantId={tenant.id}
+      photos={photos}
       hasGrowth={hasGrowthFeatures(tenant)}
       isCrewLeader={isCrewLeader(appUser)}
       timeClockEnabled={timeClockEnabled}

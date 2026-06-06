@@ -1,11 +1,25 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Toaster } from 'sonner'
+import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Kolrabee - Construction Subcontractor Management',
   description:
     'Post jobs, invite subcontractors, track who accepted, and record when they are paid.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Kolrabee',
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0D1B2A',
 }
 
 export default function RootLayout({
@@ -26,6 +40,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         {children}
         <Toaster position="top-center" richColors closeButton duration={3000} />
+        <ServiceWorkerRegister />
       </body>
     </html>
   )

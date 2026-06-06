@@ -311,3 +311,64 @@ RETURNS NUMERIC AS $$
     AND status = 'paid'
     AND paid_at >= date_trunc('year', CURRENT_DATE);
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+-- =============================================================================
+-- PHOTO MODULE (Phase 1) — see migration 00021_photo_module.sql
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS photos (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id     UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  project_id    UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  uploaded_by   UUID NOT NULL REFERENCES users(id),
+  storage_path  TEXT NOT NULL,
+  thumb_path    TEXT NOT NULL,
+  taken_at      TIMESTAMPTZ,
+  lat           DOUBLE PRECISION,
+  lng           DOUBLE PRECISION,
+  caption       TEXT,
+  tags          JSONB NOT NULL DEFAULT '[]'::jsonb,
+  width         INT,
+  height        INT,
+  bytes         INT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS photos_project_idx ON photos (project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS photos_tenant_idx  ON photos (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS photos_tags_idx    ON photos USING gin (tags);
+
+ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "photos_select" ON photos;
+CREATE POLICY "photos_select" ON photos FOR SELECT
+  USING (tenant_id = auth_tenant_id());
+
+DROP POLICY IF EXISTS "photos_insert" ON photos;
+CREATE POLICY "photos_insert" ON photos FOR INSERT
+  WITH CHECK (tenant_id = auth_tenant_id() AND uploaded_by = auth_user_id());
+
+DROP POLICY IF EXISTS "photos_update" ON photos;
+CREATE POLICY "photos_update" ON photos FOR UPDATE
+  USING (tenant_id = auth_tenant_id() AND (uploaded_by = auth_user_id() OR auth_role() = 'admin'))
+  WITH CHECK (tenant_id = auth_tenant_id() AND (uploaded_by = auth_user_id() OR auth_role() = 'admin'));
+
+DROP POLICY IF EXISTS "photos_delete" ON photos;
+CREATE POLICY "photos_delete" ON photos FOR DELETE
+  USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('jobsite-photos', 'jobsite-photos', false)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "read jobsite photos" ON storage.objects;
+CREATE POLICY "read jobsite photos" ON storage.objects FOR SELECT
+  USING (bucket_id = 'jobsite-photos' AND (storage.foldername(name))[1]::uuid = auth_tenant_id());
+
+DROP POLICY IF EXISTS "write jobsite photos" ON storage.objects;
+CREATE POLICY "write jobsite photos" ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'jobsite-photos' AND (storage.foldername(name))[1]::uuid = auth_tenant_id());
+
+DROP POLICY IF EXISTS "delete jobsite photos" ON storage.objects;
+CREATE POLICY "delete jobsite photos" ON storage.objects FOR DELETE
+  USING (bucket_id = 'jobsite-photos' AND (storage.foldername(name))[1]::uuid = auth_tenant_id() AND auth_role() = 'admin');
