@@ -1,8 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { AppUser } from '@/lib/types'
+import { resolveActingContext } from '@/lib/helpers'
 import {
   ccFormatAddress,
   ccGetCurrentUser,
@@ -15,23 +14,18 @@ const BUCKET = 'jobsite-photos'
 const PROJECTS_PER_PAGE = 50
 const PHOTOS_PER_CHUNK = 12 // bounded so one processChunk call stays well under serverless timeout
 
-type Session = { appUser: AppUser; tenantId: string }
+type Session = {
+  appUser: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string }
+  tenantId: string
+}
 
-// CompanyCam import is an admin-only, tenant-scoped operation.
+// CompanyCam import is an admin-only, tenant-scoped operation. Impersonation-
+// aware: a super admin "Viewing as" a tenant acts as that tenant's admin (the
+// imported projects/photos are owned by that admin user).
 async function resolveAdmin(): Promise<Session | null> {
-  const supabase = await createClient()
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
-  if (!authUser) return null
-  const adminClient = createAdminClient()
-  const { data: appUser } = await adminClient
-    .from('users')
-    .select('*')
-    .eq('supabase_auth_id', authUser.id)
-    .single()
-  if (!appUser || appUser.status === 'deleted' || appUser.role !== 'admin') return null
-  return { appUser: appUser as AppUser, tenantId: appUser.tenant_id }
+  const ctx = await resolveActingContext()
+  if (!ctx || ctx.user.role !== 'admin') return null
+  return { appUser: ctx.user, tenantId: ctx.tenantId }
 }
 
 export type ImportJob = {

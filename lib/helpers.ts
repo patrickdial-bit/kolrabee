@@ -33,6 +33,45 @@ export async function getImpersonation(): Promise<{
   return { isSuperAdmin: true, impersonatingTenantId, impersonatingSubId }
 }
 
+// Resolve the acting tenant + user for server actions, WITHOUT redirecting.
+// Honors super-admin impersonation (mirrors getCurrentUser): when a super admin
+// is "Viewing as" a tenant, we act as that tenant's first active admin — since a
+// super admin has no tenant `users` row of their own. Returns null when there is
+// no usable context. Used by the photo module + CompanyCam import so they work
+// under impersonation.
+export async function resolveActingContext(): Promise<
+  { tenantId: string; user: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string } } | null
+> {
+  const supabase = await createClient()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
+  if (!authUser) return null
+
+  const adminClient = createAdminClient()
+  const { isSuperAdmin, impersonatingTenantId } = await getImpersonation()
+
+  if (isSuperAdmin && impersonatingTenantId) {
+    const { data: adminUser } = await adminClient
+      .from('users')
+      .select('id, role, first_name, last_name')
+      .eq('tenant_id', impersonatingTenantId)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (!adminUser) return null
+    return { tenantId: impersonatingTenantId, user: adminUser as any }
+  }
+
+  const { data: appUser } = await adminClient
+    .from('users')
+    .select('id, tenant_id, role, first_name, last_name, status')
+    .eq('supabase_auth_id', authUser.id)
+    .single()
+  if (!appUser || (appUser as any).status === 'deleted') return null
+  return { tenantId: (appUser as any).tenant_id, user: appUser as any }
+}
+
 // Get the current authenticated user and their app user record
 export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant; impersonating?: boolean }> {
   const supabase = await createClient()

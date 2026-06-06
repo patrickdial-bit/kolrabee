@@ -1,35 +1,23 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { AppUser, GalleryProject, PhotoListItem, Tag, TagRef } from '@/lib/types'
+import { resolveActingContext } from '@/lib/helpers'
+import type { GalleryProject, PhotoListItem, Tag, TagRef } from '@/lib/types'
 
 const BUCKET = 'jobsite-photos'
 const THUMB_TTL = 60 * 60 // 1 hour — gallery thumbnails
 const RECENT_STRIP = 4 // recent-photo thumbnails per project row
 const MAX_TAG_LEN = 32
 
-// Resolve the current app user + tenant from the auth session. Mirrors
-// photo-actions.ts: tenant scoping is the security boundary and every query
-// below is filtered by the resolved tenantId (service-role client bypasses
+// Resolve the acting tenant from the auth session (impersonation-aware via
+// resolveActingContext). Tenant scoping is the security boundary: every query
+// below is filtered by the resolved tenantId (the service-role client bypasses
 // RLS, so the code-level tenant filter is what enforces isolation — RLS is
 // defense-in-depth on top).
-async function resolveSessionUser(): Promise<{ appUser: AppUser; tenantId: string } | null> {
-  const supabase = await createClient()
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
-  if (!authUser) return null
-
-  const adminClient = createAdminClient()
-  const { data: appUser } = await adminClient
-    .from('users')
-    .select('*')
-    .eq('supabase_auth_id', authUser.id)
-    .single()
-
-  if (!appUser || appUser.status === 'deleted') return null
-  return { appUser: appUser as AppUser, tenantId: appUser.tenant_id }
+async function resolveSessionUser(): Promise<{ tenantId: string } | null> {
+  const ctx = await resolveActingContext()
+  if (!ctx) return null
+  return { tenantId: ctx.tenantId }
 }
 
 function normalizeTagName(raw: string): string {
