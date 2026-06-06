@@ -23,13 +23,28 @@ export default function CompanyCamImport({ initialState }: { initialState: Impor
   const isActive = job?.status === 'running' || job?.status === 'pending'
 
   // Drive the chunked import: call processChunk in a loop until done/failed.
+  // Transient failures (serverless timeout / network blips) are retried with
+  // backoff instead of killing the whole import.
   async function runLoop() {
     if (running.current) return
     running.current = true
+    let consecutiveErrors = 0
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const res = await processChunk()
+        let res: Awaited<ReturnType<typeof processChunk>>
+        try {
+          res = await processChunk()
+        } catch {
+          consecutiveErrors++
+          if (consecutiveErrors >= 6) {
+            toast.error('Import paused after repeated errors. Click Resume to continue.')
+            break
+          }
+          await new Promise((r) => setTimeout(r, 1500 * consecutiveErrors))
+          continue
+        }
+        consecutiveErrors = 0
         if (res.job) setJob(res.job)
         if (res.error) {
           toast.error(res.error)
@@ -186,13 +201,21 @@ export default function CompanyCamImport({ initialState }: { initialState: Impor
             </div>
           )}
 
-          {!isActive && (
+          {!isActive ? (
             <button
               type="button"
               onClick={handleStart}
               className="rounded-md bg-[#0D1B2A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0b1724]"
             >
               {job?.status === 'completed' || job?.status === 'failed' ? 'Run import again' : 'Start import'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={runLoop}
+              className="rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Resume import
             </button>
           )}
           <p className="text-xs text-gray-400">
