@@ -7,6 +7,7 @@ import { getPhotos, type PhotoFilters } from '@/lib/tag-actions'
 import { getPhotoFullUrl } from '@/lib/photo-actions'
 import TagFilter from '@/components/TagFilter'
 import TagEditor from '@/components/TagEditor'
+import PhotoActions from '@/components/photos/PhotoActions'
 import PhotoCard from '@/components/photos/PhotoCard'
 
 type Props = {
@@ -203,6 +204,7 @@ function Lightbox({
             </button>
           </div>
           {photo.caption && <p className="text-sm text-gray-700">{photo.caption}</p>}
+          <PhotoActions photoId={photo.id} />
           <div>
             <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Tags</div>
             <TagEditor
