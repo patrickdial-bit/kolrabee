@@ -45,6 +45,12 @@ export type CCUser = {
   last_name?: string | null
 }
 
+export type CCTag = {
+  id: number | string
+  display_value?: string | null
+  value?: string | null
+}
+
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
@@ -90,6 +96,16 @@ export function ccListProjects(token: string, page: number, perPage = 50): Promi
 
 export function ccListPhotos(token: string, page: number, perPage = 15): Promise<CCPhoto[]> {
   return ccGet<CCPhoto[]>(token, '/photos', { page, per_page: perPage })
+}
+
+export function ccListTags(token: string, page: number, perPage = 100): Promise<CCTag[]> {
+  return ccGet<CCTag[]>(token, '/tags', { page, per_page: perPage })
+}
+
+// Photos carrying a given tag (used to build photo↔tag links without a
+// per-photo API call). tag_ids is an array param in CompanyCam.
+export function ccListPhotosByTag(token: string, tagId: string | number, page: number, perPage = 50): Promise<CCPhoto[]> {
+  return ccGet<CCPhoto[]>(token, '/photos', { 'tag_ids[]': tagId, page, per_page: perPage })
 }
 
 // Build a single-line address string from CompanyCam's address object.
