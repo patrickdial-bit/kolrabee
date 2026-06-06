@@ -12,6 +12,8 @@ import { acceptProject, acknowledgeScheduleChange, cancelAcceptedProject, declin
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
 import type { ProjectAttachment } from '@/lib/types'
 import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
+import ProjectPhotos from '@/components/ProjectPhotos'
+import type { PhotoWithUrl } from '@/lib/types'
 import { formatMinutes } from '@/lib/time-tracking'
 
 interface MessageWithSender {
@@ -32,6 +34,8 @@ interface SubProjectDetailClientProps {
   attachments: ProjectAttachment[]
   messages: MessageWithSender[]
   currentUserId: string
+  tenantId: string
+  photos: PhotoWithUrl[]
   hasGrowth: boolean
   isCrewLeader: boolean
   timeClockEnabled: boolean
@@ -79,6 +83,8 @@ export default function SubProjectDetailClient({
   attachments,
   messages,
   currentUserId,
+  tenantId,
+  photos,
   hasGrowth,
   isCrewLeader,
   timeClockEnabled,
@@ -634,6 +640,17 @@ export default function SubProjectDetailClient({
             )}
           </div>
         </div>
+
+        {/* Jobsite Photos — crews capture and view here once on the job. */}
+        {showFullDetails && (
+          <ProjectPhotos
+            projectId={project.id}
+            tenantId={tenantId}
+            initialPhotos={photos}
+            canDelete={false}
+            currentUserId={currentUserId}
+          />
+        )}
       </main>
     </div>
   )
