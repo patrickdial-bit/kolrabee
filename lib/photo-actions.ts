@@ -1,33 +1,24 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { AppUser, Photo, PhotoWithUrl } from '@/lib/types'
+import { resolveActingContext } from '@/lib/helpers'
+import type { Photo, PhotoWithUrl } from '@/lib/types'
 
 const BUCKET = 'jobsite-photos'
 const THUMB_TTL = 60 * 60 // 1 hour — gallery thumbnails
 const FULL_TTL = 60 * 5 // 5 minutes — full-size, only opened in the lightbox
 const MAX_TAGS = 12
 
-// Resolve the current app user + tenant from the auth session, independent of
-// the admin/sub route helpers (which redirect). Works for both an admin viewing
+// Resolve the acting user + tenant from the auth session, independent of the
+// admin/sub route helpers (which redirect). Impersonation-aware: a super admin
+// "Viewing as" a tenant acts as that tenant's admin. Works for an admin viewing
 // a project and a crew member (subcontractor) viewing their assigned job.
-async function resolveSessionUser(): Promise<{ appUser: AppUser; tenantId: string } | null> {
-  const supabase = await createClient()
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
-  if (!authUser) return null
-
-  const adminClient = createAdminClient()
-  const { data: appUser } = await adminClient
-    .from('users')
-    .select('*')
-    .eq('supabase_auth_id', authUser.id)
-    .single()
-
-  if (!appUser || appUser.status === 'deleted') return null
-  return { appUser: appUser as AppUser, tenantId: appUser.tenant_id }
+async function resolveSessionUser(): Promise<
+  { appUser: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string }; tenantId: string } | null
+> {
+  const ctx = await resolveActingContext()
+  if (!ctx) return null
+  return { appUser: ctx.user, tenantId: ctx.tenantId }
 }
 
 // Confirm a project exists within the caller's tenant. Tenant scoping is the
