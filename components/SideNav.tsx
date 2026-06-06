@@ -215,6 +215,7 @@ export type IconName =
   | 'crew'
   | 'profile'
   | 'tenants'
+  | 'import'
 
 function NavIcon({ name, className }: { name: IconName; className?: string }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -250,6 +251,9 @@ function NavIcon({ name, className }: { name: IconName; className?: string }) {
     ),
     tenants: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+    ),
+    import: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-6L12 15m0 0 4.5-4.5M12 15V3" />
     ),
   }
 
