@@ -85,6 +85,7 @@ export default function AppShell(props: AppShellProps) {
           { href: '/admin/photos/galleries', label: 'Galleries', icon: 'galleries', active: pathname.startsWith('/admin/photos/galleries') },
           { href: '/admin/photos', label: 'All Photos', icon: 'photos', active: pathname === '/admin/photos' },
           { href: '/admin/photos/tags', label: 'Tags', icon: 'tags', active: pathname.startsWith('/admin/photos/tags') },
+          { href: '/admin/photos/import', label: 'Import', icon: 'import', active: pathname.startsWith('/admin/photos/import') },
         ],
       },
     ]
