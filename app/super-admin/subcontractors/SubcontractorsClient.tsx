@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import SuperAdminNav from '@/components/SuperAdminNav'
+import AppShell from '@/components/AppShell'
 import { startSubImpersonation } from '@/app/super-admin/impersonate/actions'
 
 type SubRow = {
@@ -44,8 +44,7 @@ export default function SubcontractorsClient({ subs }: Props) {
   const activeCount = subs.filter((s) => s.status === 'active').length
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SuperAdminNav />
+    <AppShell variant="superadmin">
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
@@ -122,6 +121,6 @@ export default function SubcontractorsClient({ subs }: Props) {
           </table>
         </div>
       </main>
-    </div>
+    </AppShell>
   )
 }

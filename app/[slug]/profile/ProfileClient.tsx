@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import SubNav from '@/components/SubNav'
+import AppShell from '@/components/AppShell'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { updateProfile, changePassword, uploadDocument, updateNotificationPreferences } from './actions'
@@ -112,8 +112,7 @@ export default function ProfileClient({ slug, tenantName, subName, isCrewLeader,
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
+    <AppShell variant="sub" slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader}>
 
       <main className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('profile.title')}</h1>
@@ -436,6 +435,6 @@ export default function ProfileClient({ slug, tenantName, subName, isCrewLeader,
           </form>
         </div>
       </main>
-    </div>
+    </AppShell>
   )
 }

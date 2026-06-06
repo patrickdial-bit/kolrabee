@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import SubNav from '@/components/SubNav'
+import AppShell from '@/components/AppShell'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
@@ -182,8 +182,7 @@ export default function SubDashboardClient({
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
+    <AppShell variant="sub" slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader}>
 
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('dash.title')}</h1>
@@ -418,7 +417,7 @@ export default function SubDashboardClient({
       />
 
       <GuidedTour steps={tourSteps} tourKey="sub-dashboard" />
-    </div>
+    </AppShell>
   )
 }
 

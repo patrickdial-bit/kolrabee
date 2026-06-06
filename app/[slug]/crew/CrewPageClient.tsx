@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import SubNav from '@/components/SubNav'
+import AppShell from '@/components/AppShell'
 import type { CrewMember } from '@/lib/types'
 import { addCrewMember, updateCrewMember, archiveCrewMember, restoreCrewMember } from './actions'
 
@@ -104,8 +104,7 @@ export default function CrewPageClient({ slug, tenantName, subName, members }: P
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader />
+    <AppShell variant="sub" slug={slug} tenantName={tenantName} subName={subName} isCrewLeader>
 
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
@@ -267,6 +266,6 @@ export default function CrewPageClient({ slug, tenantName, subName, members }: P
           </section>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }

@@ -75,6 +75,18 @@ export default async function AdminDashboardPage() {
     .map((p: any) => p.id)
   const unreadCounts = await getUnreadCounts(appUser.id, activeProjectIds)
 
+  // Per-project photo counts for the dashboard Photos column (deep-links into
+  // the Galleries documentation lens).
+  const { data: photoRows } = await adminClient
+    .from('photos')
+    .select('project_id')
+    .eq('tenant_id', tenant.id)
+  const photoCounts: Record<string, number> = {}
+  for (const row of photoRows ?? []) {
+    const pid = (row as any).project_id as string
+    photoCounts[pid] = (photoCounts[pid] ?? 0) + 1
+  }
+
   // Fetch project-level invitations for projects still awaiting acceptance, so
   // the dashboard can show admins who they've invited at a glance.
   const availableProjectIds = (projects ?? [])
@@ -115,6 +127,7 @@ export default async function AdminDashboardPage() {
       currentUserId={appUser.id}
       unreadCounts={unreadCounts}
       projectInvites={projectInvites}
+      photoCounts={photoCounts}
     />
   )
 }

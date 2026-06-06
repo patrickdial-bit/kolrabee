@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useTransition } from 'react'
 import Link from 'next/link'
-import SuperAdminNav from '@/components/SuperAdminNav'
+import AppShell from '@/components/AppShell'
 import { startImpersonation } from '@/app/super-admin/impersonate/actions'
 
 type TenantWithStats = {
@@ -53,8 +53,7 @@ export default function SuperAdminDashboard({ tenants, stats }: Props) {
   }, [tenants, search])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SuperAdminNav />
+    <AppShell variant="superadmin">
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Platform Overview</h1>
@@ -153,6 +152,6 @@ export default function SuperAdminDashboard({ tenants, stats }: Props) {
           </table>
         </div>
       </main>
-    </div>
+    </AppShell>
   )
 }

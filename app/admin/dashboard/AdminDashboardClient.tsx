@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import StatusTabs from '@/components/StatusTabs'
 import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
@@ -35,6 +35,7 @@ interface AdminDashboardClientProps {
   currentUserId: string
   unreadCounts: Record<string, number>
   projectInvites: Record<string, ProjectInviteSummary[]>
+  photoCounts: Record<string, number>
 }
 
 const STATUS_TABS = ['Available', 'Accepted', 'Completed', 'Paid']
@@ -55,6 +56,7 @@ export default function AdminDashboardClient({
   currentUserId,
   unreadCounts: initialUnreadCounts,
   projectInvites,
+  photoCounts,
 }: AdminDashboardClientProps) {
   const [activeTab, setActiveTab] = useState('Available')
   const [search, setSearch] = useState('')
@@ -257,8 +259,7 @@ export default function AdminDashboardClient({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenantName} />
+    <AppShell variant="admin" companyName={tenantName}>
 
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -649,10 +650,10 @@ export default function AdminDashboardClient({
                         ) : '—'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        {project.companycam_link ? (
-                          <a href={project.companycam_link} target="_blank" rel="noopener noreferrer"
-                            className="text-ember hover:text-primary-700 font-medium">Link</a>
-                        ) : '—'}
+                        <Link href={`/admin/photos/galleries/${project.id}`}
+                          className="text-ember hover:text-primary-700 font-medium">
+                          {(photoCounts[project.id] ?? 0) > 0 ? photoCounts[project.id] : 'View'}
+                        </Link>
                       </td>
                       {(activeTab === 'Accepted' || activeTab === 'Completed') && (
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
@@ -742,7 +743,7 @@ export default function AdminDashboardClient({
 
       {/* Guided tour for first-time users */}
       <GuidedTour steps={dashboardTourSteps} tourKey="admin-dashboard" />
-    </div>
+    </AppShell>
   )
 }
 

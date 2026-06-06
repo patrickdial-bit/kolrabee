@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import SubNav from '@/components/SubNav'
+import AppShell from '@/components/AppShell'
 import Tooltip from '@/components/Tooltip'
 import { useI18n } from '@/lib/i18n'
 import { extractCity, formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
@@ -246,8 +246,7 @@ export default function SubProjectDetailClient({
     && !project.schedule_change_acknowledged_at
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SubNav slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader} />
+    <AppShell variant="sub" slug={slug} tenantName={tenantName} subName={subName} isCrewLeader={isCrewLeader}>
 
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link */}
@@ -652,6 +651,6 @@ export default function SubProjectDetailClient({
           />
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }

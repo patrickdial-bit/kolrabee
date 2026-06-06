@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
 import StarRating from '@/components/StarRating'
@@ -147,8 +147,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenantName} />
+    <AppShell variant="admin" companyName={tenantName}>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link */}
@@ -511,6 +510,6 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
           )}
         </div>
       </div>
-    </div>
+    </AppShell>
   )
 }
