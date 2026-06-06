@@ -151,7 +151,12 @@ export default function CompanyCamImport({ initialState }: { initialState: Impor
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-900">
-                  {job.status === 'running' && (job.phase === 'projects' ? 'Importing projects…' : 'Importing photos…')}
+                  {job.status === 'running' &&
+                    (job.phase === 'projects'
+                      ? 'Importing projects…'
+                      : job.phase === 'photos'
+                        ? 'Importing photos…'
+                        : 'Importing tags…')}
                   {job.status === 'completed' && 'Import complete'}
                   {job.status === 'failed' && 'Import failed'}
                   {job.status === 'pending' && 'Starting…'}
@@ -163,9 +168,10 @@ export default function CompanyCamImport({ initialState }: { initialState: Impor
                   </svg>
                 )}
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+              <div className="mt-3 grid grid-cols-4 gap-3 text-center">
                 <Stat label="Projects" value={job.projects_done} />
                 <Stat label="Photos" value={job.photos_done} />
+                <Stat label="Tags" value={job.tags_done} />
                 <Stat label="Skipped" value={job.photos_failed} muted />
               </div>
               {job.error && <p className="mt-3 text-sm text-red-600">{job.error}</p>}
@@ -191,7 +197,7 @@ export default function CompanyCamImport({ initialState }: { initialState: Impor
           )}
           <p className="text-xs text-gray-400">
             Keep this tab open while importing. Large libraries may take several minutes; the import
-            resumes where it left off if interrupted. Tags aren’t imported in this version.
+            resumes where it left off if interrupted. Projects and photos import first, then tags.
           </p>
         </div>
       )}

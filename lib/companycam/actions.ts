@@ -6,7 +6,9 @@ import {
   ccFormatAddress,
   ccGetCurrentUser,
   ccListPhotos,
+  ccListPhotosByTag,
   ccListProjects,
+  ccListTags,
   ccPickUri,
 } from '@/lib/companycam/client'
 
@@ -31,12 +33,16 @@ async function resolveAdmin(): Promise<Session | null> {
 export type ImportJob = {
   id: string
   status: 'pending' | 'running' | 'completed' | 'failed'
-  phase: 'projects' | 'photos' | 'done'
+  phase: 'projects' | 'photos' | 'tag_vocab' | 'tag_links' | 'done'
   projects_done: number
   photos_done: number
   photos_failed: number
+  tags_done: number
   error: string | null
 }
+
+const TAGS_PER_PAGE = 100
+const TAG_PHOTOS_PER_CHUNK = 50
 
 export type ImportState = {
   connected: boolean
@@ -93,7 +99,7 @@ export async function getImportState(): Promise<ImportState> {
     .maybeSingle()
   const { data: job } = await adminClient
     .from('companycam_import_jobs')
-    .select('id, status, phase, projects_done, photos_done, photos_failed, error')
+    .select('id, status, phase, projects_done, photos_done, photos_failed, tags_done, error')
     .eq('tenant_id', session.tenantId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -131,7 +137,7 @@ export async function startImport(): Promise<{ job?: ImportJob; error?: string }
       phase: 'projects',
       page: 1,
     })
-    .select('id, status, phase, projects_done, photos_done, photos_failed, error')
+    .select('id, status, phase, projects_done, photos_done, photos_failed, tags_done, error')
     .single()
   if (error || !job) return { error: 'An import is already running.' }
   return { job: job as ImportJob }
@@ -177,6 +183,7 @@ export async function processChunk(): Promise<{ job?: ImportJob; done?: boolean;
     projects_done: job.projects_done,
     photos_done: job.photos_done,
     photos_failed: job.photos_failed,
+    tags_done: job.tags_done ?? 0,
     error: job.error,
     ...extra,
   })
@@ -313,29 +320,107 @@ export async function processChunk(): Promise<{ job?: ImportJob; done?: boolean;
         const photosDone = job.photos_done + done
         const photosFailed = job.photos_failed + failed
         if (photos.length < PHOTOS_PER_CHUNK) {
-          await save({
-            photos_done: photosDone,
-            photos_failed: photosFailed,
-            phase: 'done',
-            status: 'completed',
-          })
-          await adminClient
-            .from('companycam_connections')
-            .update({ last_import_at: new Date().toISOString() })
-            .eq('tenant_id', tenantId)
-          return { job: snapshot(), done: true }
+          // Photos finished → move on to importing tags.
+          await save({ photos_done: photosDone, photos_failed: photosFailed, phase: 'tag_vocab', page: 1 })
+          return { job: snapshot(), done: false }
         }
         await save({ photos_done: photosDone, photos_failed: photosFailed, page: job.page + 1 })
         return { job: snapshot(), done: false }
       }
 
-      // No photos on this page → finished.
-      await save({ phase: 'done', status: 'completed' })
-      await adminClient
-        .from('companycam_connections')
-        .update({ last_import_at: new Date().toISOString() })
-        .eq('tenant_id', tenantId)
-      return { job: snapshot(), done: true }
+      // No photos on this page → move on to tags.
+      await save({ phase: 'tag_vocab', page: 1 })
+      return { job: snapshot(), done: false }
+    }
+
+    // -------- Phase 3a: tag vocabulary --------
+    // Seed CompanyCam tag names into the tenant's canonical `tags` vocabulary
+    // (lowercased to match Kolrabee's case-insensitive tags).
+    if (job.phase === 'tag_vocab') {
+      const tags = await ccListTags(token, job.page, TAGS_PER_PAGE)
+      if (tags.length > 0) {
+        const names = Array.from(
+          new Set(
+            tags
+              .map((t) => (t.display_value ?? t.value ?? '').trim().toLowerCase())
+              .filter((n) => n.length > 0 && n.length <= 32),
+          ),
+        )
+        const { data: existing } = await adminClient
+          .from('tags')
+          .select('name')
+          .eq('tenant_id', tenantId)
+          .in('name', names)
+        const have = new Set((existing ?? []).map((r: any) => r.name))
+        for (const name of names) {
+          if (have.has(name)) continue
+          // Insert individually so a rare unique-collision can't abort the chunk.
+          await adminClient.from('tags').insert({ tenant_id: tenantId, name }).then(
+            () => {},
+            () => {},
+          )
+        }
+      }
+      if (tags.length < TAGS_PER_PAGE) {
+        await save({ phase: 'tag_links', page: 1, tag_index: 0 })
+      } else {
+        await save({ page: job.page + 1 })
+      }
+      return { job: snapshot(), done: false }
+    }
+
+    // -------- Phase 3b: tag links --------
+    // For each CompanyCam tag, list its photos and link the imported Kolrabee
+    // photos to the matching Kolrabee tag. Far fewer calls than per-photo.
+    if (job.phase === 'tag_links') {
+      const tagPage = Math.floor(job.tag_index / TAGS_PER_PAGE) + 1
+      const ccTags = await ccListTags(token, tagPage, TAGS_PER_PAGE)
+      const local = job.tag_index % TAGS_PER_PAGE
+
+      if (local >= ccTags.length) {
+        // Past the last tag → import complete.
+        await save({ phase: 'done', status: 'completed' })
+        await adminClient
+          .from('companycam_connections')
+          .update({ last_import_at: new Date().toISOString() })
+          .eq('tenant_id', tenantId)
+        return { job: snapshot(), done: true }
+      }
+
+      const ccTag = ccTags[local]
+      const name = (ccTag.display_value ?? ccTag.value ?? '').trim().toLowerCase()
+      let linked = 0
+      if (name) {
+        const { data: kTag } = await adminClient
+          .from('tags')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .eq('name', name)
+          .maybeSingle()
+        const ccPhotos = await ccListPhotosByTag(token, ccTag.id, job.page, TAG_PHOTOS_PER_CHUNK)
+        if (kTag && ccPhotos.length > 0) {
+          const ccPhotoIds = ccPhotos.map((p) => String(p.id))
+          const { data: kPhotos } = await adminClient
+            .from('photos')
+            .select('id, companycam_id')
+            .eq('tenant_id', tenantId)
+            .in('companycam_id', ccPhotoIds)
+          const links = (kPhotos ?? []).map((kp: any) => ({ photo_id: kp.id, tag_id: (kTag as any).id }))
+          if (links.length > 0) {
+            await adminClient.from('photo_tags').upsert(links, { onConflict: 'photo_id,tag_id', ignoreDuplicates: true })
+            linked = links.length
+          }
+        }
+        if (ccPhotos.length < TAG_PHOTOS_PER_CHUNK) {
+          await save({ tag_index: job.tag_index + 1, page: 1, tags_done: job.tags_done + linked })
+        } else {
+          await save({ page: job.page + 1, tags_done: job.tags_done + linked })
+        }
+      } else {
+        // Unnamed tag — skip to the next.
+        await save({ tag_index: job.tag_index + 1, page: 1 })
+      }
+      return { job: snapshot(), done: false }
     }
 
     // Already done.
