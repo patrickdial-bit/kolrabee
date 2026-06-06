@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import SuperAdminNav from '@/components/SuperAdminNav'
+import AppShell from '@/components/AppShell'
 import { updateTenantPlan, suspendTenant, deleteTenant } from './actions'
 import { startImpersonation, startSubImpersonation } from '@/app/super-admin/impersonate/actions'
 import { useState, useTransition } from 'react'
@@ -63,8 +63,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SuperAdminNav />
+    <AppShell variant="superadmin">
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link + title */}
@@ -343,6 +342,6 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
           )}
         </div>
       </main>
-    </div>
+    </AppShell>
   )
 }

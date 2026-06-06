@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasTimeTracking } from '@/lib/types'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import TimeTrackingClient from './TimeTrackingClient'
 
 export default async function TimeTrackingPage() {
@@ -10,8 +10,7 @@ export default async function TimeTrackingPage() {
 
   if (!hasTimeTracking(tenant)) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <AdminNav companyName={tenant.name} />
+      <AppShell variant="admin" companyName={tenant.name}>
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Time Tracking</h1>
           <p className="mt-3 text-gray-600">
@@ -24,7 +23,7 @@ export default async function TimeTrackingPage() {
             Upgrade to Growth
           </Link>
         </div>
-      </div>
+      </AppShell>
     )
   }
 
@@ -50,14 +49,13 @@ export default async function TimeTrackingPage() {
   ])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenant.name} />
+    <AppShell variant="admin" companyName={tenant.name}>
       <TimeTrackingClient
         tenantTimezone={tenant.timezone ?? 'America/New_York'}
         entries={(entries ?? []) as any}
         subs={(subs ?? []) as any}
         projects={(projects ?? []) as any}
       />
-    </div>
+    </AppShell>
   )
 }

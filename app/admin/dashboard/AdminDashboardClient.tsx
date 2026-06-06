@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import StatusTabs from '@/components/StatusTabs'
 import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
@@ -257,8 +257,7 @@ export default function AdminDashboardClient({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenantName} />
+    <AppShell variant="admin" companyName={tenantName}>
 
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -742,7 +741,7 @@ export default function AdminDashboardClient({
 
       {/* Guided tour for first-time users */}
       <GuidedTour steps={dashboardTourSteps} tourKey="admin-dashboard" />
-    </div>
+    </AppShell>
   )
 }
 

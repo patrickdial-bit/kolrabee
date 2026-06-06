@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import { formatDate } from '@/lib/utils'
 import { inviteAdminToJoin, removeAdmin, reactivateAdmin, revokeAdminInvite } from './actions'
 
@@ -117,8 +117,7 @@ export default function AdminTeamClient({ admins, invites, tenantName, currentUs
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenantName} />
+    <AppShell variant="admin" companyName={tenantName}>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 sm:flex sm:items-center sm:justify-between">
@@ -348,6 +347,6 @@ export default function AdminTeamClient({ admins, invites, tenantName, currentUs
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   )
 }

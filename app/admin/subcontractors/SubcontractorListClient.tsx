@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
@@ -193,8 +193,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenantName} />
+    <AppShell variant="admin" companyName={tenantName}>
 
       <div className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
@@ -570,7 +569,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
 
       {/* Guided tour for first-time users */}
       <GuidedTour steps={subsTourSteps} tourKey="admin-subcontractors" />
-    </div>
+    </AppShell>
   )
 }
 

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import AdminNav from '@/components/AdminNav'
+import AppShell from '@/components/AppShell'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import { updateProject, markCompleted, markPaid, cancelProject, deleteProject, approveCompletion, rescheduleProject } from './actions'
@@ -260,8 +260,7 @@ export default function ProjectDetailClient({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav companyName={tenantName} />
+    <AppShell variant="admin" companyName={tenantName}>
 
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
@@ -822,6 +821,6 @@ export default function ProjectDetailClient({
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   )
 }
