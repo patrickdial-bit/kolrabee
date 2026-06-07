@@ -1,6 +1,6 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { ProjectAttachment, CrewMember } from '@/lib/types'
+import type { ProjectAttachment, CrewMember, ChangeOrder } from '@/lib/types'
 import { hasGrowthFeatures, hasTimeTracking, isCrewLeader } from '@/lib/types'
 import type { CrewMemberLite, CrewOpenEntry } from '@/components/CrewClockPanel'
 import { getProjectPhotos } from '@/lib/photo-actions'
@@ -72,6 +72,28 @@ export default async function SubProjectDetailPage({
 
   // Crew + time tracking data (only when this sub has accepted the project).
   const isAccepted = project.accepted_by === appUser.id
+
+  // Change orders — scope/pay history, visible once the sub has accepted the job.
+  let changeOrders: ChangeOrder[] = []
+  if (isAccepted) {
+    const { data: coData } = await adminClient
+      .from('change_orders')
+      .select('*')
+      .eq('project_id', id)
+      .eq('tenant_id', tenant.id)
+      .order('created_at', { ascending: false })
+    changeOrders = (coData ?? []).map((c: any) => ({
+      id: c.id,
+      tenant_id: c.tenant_id,
+      project_id: c.project_id,
+      amount: Number(c.amount),
+      description: c.description,
+      previous_payout: Number(c.previous_payout),
+      new_payout: Number(c.new_payout),
+      created_by: c.created_by,
+      created_at: c.created_at,
+    }))
+  }
   let timeClockEnabled = false
   let crewMembers: CrewMemberLite[] = []
   let crewOpenEntries: CrewOpenEntry[] = []
@@ -175,6 +197,7 @@ export default async function SubProjectDetailPage({
       isAcceptedByMe={isAccepted}
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}
+      changeOrders={changeOrders}
       currentUserId={appUser.id}
       tenantId={tenant.id}
       photos={photos}

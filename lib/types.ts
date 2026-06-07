@@ -52,6 +52,7 @@ export type NotificationPreferences = {
   project_completion_requested: boolean
   project_completion_approved: boolean
   project_rescheduled: boolean
+  project_change_order: boolean
   new_message: boolean
 }
 
@@ -63,6 +64,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   project_completion_requested: true,
   project_completion_approved: true,
   project_rescheduled: true,
+  project_change_order: true,
   new_message: true,
 }
 
@@ -240,6 +242,20 @@ export type GalleryProject = {
 export type PhotoListItem = Omit<PhotoWithUrl, 'tags'> & {
   project_name: string
   tags: TagRef[]
+}
+
+// A change order — a dated, attributed adjustment to a project's scope and pay.
+// `amount` is the signed delta; `new_payout` is the project's resulting total.
+export type ChangeOrder = {
+  id: string
+  tenant_id: string
+  project_id: string
+  amount: number
+  description: string
+  previous_payout: number
+  new_payout: number
+  created_by: string
+  created_at: string
 }
 
 export type JobMessage = {

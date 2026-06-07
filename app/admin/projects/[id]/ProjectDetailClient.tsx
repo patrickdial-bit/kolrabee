@@ -11,6 +11,7 @@ import { updateProject, markCompleted, markPaid, cancelProject, deleteProject, a
 import { submitRating } from './rating-actions'
 import { addAttachment, removeAttachment, getAttachmentUrl } from './attachment-actions'
 import { sendMessage, getMessages } from './message-actions'
+import { addChangeOrder, deleteChangeOrder } from './change-order-actions'
 import InviteSubsModal from './InviteSubsModal'
 import StarRating from '@/components/StarRating'
 import DatePicker from '@/components/DatePicker'
@@ -38,6 +39,17 @@ interface MessageWithSender {
   sender_name: string
 }
 
+interface ChangeOrderWithName {
+  id: string
+  project_id: string
+  amount: number
+  description: string
+  previous_payout: number
+  new_payout: number
+  created_at: string
+  created_by_name: string
+}
+
 interface ProjectDetailClientProps {
   project: Project
   invitations: InvitationWithName[]
@@ -48,6 +60,7 @@ interface ProjectDetailClientProps {
   existingRating: SubRating | null
   attachments: ProjectAttachment[]
   messages: MessageWithSender[]
+  changeOrders: ChangeOrderWithName[]
   currentUserId: string
   photos: PhotoWithUrl[]
 }
@@ -78,6 +91,7 @@ export default function ProjectDetailClient({
   existingRating,
   attachments,
   messages,
+  changeOrders,
   currentUserId,
   photos,
 }: ProjectDetailClientProps) {
@@ -100,10 +114,20 @@ export default function ProjectDetailClient({
   // Reschedule modal state
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [rescheduleError, setRescheduleError] = useState<string | null>(null)
+  // Change order modal state
+  const [showChangeOrderModal, setShowChangeOrderModal] = useState(false)
+  const [changeOrderError, setChangeOrderError] = useState<string | null>(null)
 
   const hasAssignedSub = !!project.accepted_by
   const canReschedule = !['paid', 'cancelled'].includes(project.status)
   const hasScheduleChange = !!project.schedule_changed_at
+  // Change orders are sorted newest first; the oldest entry's previous_payout is
+  // the project's original (base) payout before any adjustments.
+  const canChangeOrder = !['paid', 'cancelled', 'imported'].includes(project.status)
+  const originalPayout = changeOrders.length > 0
+    ? changeOrders[changeOrders.length - 1].previous_payout
+    : project.payout_amount
+  const totalAdjustments = changeOrders.reduce((sum, co) => sum + co.amount, 0)
 
   const clearMessages = () => { setError(null); setSuccessMsg(null) }
 
@@ -256,6 +280,32 @@ export default function ProjectDetailClient({
     startTransition(async () => {
       const result = await deleteProject(project.id)
       if (result?.error) { setError(result.error); toast.error(result.error) }
+    })
+  }
+
+  const handleAddChangeOrder = (formData: FormData) => {
+    setChangeOrderError(null)
+    startTransition(async () => {
+      const result = await addChangeOrder(project.id, formData)
+      if (result?.error) {
+        setChangeOrderError(result.error)
+        toast.error(result.error)
+      } else {
+        toast.success(result?.subNotified
+          ? 'Change order added. The assigned subcontractor has been emailed.'
+          : 'Change order added.')
+        setShowChangeOrderModal(false)
+        router.refresh()
+      }
+    })
+  }
+
+  const handleDeleteChangeOrder = (changeOrderId: string) => {
+    if (!confirm('Remove this change order? Its amount will be reversed out of the payout.')) return
+    startTransition(async () => {
+      const result = await deleteChangeOrder(changeOrderId)
+      if (result?.error) { setError(result.error); toast.error(result.error) }
+      else { toast.success('Change order removed.'); router.refresh() }
     })
   }
 
@@ -521,6 +571,81 @@ export default function ProjectDetailClient({
           )}
         </div>
 
+        {/* Change Orders — adjust scope & pay at any point */}
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Change Orders</h2>
+              <p className="text-sm text-gray-500">Adjust scope and pay — every change is logged so there's no confusion.</p>
+            </div>
+            {canChangeOrder && (
+              <button
+                onClick={() => { setChangeOrderError(null); setShowChangeOrderModal(true) }}
+                disabled={isPending}
+                className="inline-flex items-center gap-1.5 rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Change Order
+              </button>
+            )}
+          </div>
+
+          {/* Payout breakdown */}
+          <div className="rounded-lg bg-gray-50 border border-gray-200 p-4 mb-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Original payout</span>
+              <span className="font-medium text-gray-900">{formatCurrency(originalPayout)}</span>
+            </div>
+            {changeOrders.length > 0 && (
+              <div className="flex items-center justify-between text-sm mt-1">
+                <span className="text-gray-600">Change orders ({changeOrders.length})</span>
+                <span className={`font-medium ${totalAdjustments >= 0 ? 'text-green-700' : 'text-amber-700'}`}>
+                  {totalAdjustments >= 0 ? '+' : '−'}{formatCurrency(Math.abs(totalAdjustments))}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-base mt-2 pt-2 border-t border-gray-200">
+              <span className="font-semibold text-gray-900">Current total payout</span>
+              <span className="font-bold text-gray-900">{formatCurrency(project.payout_amount)}</span>
+            </div>
+          </div>
+
+          {changeOrders.length > 0 ? (
+            <ul className="divide-y divide-gray-100">
+              {changeOrders.map((co) => (
+                <li key={co.id} className="py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{co.description}</p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {formatDate(co.created_at)} · {co.created_by_name} · new total {formatCurrency(co.new_payout)}
+                      </p>
+                    </div>
+                    <div className="flex flex-shrink-0 items-center gap-3">
+                      <span className={`text-sm font-semibold ${co.amount >= 0 ? 'text-green-700' : 'text-amber-700'}`}>
+                        {co.amount >= 0 ? '+' : '−'}{formatCurrency(Math.abs(co.amount))}
+                      </span>
+                      {project.status !== 'paid' && (
+                        <button
+                          onClick={() => handleDeleteChangeOrder(co.id)}
+                          disabled={isPending}
+                          className="text-xs font-medium text-amber-600 hover:text-amber-700 disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-500">No change orders yet. Add one when scope or pay changes after the job is posted.</p>
+          )}
+        </div>
+
         {/* Invitations */}
         <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
@@ -754,6 +879,84 @@ export default function ProjectDetailClient({
           existingInvitationSubIds={invitations.map((i) => i.subcontractor_id)}
           onClose={() => { setShowInviteModal(false); router.refresh() }}
         />
+      )}
+
+      {showChangeOrderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add Change Order</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Current payout is <span className="font-medium text-gray-700">{formatCurrency(project.payout_amount)}</span>. Use a negative amount to reduce pay.
+              </p>
+            </div>
+            <form action={handleAddChangeOrder} className="px-6 py-5 space-y-5">
+              {hasAssignedSub && acceptedByUser && (
+                <div className="rounded-md border-2 border-amber-300 bg-amber-50 p-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="h-5 w-5 flex-shrink-0 text-amber-700 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">This project has an assigned subcontractor</p>
+                      <p className="mt-1 text-sm text-amber-800">
+                        <strong>{acceptedByUser.display_name}</strong> will be emailed the new scope and total payout.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Adjustment Amount *</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    name="amount"
+                    required
+                    step="0.01"
+                    placeholder="e.g. 250 or -100"
+                    className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Positive adds scope/pay; negative reduces it.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">What changed? *</label>
+                <textarea
+                  name="description"
+                  required
+                  rows={3}
+                  placeholder="e.g. Added gutter replacement on the north side."
+                  className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
+                />
+              </div>
+
+              {changeOrderError && (
+                <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-700">{changeOrderError}</div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="inline-flex items-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {isPending ? 'Saving...' : hasAssignedSub ? 'Save & Notify Sub' : 'Save Change Order'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowChangeOrderModal(false); setChangeOrderError(null) }}
+                  className="inline-flex items-center rounded-md px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {showRescheduleModal && (
