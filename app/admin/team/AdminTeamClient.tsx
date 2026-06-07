@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
+import Tooltip from '@/components/Tooltip'
 import { formatDate } from '@/lib/utils'
 import { inviteAdminToJoin, removeAdmin, reactivateAdmin, revokeAdminInvite } from './actions'
 
@@ -129,15 +130,17 @@ export default function AdminTeamClient({ admins, invites, tenantName, currentUs
             </p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <button
-              onClick={() => setShowInviteModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-forest px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-700 transition-colors"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-              </svg>
-              Invite Admin
-            </button>
+            <Tooltip text="Email someone an invite to join as an admin who can manage projects, subs, and the team">
+              <button
+                onClick={() => setShowInviteModal(true)}
+                className="inline-flex items-center gap-2 rounded-lg bg-forest px-4 py-2.5 text-sm font-semibold text-white hover:bg-forest-700 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                </svg>
+                Invite Admin
+              </button>
+            </Tooltip>
           </div>
         </div>
 
@@ -195,14 +198,15 @@ export default function AdminTeamClient({ admins, invites, tenantName, currentUs
                             </button>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => setConfirmRemoveId(a.id)}
-                            disabled={removeDisabledReason !== null}
-                            title={removeDisabledReason ?? 'Remove admin'}
-                            className="text-amber-600 hover:text-amber-800 disabled:text-gray-300 disabled:cursor-not-allowed"
-                          >
-                            Remove
-                          </button>
+                          <Tooltip text={removeDisabledReason ?? "Revoke this person's admin access to your account"}>
+                            <button
+                              onClick={() => setConfirmRemoveId(a.id)}
+                              disabled={removeDisabledReason !== null}
+                              className="text-amber-600 hover:text-amber-800 disabled:text-gray-300 disabled:cursor-not-allowed"
+                            >
+                              Remove
+                            </button>
+                          </Tooltip>
                         )
                       ) : (
                         <button
@@ -245,20 +249,24 @@ export default function AdminTeamClient({ admins, invites, tenantName, currentUs
                       <td className="px-4 py-2.5 text-sm text-gray-600">{formatDate(inv.invited_at)}</td>
                       <td className="px-4 py-2.5 text-sm text-gray-600">{formatDate(inv.expires_at)}</td>
                       <td className="px-4 py-2.5 text-sm text-center space-x-3">
-                        <button
-                          onClick={() => handleResendInvite(inv.email, inv.name)}
-                          disabled={isPending}
-                          className="text-ember hover:text-primary-700 disabled:opacity-50"
-                        >
-                          Resend
-                        </button>
-                        <button
-                          onClick={() => handleRevokeInvite(inv.id, inv.email)}
-                          disabled={isPending}
-                          className="text-amber-600 hover:text-amber-800 disabled:opacity-50"
-                        >
-                          Revoke
-                        </button>
+                        <Tooltip text="Send this admin invitation email again">
+                          <button
+                            onClick={() => handleResendInvite(inv.email, inv.name)}
+                            disabled={isPending}
+                            className="text-ember hover:text-primary-700 disabled:opacity-50"
+                          >
+                            Resend
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Cancel this pending invite so the link no longer works">
+                          <button
+                            onClick={() => handleRevokeInvite(inv.id, inv.email)}
+                            disabled={isPending}
+                            className="text-amber-600 hover:text-amber-800 disabled:opacity-50"
+                          >
+                            Revoke
+                          </button>
+                        </Tooltip>
                       </td>
                     </tr>
                   ))}

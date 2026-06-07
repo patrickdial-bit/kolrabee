@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
+import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
 import StarRating from '@/components/StarRating'
@@ -198,71 +199,90 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
               </dl>
             </div>
             <div className="mt-4 sm:mt-0">
-              <button
-                onClick={handleStatusToggle}
-                disabled={isPending}
-                className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
-                  sub.status === 'active'
-                    ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                    : 'bg-ember/10 text-ember hover:bg-ember/15'
-                }`}
+              <Tooltip
+                text={sub.status === 'active'
+                  ? 'Deactivate this subcontractor so they stop receiving new invites'
+                  : 'Reactivate this subcontractor so they can receive invites again'}
+                position="left"
               >
-                {isPending
-                  ? sub.status === 'active' ? 'Deleting...' : 'Reactivating...'
-                  : sub.status === 'active' ? 'Delete Subcontractor' : 'Reactivate Subcontractor'}
-              </button>
+                <button
+                  onClick={handleStatusToggle}
+                  disabled={isPending}
+                  className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+                    sub.status === 'active'
+                      ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                      : 'bg-ember/10 text-ember hover:bg-ember/15'
+                  }`}
+                >
+                  {isPending
+                    ? sub.status === 'active' ? 'Deleting...' : 'Reactivating...'
+                    : sub.status === 'active' ? 'Delete Subcontractor' : 'Reactivate Subcontractor'}
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>
 
         {/* Reliability & Performance */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">YTD Earnings</p>
-            <p className="mt-1 text-2xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Average Rating</p>
-            <div className="mt-1 flex items-center gap-2">
-              {avgRating !== null ? (
-                <>
-                  <StarRating value={Math.round(avgRating)} readonly size="sm" />
-                  <span className="text-lg font-bold text-gray-900">{avgRating.toFixed(1)}</span>
-                  <span className="text-sm text-gray-500">({totalRatings})</span>
-                </>
-              ) : (
-                <span className="text-sm text-gray-400">No ratings yet</span>
-              )}
+          <Tooltip text="Total amount paid to this subcontractor so far this calendar year">
+            <div className="block w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">YTD Earnings</p>
+              <p className="mt-1 text-2xl font-bold text-ember">{formatCurrency(ytdEarnings)}</p>
             </div>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Accept Rate</p>
-            <p className={`mt-1 text-2xl font-bold ${reliabilityStats.acceptRate >= 70 ? 'text-green-600' : reliabilityStats.acceptRate >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
-              {reliabilityStats.totalInvited > 0 ? `${reliabilityStats.acceptRate}%` : '—'}
-            </p>
-            <p className="text-xs text-gray-400">{reliabilityStats.totalAccepted} of {reliabilityStats.totalInvited} invites</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</p>
-            <p className={`mt-1 text-2xl font-bold ${reliabilityStats.completionRate >= 80 ? 'text-green-600' : reliabilityStats.completionRate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
-              {reliabilityStats.totalAccepted > 0 ? `${reliabilityStats.completionRate}%` : '—'}
-            </p>
-            <p className="text-xs text-gray-400">{reliabilityStats.totalCompleted} completed, {reliabilityStats.totalPaid} paid</p>
-          </div>
+          </Tooltip>
+          <Tooltip text="Average star rating across all completed jobs for this subcontractor">
+            <div className="block w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Average Rating</p>
+              <div className="mt-1 flex items-center gap-2">
+                {avgRating !== null ? (
+                  <>
+                    <StarRating value={Math.round(avgRating)} readonly size="sm" />
+                    <span className="text-lg font-bold text-gray-900">{avgRating.toFixed(1)}</span>
+                    <span className="text-sm text-gray-500">({totalRatings})</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-400">No ratings yet</span>
+                )}
+              </div>
+            </div>
+          </Tooltip>
+          <Tooltip text="Share of job invitations this subcontractor has accepted">
+            <div className="block w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Accept Rate</p>
+              <p className={`mt-1 text-2xl font-bold ${reliabilityStats.acceptRate >= 70 ? 'text-green-600' : reliabilityStats.acceptRate >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+                {reliabilityStats.totalInvited > 0 ? `${reliabilityStats.acceptRate}%` : '—'}
+              </p>
+              <p className="text-xs text-gray-400">{reliabilityStats.totalAccepted} of {reliabilityStats.totalInvited} invites</p>
+            </div>
+          </Tooltip>
+          <Tooltip text="Share of accepted jobs this subcontractor has seen through to completion">
+            <div className="block w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Completion Rate</p>
+              <p className={`mt-1 text-2xl font-bold ${reliabilityStats.completionRate >= 80 ? 'text-green-600' : reliabilityStats.completionRate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                {reliabilityStats.totalAccepted > 0 ? `${reliabilityStats.completionRate}%` : '—'}
+              </p>
+              <p className="text-xs text-gray-400">{reliabilityStats.totalCompleted} completed, {reliabilityStats.totalPaid} paid</p>
+            </div>
+          </Tooltip>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Jobs</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{totalJobs}</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Declined / Cancelled</p>
-            <p className={`mt-1 text-2xl font-bold ${(reliabilityStats.totalDeclined + reliabilityStats.totalCancelled) === 0 ? 'text-green-600' : 'text-amber-600'}`}>
-              {reliabilityStats.totalDeclined + reliabilityStats.totalCancelled}
-            </p>
-            <p className="text-xs text-gray-400">{reliabilityStats.totalDeclined} declined, {reliabilityStats.totalCancelled} cancelled</p>
-          </div>
+          <Tooltip text="Total number of jobs this subcontractor has accepted over time">
+            <div className="block w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Jobs</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">{totalJobs}</p>
+            </div>
+          </Tooltip>
+          <Tooltip text="How often this subcontractor has turned down or backed out of jobs">
+            <div className="block w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Declined / Cancelled</p>
+              <p className={`mt-1 text-2xl font-bold ${(reliabilityStats.totalDeclined + reliabilityStats.totalCancelled) === 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                {reliabilityStats.totalDeclined + reliabilityStats.totalCancelled}
+              </p>
+              <p className="text-xs text-gray-400">{reliabilityStats.totalDeclined} declined, {reliabilityStats.totalCancelled} cancelled</p>
+            </div>
+          </Tooltip>
         </div>
 
         {/* Compliance & Documents */}
