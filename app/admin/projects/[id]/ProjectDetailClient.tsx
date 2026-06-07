@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
+import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import { updateProject, markCompleted, markPaid, cancelProject, deleteProject, approveCompletion, rescheduleProject } from './actions'
@@ -508,50 +509,72 @@ export default function ProjectDetailClient({
               <div className="flex flex-wrap items-center gap-3">
                 {project.status === 'available' && (
                   <>
-                    <button onClick={() => { setEditing(true); clearMessages() }}
-                      className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Edit</button>
-                    <button onClick={() => setShowInviteModal(true)}
-                      className="inline-flex items-center rounded-md bg-white border border-ember/30 px-4 py-2 text-sm font-semibold text-ember hover:bg-ember/10">Invite Subs</button>
-                    <button onClick={handleDelete} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
+                    <Tooltip text="Edit this job's details, pay, or schedule.">
+                      <button onClick={() => { setEditing(true); clearMessages() }}
+                        className="inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">Edit</button>
+                    </Tooltip>
+                    <Tooltip text="Send this job to subcontractors so they can accept it.">
+                      <button onClick={() => setShowInviteModal(true)}
+                        className="inline-flex items-center rounded-md bg-white border border-ember/30 px-4 py-2 text-sm font-semibold text-ember hover:bg-ember/10">Invite Subs</button>
+                    </Tooltip>
+                    <Tooltip text="Permanently remove this job. This can't be undone.">
+                      <button onClick={handleDelete} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
+                    </Tooltip>
                   </>
                 )}
                 {(project.status === 'accepted' || project.status === 'in_progress') && (
                   <>
-                    <button onClick={handleMarkCompleted} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
-                      {isPending ? 'Processing...' : 'Mark Completed'}
-                    </button>
-                    <button onClick={handleMarkPaid} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
-                      {isPending ? 'Processing...' : 'Mark Paid'}
-                    </button>
-                    <button onClick={handleCancel} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                    <Tooltip text="Mark the work done. Moves the job to completed.">
+                      <button onClick={handleMarkCompleted} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
+                        {isPending ? 'Processing...' : 'Mark Completed'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Record that you've paid the sub. They'll be notified.">
+                      <button onClick={handleMarkPaid} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
+                        {isPending ? 'Processing...' : 'Mark Paid'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Cancel this job. Subs will no longer see it.">
+                      <button onClick={handleCancel} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                    </Tooltip>
                   </>
                 )}
                 {project.status === 'pending_completion' && (
                   <>
-                    <button onClick={handleApproveCompletion} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
-                      {isPending ? 'Processing...' : 'Approve Completion'}
-                    </button>
-                    <button onClick={handleMarkPaid} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
-                      {isPending ? 'Processing...' : 'Mark Paid'}
-                    </button>
-                    <button onClick={handleCancel} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                    <Tooltip text="Confirm the sub finished the job and mark it completed.">
+                      <button onClick={handleApproveCompletion} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50">
+                        {isPending ? 'Processing...' : 'Approve Completion'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Record that you've paid the sub. They'll be notified.">
+                      <button onClick={handleMarkPaid} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
+                        {isPending ? 'Processing...' : 'Mark Paid'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Cancel this job. Subs will no longer see it.">
+                      <button onClick={handleCancel} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                    </Tooltip>
                   </>
                 )}
                 {project.status === 'completed' && (
                   <>
-                    <button onClick={handleMarkPaid} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
-                      {isPending ? 'Processing...' : 'Mark Paid'}
-                    </button>
-                    <button onClick={handleCancel} disabled={isPending}
-                      className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                    <Tooltip text="Record that you've paid the sub. They'll be notified.">
+                      <button onClick={handleMarkPaid} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:opacity-50">
+                        {isPending ? 'Processing...' : 'Mark Paid'}
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Cancel this job. Subs will no longer see it.">
+                      <button onClick={handleCancel} disabled={isPending}
+                        className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Cancel</button>
+                    </Tooltip>
                   </>
                 )}
                 {project.status === 'cancelled' && (
@@ -559,16 +582,18 @@ export default function ProjectDetailClient({
                     className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50">Delete</button>
                 )}
                 {canReschedule && (
-                  <button
-                    onClick={() => { setRescheduleError(null); setShowRescheduleModal(true) }}
-                    disabled={isPending}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                    </svg>
-                    Reschedule
-                  </button>
+                  <Tooltip text="Change the start date or time. The assigned sub gets emailed.">
+                    <button
+                      onClick={() => { setRescheduleError(null); setShowRescheduleModal(true) }}
+                      disabled={isPending}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                      </svg>
+                      Reschedule
+                    </button>
+                  </Tooltip>
                 )}
                 <BackupButton projectId={project.id} />
                 {driveConnected && <BackupToDriveButton projectId={project.id} />}
@@ -585,16 +610,18 @@ export default function ProjectDetailClient({
               <p className="text-sm text-gray-500">Adjust scope and pay — every change is logged so there's no confusion.</p>
             </div>
             {canChangeOrder && (
-              <button
-                onClick={() => { setChangeOrderError(null); setShowChangeOrderModal(true) }}
-                disabled={isPending}
-                className="inline-flex items-center gap-1.5 rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Add Change Order
-              </button>
+              <Tooltip text="Adjust the scope and pay after the job is posted. The change is logged.">
+                <button
+                  onClick={() => { setChangeOrderError(null); setShowChangeOrderModal(true) }}
+                  disabled={isPending}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  Add Change Order
+                </button>
+              </Tooltip>
             )}
           </div>
 
@@ -721,20 +748,22 @@ export default function ProjectDetailClient({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Job Documents</h2>
             {attachments.length < 3 && (
-              <label className="inline-flex items-center gap-1.5 text-sm font-medium text-ember hover:text-primary-700 cursor-pointer">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                {attachUploading ? 'Uploading...' : 'Add File'}
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={attachUploading}
-                />
-              </label>
+              <Tooltip text="Attach a PDF, JPG, or PNG (up to 3) the sub can download.">
+                <label className="inline-flex items-center gap-1.5 text-sm font-medium text-ember hover:text-primary-700 cursor-pointer">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  {attachUploading ? 'Uploading...' : 'Add File'}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={attachUploading}
+                  />
+                </label>
+              </Tooltip>
             )}
           </div>
           {attachError && (
@@ -754,19 +783,23 @@ export default function ProjectDetailClient({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleDownloadAttachment(att.id)}
-                      className="text-xs font-medium text-ember hover:text-primary-700"
-                    >
-                      Download
-                    </button>
-                    <button
-                      onClick={() => handleRemoveAttachment(att.id)}
-                      disabled={isPending}
-                      className="text-xs font-medium text-amber-600 hover:text-amber-700"
-                    >
-                      Remove
-                    </button>
+                    <Tooltip text="Open or save this file." position="left">
+                      <button
+                        onClick={() => handleDownloadAttachment(att.id)}
+                        className="text-xs font-medium text-ember hover:text-primary-700"
+                      >
+                        Download
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Delete this file from the job. The sub won't see it anymore." position="left">
+                      <button
+                        onClick={() => handleRemoveAttachment(att.id)}
+                        disabled={isPending}
+                        className="text-xs font-medium text-amber-600 hover:text-amber-700"
+                      >
+                        Remove
+                      </button>
+                    </Tooltip>
                   </div>
                 </li>
               ))}

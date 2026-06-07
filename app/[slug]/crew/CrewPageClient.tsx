@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
+import Tooltip from '@/components/Tooltip'
 import type { CrewMember } from '@/lib/types'
 import { addCrewMember, updateCrewMember, archiveCrewMember, restoreCrewMember } from './actions'
 
@@ -143,13 +144,15 @@ export default function CrewPageClient({ slug, tenantName, subName, members }: P
             />
           </div>
           <div className="mt-3 flex justify-end">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
-            >
-              {isPending ? 'Adding…' : 'Add to crew'}
-            </button>
+            <Tooltip text="Add this worker to your crew so you can clock them in on jobs.">
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
+              >
+                {isPending ? 'Adding…' : 'Add to crew'}
+              </button>
+            </Tooltip>
           </div>
         </form>
 
@@ -214,19 +217,23 @@ export default function CrewPageClient({ slug, tenantName, subName, members }: P
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => startEdit(m)}
-                          className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleArchive(m.id, `${m.first_name} ${m.last_name}`)}
-                          disabled={isPending}
-                          className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-                        >
-                          Archive
-                        </button>
+                        <Tooltip text="Update this crew member's name or phone." position="left">
+                          <button
+                            onClick={() => startEdit(m)}
+                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            Edit
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Remove from clock-in lists. Past hours are kept." position="left">
+                          <button
+                            onClick={() => handleArchive(m.id, `${m.first_name} ${m.last_name}`)}
+                            disabled={isPending}
+                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            Archive
+                          </button>
+                        </Tooltip>
                       </div>
                     </div>
                   )}
@@ -253,13 +260,15 @@ export default function CrewPageClient({ slug, tenantName, subName, members }: P
                     </p>
                     {m.phone && <p className="text-xs text-gray-500">{m.phone}</p>}
                   </div>
-                  <button
-                    onClick={() => handleRestore(m.id)}
-                    disabled={isPending}
-                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-white/80 disabled:opacity-50"
-                  >
-                    Restore
-                  </button>
+                  <Tooltip text="Bring this member back so they show up on clock-in lists again." position="left">
+                    <button
+                      onClick={() => handleRestore(m.id)}
+                      disabled={isPending}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-white/80 disabled:opacity-50"
+                    >
+                      Restore
+                    </button>
+                  </Tooltip>
                 </li>
               ))}
             </ul>
