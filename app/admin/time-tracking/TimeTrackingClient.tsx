@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { formatMinutes, sumDurationMinutes, weekRange } from '@/lib/time-tracking'
 import { subDisplayName } from '@/lib/types'
+import Tooltip from '@/components/Tooltip'
 import { deleteTimeEntry, updateTimeEntry } from './actions'
 
 type Entry = {
@@ -205,58 +206,70 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
           <p className="mt-1 text-sm text-gray-500">{weekLabel} · {timezone}</p>
         </div>
         <div className="mt-4 sm:mt-0 flex items-center gap-2">
-          <button
-            onClick={() => setWeekOffset((n) => n - 1)}
-            className="rounded-md bg-white border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-50"
-            aria-label="Previous week"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-          </button>
-          {weekOffset !== 0 && (
+          <Tooltip text="View the previous week's hours">
             <button
-              onClick={() => setWeekOffset(0)}
-              className="rounded-md bg-white border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              onClick={() => setWeekOffset((n) => n - 1)}
+              className="rounded-md bg-white border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-50"
+              aria-label="Previous week"
             >
-              This week
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
             </button>
+          </Tooltip>
+          {weekOffset !== 0 && (
+            <Tooltip text="Jump back to the current week">
+              <button
+                onClick={() => setWeekOffset(0)}
+                className="rounded-md bg-white border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                This week
+              </button>
+            </Tooltip>
           )}
-          <button
-            onClick={() => setWeekOffset((n) => n + 1)}
-            className="rounded-md bg-white border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-50"
-            aria-label="Next week"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-          </button>
-          <button
-            onClick={exportCsv}
-            className="ml-2 rounded-md bg-forest px-3 py-2 text-sm font-semibold text-white hover:bg-forest-700"
-          >
-            Export CSV
-          </button>
+          <Tooltip text="View the next week's hours">
+            <button
+              onClick={() => setWeekOffset((n) => n + 1)}
+              className="rounded-md bg-white border border-gray-300 p-1.5 text-gray-600 hover:bg-gray-50"
+              aria-label="Next week"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+            </button>
+          </Tooltip>
+          <Tooltip text="Download this week's time entries as a CSV spreadsheet">
+            <button
+              onClick={exportCsv}
+              className="ml-2 rounded-md bg-forest px-3 py-2 text-sm font-semibold text-white hover:bg-forest-700"
+            >
+              Export CSV
+            </button>
+          </Tooltip>
         </div>
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <select
-          value={subFilter}
-          onChange={(e) => setSubFilter(e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-        >
-          <option value="all">All subcontractors</option>
-          {subs.map((s) => (
-            <option key={s.id} value={s.id}>{subDisplayName(s)}</option>
-          ))}
-        </select>
-        <select
-          value={projectFilter}
-          onChange={(e) => setProjectFilter(e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-        >
-          <option value="all">All jobs</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>{p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name}</option>
-          ))}
-        </select>
+        <Tooltip text="Show hours for just one subcontractor">
+          <select
+            value={subFilter}
+            onChange={(e) => setSubFilter(e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="all">All subcontractors</option>
+            {subs.map((s) => (
+              <option key={s.id} value={s.id}>{subDisplayName(s)}</option>
+            ))}
+          </select>
+        </Tooltip>
+        <Tooltip text="Show hours for just one job">
+          <select
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="all">All jobs</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name}</option>
+            ))}
+          </select>
+        </Tooltip>
         <span className="text-xs text-gray-500">{groups.length} group{groups.length === 1 ? '' : 's'}</span>
       </div>
 
@@ -287,7 +300,11 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
                       <td className="px-4 py-3 text-sm text-gray-900">{subMap.get(g.subId) ?? '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{projectMap.get(g.projectId) ?? '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{weekLabel}</td>
-                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right tabular-nums">{formatMinutes(g.totalMinutes)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right tabular-nums">
+                        <Tooltip text="Total hours logged this week for this subcontractor on this job">
+                          <span>{formatMinutes(g.totalMinutes)}</span>
+                        </Tooltip>
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-700 text-center">{g.entries.length}</td>
                       <td className="px-4 py-3 text-right">
                         <button

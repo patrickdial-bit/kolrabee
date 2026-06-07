@@ -6,6 +6,7 @@ import type { Tenant } from '@/lib/types'
 import { isTenantActive } from '@/lib/types'
 import { PLANS, ALL_PLANS } from '@/lib/plans'
 import type { PlanId } from '@/lib/plans'
+import Tooltip from '@/components/Tooltip'
 import { updateNotificationEmail } from './actions'
 
 interface Props {
@@ -131,30 +132,36 @@ export default function BillingClient({ tenant }: Props) {
             </div>
           </div>
           {hasSubscription && (
-            <button
-              onClick={handleManageBilling}
-              disabled={loading === 'portal'}
-              className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-            >
-              {loading === 'portal' ? 'Loading...' : 'Manage Billing'}
-            </button>
+            <Tooltip text="Open the secure Stripe portal to update your card, view invoices, or cancel" position="left">
+              <button
+                onClick={handleManageBilling}
+                disabled={loading === 'portal'}
+                className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                {loading === 'portal' ? 'Loading...' : 'Manage Billing'}
+              </button>
+            </Tooltip>
           )}
         </div>
 
         {/* Usage Info */}
         <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="rounded-md bg-gray-50 p-3">
-            <p className="text-xs text-gray-500">Project Limit</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {tenant.max_projects < 0 || tenant.max_projects >= 999999 ? 'Unlimited' : `${tenant.max_projects} projects`}
-            </p>
-          </div>
-          <div className="rounded-md bg-gray-50 p-3">
-            <p className="text-xs text-gray-500">Subcontractor Limit</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {tenant.max_subcontractors < 0 || tenant.max_subcontractors >= 999999 ? 'Unlimited' : `${tenant.max_subcontractors} subcontractors`}
-            </p>
-          </div>
+          <Tooltip text="The most active projects your current plan allows — upgrade to raise this">
+            <div className="block w-full rounded-md bg-gray-50 p-3">
+              <p className="text-xs text-gray-500">Project Limit</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {tenant.max_projects < 0 || tenant.max_projects >= 999999 ? 'Unlimited' : `${tenant.max_projects} projects`}
+              </p>
+            </div>
+          </Tooltip>
+          <Tooltip text="The most subcontractors your current plan allows — upgrade to raise this">
+            <div className="block w-full rounded-md bg-gray-50 p-3">
+              <p className="text-xs text-gray-500">Subcontractor Limit</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {tenant.max_subcontractors < 0 || tenant.max_subcontractors >= 999999 ? 'Unlimited' : `${tenant.max_subcontractors} subcontractors`}
+              </p>
+            </div>
+          </Tooltip>
         </div>
 
         {/* Trial Warning */}
@@ -276,13 +283,15 @@ export default function BillingClient({ tenant }: Props) {
               Current Plan
             </button>
           ) : hasSubscription ? (
-            <button
-              onClick={handleCancelSubscription}
-              disabled={loading === 'cancel'}
-              className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              {loading === 'cancel' ? 'Processing...' : 'Downgrade to Free'}
-            </button>
+            <Tooltip text="Cancel your paid plan — you keep access until the end of the current billing period">
+              <button
+                onClick={handleCancelSubscription}
+                disabled={loading === 'cancel'}
+                className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {loading === 'cancel' ? 'Processing...' : 'Downgrade to Free'}
+              </button>
+            </Tooltip>
           ) : (
             <button
               disabled
@@ -342,13 +351,15 @@ export default function BillingClient({ tenant }: Props) {
                   Current Plan
                 </button>
               ) : isUpgrade ? (
-                <button
-                  onClick={() => handleCheckout(planId)}
-                  disabled={loading !== null}
-                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50" style={{ backgroundColor: '#00A896' }}
-                >
-                  {loading === planId ? 'Redirecting...' : 'Upgrade to Operator'}
-                </button>
+                <Tooltip text="Move up to Operator and unlock its higher limits and features (secure Stripe checkout)">
+                  <button
+                    onClick={() => handleCheckout(planId)}
+                    disabled={loading !== null}
+                    className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50" style={{ backgroundColor: '#00A896' }}
+                  >
+                    {loading === planId ? 'Redirecting...' : 'Upgrade to Operator'}
+                  </button>
+                </Tooltip>
               ) : isDowngrade ? (
                 <button
                   onClick={() => handleCheckout(planId)}
@@ -358,13 +369,15 @@ export default function BillingClient({ tenant }: Props) {
                   {loading === planId ? 'Redirecting...' : 'Downgrade to Growth'}
                 </button>
               ) : (
-                <button
-                  onClick={() => handleCheckout(planId)}
-                  disabled={loading !== null}
-                  className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50" style={{ backgroundColor: '#00A896' }}
-                >
-                  {loading === planId ? 'Redirecting...' : `Upgrade to ${plan.name}`}
-                </button>
+                <Tooltip text={`Subscribe to ${plan.name} for $${plan.price}/month via secure Stripe checkout`}>
+                  <button
+                    onClick={() => handleCheckout(planId)}
+                    disabled={loading !== null}
+                    className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50" style={{ backgroundColor: '#00A896' }}
+                  >
+                    {loading === planId ? 'Redirecting...' : `Upgrade to ${plan.name}`}
+                  </button>
+                </Tooltip>
               )}
             </div>
           )
