@@ -100,7 +100,10 @@ export default async function AdminDashboardPage() {
   const completionRate = startedCount > 0 ? Math.round((stageAcc.paid.count / startedCount) * 100) : 0
 
   // --- Recent projects (newest first) --------------------------------------
+  // Exclude CompanyCam 'imported' projects — they're documentation-only and
+  // kept out of the dispatch pipeline, so they shouldn't flood the dashboard.
   const recentProjects: RecentProject[] = [...projects]
+    .filter((p) => (p.status as string) !== 'imported')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 6)
     .map((p) => ({
