@@ -277,7 +277,7 @@ export default function AdminDashboardClient({
             ) : (
               <ul className="divide-y divide-gray-100">
                 {recentProjects.map((p) => {
-                  const badge = STATUS_BADGE[p.status]
+                  const badge = STATUS_BADGE[p.status] ?? { label: p.status, className: 'bg-gray-100 text-gray-500' }
                   return (
                     <li key={p.id}>
                       <Link href={`/admin/projects/${p.id}`} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors">
