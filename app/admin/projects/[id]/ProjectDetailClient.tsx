@@ -16,6 +16,7 @@ import InviteSubsModal from './InviteSubsModal'
 import StarRating from '@/components/StarRating'
 import DatePicker from '@/components/DatePicker'
 import ProjectPhotos from '@/components/ProjectPhotos'
+import BackupButton from '@/components/BackupButton'
 import type { SubRating, ProjectAttachment, PhotoWithUrl } from '@/lib/types'
 
 interface InvitationWithName {
@@ -566,6 +567,7 @@ export default function ProjectDetailClient({
                     Reschedule
                   </button>
                 )}
+                <BackupButton projectId={project.id} />
               </div>
             </>
           )}
