@@ -3,6 +3,7 @@
 import { useTransition, useState } from 'react'
 import Link from 'next/link'
 import { createProject } from './actions'
+import Tooltip from '@/components/Tooltip'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import DatePicker from '@/components/DatePicker'
 
@@ -188,7 +189,9 @@ export default function NewProjectForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label htmlFor="payout_amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Project Payout ($ Amount) <span className="text-amber-500">*</span>
+                <Tooltip text="What you'll pay the sub for this job. They see this on the invite." position="right">
+                  <span>Project Payout ($ Amount) <span className="text-amber-500">*</span></span>
+                </Tooltip>
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
@@ -210,7 +213,9 @@ export default function NewProjectForm() {
 
           <div>
             <label htmlFor="work_order_link" className="block text-sm font-medium text-gray-700 mb-1">
-              Work Order Link
+              <Tooltip text="Paste any link to the work order — CRM, Slack, or Docs. The sub can open it." position="right">
+                <span>Work Order Link</span>
+              </Tooltip>
             </label>
             <input type="text" id="work_order_link" name="work_order_link"
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
@@ -219,7 +224,9 @@ export default function NewProjectForm() {
 
           <div>
             <label htmlFor="companycam_link" className="block text-sm font-medium text-gray-700 mb-1">
-              Photo Repository Link
+              <Tooltip text="Link to job photos — Google Drive, Dropbox, CompanyCam, or similar." position="right">
+                <span>Photo Repository Link</span>
+              </Tooltip>
             </label>
             <input type="text" id="companycam_link" name="companycam_link"
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
@@ -237,7 +244,9 @@ export default function NewProjectForm() {
 
           <div>
             <label htmlFor="admin_notes" className="block text-sm font-medium text-gray-700 mb-1">
-              Admin Notes (Internal)
+              <Tooltip text="Private notes only your team sees — the sub never sees these." position="right">
+                <span>Admin Notes (Internal)</span>
+              </Tooltip>
             </label>
             <textarea id="admin_notes" name="admin_notes" rows={3}
               className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
@@ -280,10 +289,12 @@ export default function NewProjectForm() {
           </div>
 
           <div className="flex items-center gap-3 pt-2">
-            <button type="submit" disabled={isPending}
-              className="inline-flex items-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
-              {isPending ? 'Creating...' : 'Create Project'}
-            </button>
+            <Tooltip text="Save this job so you can invite subs to accept it.">
+              <button type="submit" disabled={isPending}
+                className="inline-flex items-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors">
+                {isPending ? 'Creating...' : 'Create Project'}
+              </button>
+            </Tooltip>
             <Link href="/admin/dashboard"
               className="inline-flex items-center rounded-md px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
               Cancel
