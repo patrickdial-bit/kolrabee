@@ -485,6 +485,69 @@ export async function sendScheduleChangedEmail(params: {
   }
 }
 
+/** Email: Admin added a change order — notify the assigned subcontractor */
+export async function sendChangeOrderEmail(params: {
+  to: string
+  subName: string
+  tenantName: string
+  notificationEmail: string | null
+  jobNumber: string | null
+  customerName: string
+  amount: number
+  description: string
+  previousPayout: number
+  newPayout: number
+  projectUrl: string
+}) {
+  const {
+    to,
+    subName,
+    tenantName,
+    notificationEmail,
+    jobNumber,
+    customerName,
+    amount,
+    description,
+    previousPayout,
+    newPayout,
+    projectUrl,
+  } = params
+  const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
+  const isIncrease = amount >= 0
+  const signed = `${isIncrease ? '+' : '−'}${formatCurrency(Math.abs(amount))}`
+  const accent = isIncrease ? '#16a34a' : '#d97706'
+
+  try {
+    await resend.emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `Scope & pay update: ${jobLabel}${customerName} (${signed})`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+            <p style="color: #1e40af; margin: 0; font-weight: 600;">📝 Change Order</p>
+          </div>
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">The scope &amp; pay on your job changed</h2>
+          <p style="color: #666; margin-top: 0;">Hi ${subName}, <strong>${tenantName}</strong> added a change order to <strong>${jobLabel}${customerName}</strong>.</p>
+          <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="color: #374151; margin: 0; white-space: pre-wrap;">${description}</p>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr><td style="padding: 8px 0; color: #666; width: 160px;">Adjustment</td><td style="padding: 8px 0; font-weight: 700; color: ${accent};">${signed}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Previous payout</td><td style="padding: 8px 0; color: #374151;">${formatCurrency(previousPayout)}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">New total payout</td><td style="padding: 8px 0; font-weight: 700; color: #16a34a;">${formatCurrency(newPayout)}</td></tr>
+          </table>
+          <a href="${projectUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View Project</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">If anything about this change looks off, contact ${tenantName} before continuing the work.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send change order email:', err)
+  }
+}
+
 /** Email 9: Sub updated project status (in_progress / completed) — notify admin with link */
 export async function sendStatusUpdateEmail(params: StatusUpdateEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, newStatus, projectUrl } = params

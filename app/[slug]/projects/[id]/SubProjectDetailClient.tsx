@@ -10,7 +10,7 @@ import { extractCity, formatCurrency, formatDate, formatDateTime } from '@/lib/u
 import type { Project, ProjectInvitation } from '@/lib/types'
 import { acceptProject, acknowledgeScheduleChange, cancelAcceptedProject, declineProject, markInProgress, requestCompletion, markCompleted } from './actions'
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
-import type { ProjectAttachment } from '@/lib/types'
+import type { ProjectAttachment, ChangeOrder } from '@/lib/types'
 import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
 import ProjectPhotos from '@/components/ProjectPhotos'
 import type { PhotoWithUrl } from '@/lib/types'
@@ -33,6 +33,7 @@ interface SubProjectDetailClientProps {
   isAcceptedByMe: boolean
   attachments: ProjectAttachment[]
   messages: MessageWithSender[]
+  changeOrders: ChangeOrder[]
   currentUserId: string
   tenantId: string
   photos: PhotoWithUrl[]
@@ -82,6 +83,7 @@ export default function SubProjectDetailClient({
   isAcceptedByMe,
   attachments,
   messages,
+  changeOrders,
   currentUserId,
   tenantId,
   photos,
@@ -412,6 +414,31 @@ export default function SubProjectDetailClient({
                     >
                       Download
                     </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Change orders — transparent scope & pay history */}
+          {isAcceptedByMe && changeOrders.length > 0 && (
+            <div className="border-t border-gray-200 px-6 py-5">
+              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Scope &amp; pay changes</dt>
+              <p className="text-xs text-gray-500 mb-3">
+                Your payout of <span className="font-semibold text-gray-700">{formatCurrency(project.payout_amount)}</span> includes the changes below.
+              </p>
+              <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                {changeOrders.map((co) => (
+                  <li key={co.id} className="flex items-start justify-between gap-3 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-900 whitespace-pre-wrap">{co.description}</p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {formatDate(co.created_at)} · new total {formatCurrency(co.new_payout)}
+                      </p>
+                    </div>
+                    <span className={`flex-shrink-0 text-sm font-semibold ${co.amount >= 0 ? 'text-emerald-600' : 'text-amber-700'}`}>
+                      {co.amount >= 0 ? '+' : '−'}{formatCurrency(Math.abs(co.amount))}
+                    </span>
                   </li>
                 ))}
               </ul>

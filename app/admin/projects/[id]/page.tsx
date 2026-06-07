@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SubRating, ProjectAttachment, JobMessage } from '@/lib/types'
+import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder } from '@/lib/types'
 import { subDisplayName } from '@/lib/types'
 import { getProjectPhotos } from '@/lib/photo-actions'
 import ProjectDetailClient from './ProjectDetailClient'
@@ -78,6 +78,27 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     sender_name: m.sender ? `${m.sender.first_name} ${m.sender.last_name}` : 'Unknown',
   }))
 
+  // Change orders — scope/pay adjustment history, newest first.
+  const { data: changeOrdersData } = await adminClient
+    .from('change_orders')
+    .select('*, creator:users!change_orders_created_by_fkey(first_name, last_name)')
+    .eq('project_id', project.id)
+    .eq('tenant_id', tenant.id)
+    .order('created_at', { ascending: false })
+
+  const changeOrders = (changeOrdersData ?? []).map((c: any) => ({
+    id: c.id,
+    tenant_id: c.tenant_id,
+    project_id: c.project_id,
+    amount: Number(c.amount),
+    description: c.description,
+    previous_payout: Number(c.previous_payout),
+    new_payout: Number(c.new_payout),
+    created_by: c.created_by,
+    created_at: c.created_at,
+    created_by_name: c.creator ? `${c.creator.first_name} ${c.creator.last_name}` : 'Admin',
+  }))
+
   // Jobsite photos with signed thumbnail URLs for the gallery.
   const photos = await getProjectPhotos(project.id)
 
@@ -105,6 +126,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       existingRating={ratingData as SubRating | null}
       attachments={(attachmentsData ?? []) as ProjectAttachment[]}
       messages={messages}
+      changeOrders={changeOrders}
       currentUserId={appUser.id}
       photos={photos}
     />
