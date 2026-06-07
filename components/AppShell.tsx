@@ -73,6 +73,7 @@ export default function AppShell(props: AppShellProps) {
       {
         items: [
           { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', active: pathname.startsWith('/admin/dashboard') },
+          { href: '/admin/projects', label: 'Projects', icon: 'projects', active: pathname.startsWith('/admin/projects') },
           { href: '/admin/subcontractors', label: 'Subcontractors', icon: 'subcontractors', active: pathname.startsWith('/admin/subcontractors') },
           { href: '/admin/team', label: 'Team', icon: 'team', active: pathname.startsWith('/admin/team') },
           { href: '/admin/time-tracking', label: 'Time Tracking', icon: 'time', active: pathname.startsWith('/admin/time-tracking') },
@@ -106,7 +107,9 @@ export default function AppShell(props: AppShellProps) {
                 ? 'admin-billing'
                 : pathname.includes('/projects/new')
                   ? 'admin-project-new'
-                  : 'admin-dashboard'
+                  : pathname.startsWith('/admin/projects')
+                    ? 'admin-projects'
+                    : 'admin-dashboard'
             resetTour(current)
             window.location.reload()
           }}
