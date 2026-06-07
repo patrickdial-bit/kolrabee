@@ -137,6 +137,69 @@ export async function ensureFolder(
   return { id: created.id, webViewLink: created.webViewLink ?? null }
 }
 
+// List the names of all (non-trashed) files directly inside a folder. Used to
+// skip files that were already uploaded (dedupe). Paginates fully.
+export async function listFileNames(accessToken: string, folderId: string): Promise<Set<string>> {
+  const names = new Set<string>()
+  let pageToken: string | undefined
+  do {
+    const search = new URLSearchParams({
+      q: `'${folderId.replace(/'/g, "\\'")}' in parents and trashed=false`,
+      fields: 'nextPageToken,files(name)',
+      spaces: 'drive',
+      pageSize: '1000',
+    })
+    if (pageToken) search.set('pageToken', pageToken)
+    const res = await fetch(`${DRIVE_FILES}?${search.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!res.ok) break // best-effort: on error, treat as empty (may re-upload)
+    const data = (await res.json()) as { nextPageToken?: string; files?: { name: string }[] }
+    for (const f of data.files ?? []) names.add(f.name)
+    pageToken = data.nextPageToken
+  } while (pageToken)
+  return names
+}
+
+// Find a file id by exact name within a folder, or null. Used to overwrite the
+// README in place rather than creating duplicates.
+export async function findFileIdByName(
+  accessToken: string,
+  folderId: string,
+  name: string,
+): Promise<string | null> {
+  const search = new URLSearchParams({
+    q: `name='${name.replace(/'/g, "\\'")}' and '${folderId.replace(/'/g, "\\'")}' in parents and trashed=false`,
+    fields: 'files(id)',
+    spaces: 'drive',
+    pageSize: '1',
+  })
+  const res = await fetch(`${DRIVE_FILES}?${search.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) return null
+  const data = (await res.json()) as { files?: { id: string }[] }
+  return data.files?.[0]?.id ?? null
+}
+
+// Replace the contents of an existing file (media upload). Used for the README.
+export async function updateFileContent(
+  accessToken: string,
+  fileId: string,
+  bytes: Uint8Array,
+  mimeType: string,
+): Promise<void> {
+  // Copy into a fresh ArrayBuffer-backed view so the body type is unambiguous.
+  const body = new Uint8Array(bytes.byteLength)
+  body.set(bytes)
+  const res = await fetch(`${DRIVE_UPLOAD}/${fileId}?uploadType=media&fields=id`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': mimeType },
+    body,
+  })
+  if (!res.ok) throw new Error(`Update failed for file ${fileId} (${res.status})`)
+}
+
 // Multipart upload of a single file into a folder. Returns the new file id.
 export async function uploadFile(
   accessToken: string,

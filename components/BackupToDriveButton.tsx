@@ -21,10 +21,16 @@ export default function BackupToDriveButton({ projectId }: { projectId: string }
         toast.error(res.error)
         return
       }
-      const failed = res?.failed ?? 0
       const ok = res?.ok ?? 0
-      if (failed > 0) toast.warning(`Backed up ${ok} file${ok === 1 ? '' : 's'} to Drive, ${failed} failed.`)
-      else toast.success(`Backed up ${ok} file${ok === 1 ? '' : 's'} to Google Drive.`)
+      const skipped = res?.skipped ?? 0
+      const failed = res?.failed ?? 0
+      const parts = [`${ok} backed up`]
+      if (skipped > 0) parts.push(`${skipped} already there`)
+      if (failed > 0) parts.push(`${failed} failed`)
+      const summary = parts.join(', ')
+      if (failed > 0) toast.warning(`Drive backup: ${summary}.`)
+      else if (ok === 0 && skipped > 0) toast.success(`Already up to date — ${skipped} file${skipped === 1 ? '' : 's'} in Drive.`)
+      else toast.success(`Drive backup: ${summary}.`)
       router.refresh()
     })
   }
