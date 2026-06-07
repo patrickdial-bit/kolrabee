@@ -43,6 +43,7 @@ const STATUS_BADGE: Record<Project['status'], { label: string; className: string
   completed: { label: 'Completed', className: 'bg-indigo-100 text-indigo-700' },
   paid: { label: 'Paid', className: 'bg-primary-100 text-primary-700' },
   cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-500' },
+  imported: { label: 'Imported', className: 'bg-gray-100 text-gray-500' },
 }
 
 export default function AdminDashboardClient({
