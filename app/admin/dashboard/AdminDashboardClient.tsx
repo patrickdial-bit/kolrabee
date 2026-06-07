@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
+import Tooltip from '@/components/Tooltip'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Project } from '@/lib/types'
@@ -160,15 +161,17 @@ export default function AdminDashboardClient({
             >
               View Projects
             </Link>
-            <Link
-              href="/admin/projects/new"
-              className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Add Project
-            </Link>
+            <Tooltip text="Post a new job for your subcontractors to accept">
+              <Link
+                href="/admin/projects/new"
+                className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Project
+              </Link>
+            </Tooltip>
           </div>
         </div>
 
@@ -194,6 +197,7 @@ export default function AdminDashboardClient({
             label="Pipeline Value"
             value={formatCurrency(pipelineValue)}
             sub={`${pipelineCount} open project${pipelineCount === 1 ? '' : 's'}`}
+            tip="Total payout value of all available and in-progress jobs — money still in motion."
             icon={
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
             }
@@ -203,6 +207,7 @@ export default function AdminDashboardClient({
             label="Revenue This Month"
             value={formatCurrency(paidThisMonth)}
             sub={`${paid.count} job${paid.count === 1 ? '' : 's'} paid all-time`}
+            tip="Total you've paid out to subcontractors so far this calendar month."
             icon={
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             }
@@ -212,6 +217,7 @@ export default function AdminDashboardClient({
             label="Active Jobs"
             value={String(active.count)}
             sub={`${completed.count} awaiting payment`}
+            tip="Jobs a subcontractor has accepted or is actively working on right now."
             icon={
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
             }
@@ -221,6 +227,7 @@ export default function AdminDashboardClient({
             label="Subcontractors"
             value={unlimited(maxSubcontractors) ? String(subCount) : `${subCount}/${maxSubcontractors}`}
             sub={`${completionRate}% completion rate`}
+            tip="Active subcontractors on your account, against your plan's limit. Completion rate is jobs finished vs. accepted."
             icon={
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
             }
@@ -381,15 +388,16 @@ export default function AdminDashboardClient({
   )
 }
 
-function KpiCard({ label, value, sub, icon, accent }: {
+function KpiCard({ label, value, sub, icon, accent, tip }: {
   label: string
   value: string
   sub: string
   icon: React.ReactNode
   accent: string
+  tip?: string
 }) {
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+  const card = (
+    <div className="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</p>
         <svg className={`h-5 w-5 ${accent}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.6" stroke="currentColor" aria-hidden="true">
@@ -399,6 +407,12 @@ function KpiCard({ label, value, sub, icon, accent }: {
       <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
       <p className="mt-0.5 text-xs text-gray-400">{sub}</p>
     </div>
+  )
+  if (!tip) return card
+  return (
+    <Tooltip text={tip} position="bottom">
+      <div className="block w-full">{card}</div>
+    </Tooltip>
   )
 }
 
