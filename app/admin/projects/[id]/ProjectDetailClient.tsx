@@ -17,6 +17,7 @@ import StarRating from '@/components/StarRating'
 import DatePicker from '@/components/DatePicker'
 import ProjectPhotos from '@/components/ProjectPhotos'
 import BackupButton from '@/components/BackupButton'
+import BackupToDriveButton from '@/components/BackupToDriveButton'
 import type { SubRating, ProjectAttachment, PhotoWithUrl } from '@/lib/types'
 
 interface InvitationWithName {
@@ -64,6 +65,7 @@ interface ProjectDetailClientProps {
   changeOrders: ChangeOrderWithName[]
   currentUserId: string
   photos: PhotoWithUrl[]
+  driveConnected: boolean
 }
 
 const statusColors: Record<string, string> = {
@@ -95,6 +97,7 @@ export default function ProjectDetailClient({
   changeOrders,
   currentUserId,
   photos,
+  driveConnected,
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -568,6 +571,7 @@ export default function ProjectDetailClient({
                   </button>
                 )}
                 <BackupButton projectId={project.id} />
+                {driveConnected && <BackupToDriveButton projectId={project.id} />}
               </div>
             </>
           )}
