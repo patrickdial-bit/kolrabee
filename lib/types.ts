@@ -270,6 +270,48 @@ export type JobMessage = {
   created_at: string
 }
 
+// ---------------------------------------------------------------------------
+// Knowledge base — platform help center (global, authored by super admin).
+// ---------------------------------------------------------------------------
+export type KbCategory = {
+  id: string
+  slug: string
+  name: string
+  description: string | null
+  position: number
+  created_at: string
+}
+
+export type KbArticle = {
+  id: string
+  category_id: string | null
+  slug: string
+  title: string
+  excerpt: string | null
+  body: string
+  status: 'draft' | 'published'
+  position: number
+  created_at: string
+  updated_at: string
+}
+
+// A category with its published articles, for the Help Center browse view.
+export type CategoryWithArticles = KbCategory & {
+  articles: Pick<KbArticle, 'id' | 'slug' | 'title' | 'excerpt' | 'position'>[]
+}
+
+// A ranked search hit with a highlighted snippet. `headline` uses «/» markers
+// around matched terms (the UI escapes the text, then swaps in <mark>).
+export type KbSearchResult = {
+  id: string
+  slug: string
+  title: string
+  category_name: string | null
+  category_slug: string | null
+  headline: string
+  rank: number
+}
+
 // Check if a tenant has Growth+ features (messaging, ratings, completion approval)
 export function hasGrowthFeatures(tenant: Tenant): boolean {
   return tenant.plan === 'growth' || tenant.plan === 'operator'
