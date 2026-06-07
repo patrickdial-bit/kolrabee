@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
 import type { IntegrationStatus } from '@/lib/integrations/backup'
-import { disconnectGoogleDrive, updateAutoCreateFolders } from './actions'
+import { disconnectGoogleDrive, updateAutoCreateFolders, updateAutoBackup } from './actions'
 
 const ERROR_MESSAGES: Record<string, string> = {
   not_configured: 'Google Drive backup isn’t configured on the server yet (missing credentials).',
@@ -29,6 +29,7 @@ export default function BackupSettingsClient({
   const params = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [autoCreate, setAutoCreate] = useState(status.autoCreateFolders)
+  const [autoBackup, setAutoBackupState] = useState(status.autoBackup)
 
   // Surface the OAuth round-trip result once, then clean the URL.
   useEffect(() => {
@@ -56,6 +57,13 @@ export default function BackupSettingsClient({
     setAutoCreate(next)
     startTransition(async () => {
       await updateAutoCreateFolders(next)
+    })
+  }
+
+  const handleToggleAutoBackup = (next: boolean) => {
+    setAutoBackupState(next)
+    startTransition(async () => {
+      await updateAutoBackup(next)
     })
   }
 
@@ -134,6 +142,16 @@ export default function BackupSettingsClient({
                     className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
                   />
                   Auto-create a Drive folder when a new project is added
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={autoBackup}
+                    onChange={(e) => handleToggleAutoBackup(e.target.checked)}
+                    disabled={isPending}
+                    className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
+                  />
+                  Nightly auto-backup of jobs with new photos or documents
                 </label>
               </>
             ) : (

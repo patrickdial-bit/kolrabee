@@ -18,6 +18,7 @@ export type IntegrationStatus = {
   accountEmail: string | null
   rootFolderName: string | null
   autoCreateFolders: boolean
+  autoBackup: boolean
 }
 
 // Whether Google Drive backup can be offered at all (server env present).
@@ -33,11 +34,12 @@ export async function getIntegrationStatus(tenantId: string): Promise<Integratio
     accountEmail: null,
     rootFolderName: null,
     autoCreateFolders: true,
+    autoBackup: true,
   }
   const adminClient = createAdminClient()
   const { data } = await adminClient
     .from('tenant_integrations')
-    .select('provider, status, account_email, root_folder_name, auto_create_folders')
+    .select('provider, status, account_email, root_folder_name, auto_create_folders, auto_backup')
     .eq('tenant_id', tenantId)
     .eq('provider', 'google_drive')
     .maybeSingle()
@@ -49,6 +51,7 @@ export async function getIntegrationStatus(tenantId: string): Promise<Integratio
     accountEmail: data.account_email ?? null,
     rootFolderName: data.root_folder_name ?? null,
     autoCreateFolders: data.auto_create_folders ?? true,
+    autoBackup: data.auto_backup ?? true,
   }
 }
 
@@ -97,6 +100,15 @@ export async function setAutoCreateFolders(tenantId: string, enabled: boolean): 
   await adminClient
     .from('tenant_integrations')
     .update({ auto_create_folders: enabled, updated_at: new Date().toISOString() })
+    .eq('tenant_id', tenantId)
+    .eq('provider', 'google_drive')
+}
+
+export async function setAutoBackup(tenantId: string, enabled: boolean): Promise<void> {
+  const adminClient = createAdminClient()
+  await adminClient
+    .from('tenant_integrations')
+    .update({ auto_backup: enabled, updated_at: new Date().toISOString() })
     .eq('tenant_id', tenantId)
     .eq('provider', 'google_drive')
 }
@@ -181,14 +193,14 @@ function mimeFromName(name: string): string {
   return map[ext] ?? 'application/octet-stream'
 }
 
-export type BackupResult = { ok: number; failed: number; folderUrl: string | null; error?: string }
+export type BackupResult = { ok: number; skipped: number; failed: number; folderUrl: string | null; error?: string }
 
 // Push a job's photos + documents into its drive folder (photos/ + documents/
 // subfolders), mirroring the local ZIP layout. Reuses getProjectBackup so the
 // signed-URL assembly + manifest live in one place.
 export async function backupProjectToDrive(tenantId: string, projectId: string): Promise<BackupResult> {
   const session = await getDriveSession(tenantId)
-  if (!session) return { ok: 0, failed: 0, folderUrl: null, error: 'Google Drive is not connected.' }
+  if (!session) return { ok: 0, skipped: 0, failed: 0, folderUrl: null, error: 'Google Drive is not connected.' }
 
   const adminClient = createAdminClient()
   const { data: project } = await adminClient
@@ -197,10 +209,10 @@ export async function backupProjectToDrive(tenantId: string, projectId: string):
     .eq('id', projectId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
-  if (!project) return { ok: 0, failed: 0, folderUrl: null, error: 'Project not found.' }
+  if (!project) return { ok: 0, skipped: 0, failed: 0, folderUrl: null, error: 'Project not found.' }
 
   const backup = await getProjectBackup(projectId)
-  if (!backup) return { ok: 0, failed: 0, folderUrl: null, error: 'Could not prepare backup.' }
+  if (!backup) return { ok: 0, skipped: 0, failed: 0, folderUrl: null, error: 'Could not prepare backup.' }
 
   try {
     // Job folder (reuse cached id if present).
@@ -221,6 +233,7 @@ export async function backupProjectToDrive(tenantId: string, projectId: string):
     const docsFolder = await gdrive.ensureFolder(session.accessToken, 'documents', jobFolderId)
 
     let ok = 0
+    let skipped = 0
     let failed = 0
 
     const groups: { folderId: string; files: { url: string; filename: string }[] }[] = [
@@ -228,7 +241,15 @@ export async function backupProjectToDrive(tenantId: string, projectId: string):
       { folderId: docsFolder.id, files: backup.documents },
     ]
     for (const group of groups) {
+      if (group.files.length === 0) continue
+      // List the folder once and skip files already uploaded (dedupe). On a
+      // listing error we get an empty set and fall back to re-uploading.
+      const existing = await gdrive.listFileNames(session.accessToken, group.folderId)
       for (const f of group.files) {
+        if (existing.has(f.filename)) {
+          skipped++
+          continue
+        }
         try {
           const res = await fetch(f.url)
           if (!res.ok) throw new Error(String(res.status))
@@ -241,15 +262,15 @@ export async function backupProjectToDrive(tenantId: string, projectId: string):
       }
     }
 
-    // README manifest at the job folder root.
+    // README manifest at the job folder root — overwrite in place, never dupe.
     try {
-      await gdrive.uploadFile(
-        session.accessToken,
-        jobFolderId,
-        'README.txt',
-        new TextEncoder().encode(backup.manifest),
-        'text/plain',
-      )
+      const manifestBytes = new TextEncoder().encode(backup.manifest)
+      const existingReadme = await gdrive.findFileIdByName(session.accessToken, jobFolderId, 'README.txt')
+      if (existingReadme) {
+        await gdrive.updateFileContent(session.accessToken, existingReadme, manifestBytes, 'text/plain')
+      } else {
+        await gdrive.uploadFile(session.accessToken, jobFolderId, 'README.txt', manifestBytes, 'text/plain')
+      }
     } catch {
       /* manifest is best-effort */
     }
@@ -260,8 +281,57 @@ export async function backupProjectToDrive(tenantId: string, projectId: string):
       .eq('id', projectId)
       .eq('tenant_id', tenantId)
 
-    return { ok, failed, folderUrl }
+    return { ok, skipped, failed, folderUrl }
   } catch (err) {
-    return { ok: 0, failed: 0, folderUrl: null, error: `Backup failed: ${String(err).slice(0, 200)}` }
+    return { ok: 0, skipped: 0, failed: 0, folderUrl: null, error: `Backup failed: ${String(err).slice(0, 200)}` }
   }
+}
+
+export type ScheduledBackupSummary = {
+  jobs: number
+  ok: number
+  skipped: number
+  failed: number
+  errors: number
+}
+
+// Cron entry point: back up the N jobs (across all connected, auto-backup
+// tenants) with the oldest backups that have new files. Each job goes through
+// backupProjectToDrive (which only uploads new files), so incremental nightly
+// runs are cheap. Failures are recorded per tenant but never abort the run.
+export async function runScheduledBackups(limit = 10): Promise<ScheduledBackupSummary> {
+  const summary: ScheduledBackupSummary = { jobs: 0, ok: 0, skipped: 0, failed: 0, errors: 0 }
+  if (!googleConfigured()) return summary
+
+  const adminClient = createAdminClient()
+  const { data: candidates, error } = await adminClient.rpc('projects_needing_backup', { p_limit: limit })
+  if (error || !candidates) return summary
+
+  for (const row of candidates as { project_id: string; tenant_id: string }[]) {
+    summary.jobs++
+    try {
+      const result = await backupProjectToDrive(row.tenant_id, row.project_id)
+      if (result.error) {
+        summary.errors++
+        await adminClient
+          .from('tenant_integrations')
+          .update({ last_error: result.error.slice(0, 500), updated_at: new Date().toISOString() })
+          .eq('tenant_id', row.tenant_id)
+          .eq('provider', 'google_drive')
+      } else {
+        summary.ok += result.ok
+        summary.skipped += result.skipped
+        summary.failed += result.failed
+      }
+    } catch (err) {
+      summary.errors++
+      await adminClient
+        .from('tenant_integrations')
+        .update({ last_error: String(err).slice(0, 500), updated_at: new Date().toISOString() })
+        .eq('tenant_id', row.tenant_id)
+        .eq('provider', 'google_drive')
+    }
+  }
+
+  return summary
 }
