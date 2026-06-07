@@ -4,9 +4,12 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import KolrabeeLogo from '@/components/KolrabeeLogo'
 import SideNav, { type SideNavGroup } from '@/components/SideNav'
-import { useTooltips } from '@/lib/tooltip-context'
 import { useI18n } from '@/lib/i18n'
-import { resetTour } from '@/components/GuidedTour'
+
+// Fire-and-forget: ask the current screen's GuidedTour (if any) to replay.
+function startTour(tourKey: string) {
+  window.dispatchEvent(new CustomEvent('kolrabee:start-tour', { detail: { tourKey } }))
+}
 import { logout as adminLogout } from '@/app/admin/dashboard/actions'
 import { logout as subLogout } from '@/app/[slug]/dashboard/actions'
 
@@ -47,7 +50,6 @@ export default function AppShell(props: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const { enabled: tooltipsOn, toggle: toggleTooltips } = useTooltips()
   const { locale, setLocale } = useI18n()
 
   // ---- per-variant config ------------------------------------------------
@@ -94,34 +96,25 @@ export default function AppShell(props: AppShellProps) {
     ]
     footer = (
       <div className="space-y-1">
-        <button type="button" onClick={toggleTooltips} className={footerRow} title={tooltipsOn ? 'Turn off tooltips' : 'Turn on tooltips'}>
-          <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
-          </svg>
-          <span className={footerLabel}>Tips {tooltipsOn ? 'On' : 'Off'}</span>
-        </button>
         <button
           type="button"
           onClick={() => {
             const current = pathname.includes('/subcontractors')
               ? 'admin-subcontractors'
-              : pathname.includes('/billing')
-                ? 'admin-billing'
-                : pathname.includes('/projects/new')
-                  ? 'admin-project-new'
-                  : pathname.startsWith('/admin/projects')
-                    ? 'admin-projects'
-                    : 'admin-dashboard'
-            resetTour(current)
-            window.location.reload()
+              : pathname.includes('/projects/new')
+                ? 'admin-project-new'
+                : pathname.startsWith('/admin/projects')
+                  ? 'admin-projects'
+                  : 'admin-dashboard'
+            startTour(current)
           }}
           className={footerRow}
-          title="Show guided tour"
+          title="Replay the tour for this page"
         >
           <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
           </svg>
-          <span className={footerLabel}>Guided tour</span>
+          <span className={footerLabel}>Take a tour</span>
         </button>
         <form action={adminLogout}>
           <button type="submit" className={footerRow}>
@@ -162,11 +155,16 @@ export default function AppShell(props: AppShellProps) {
           </svg>
           <span className={footerLabel}>{locale === 'en' ? 'Español' : 'English'}</span>
         </button>
-        <button type="button" onClick={toggleTooltips} className={footerRow} title={tooltipsOn ? 'Turn off tooltips' : 'Turn on tooltips'}>
+        <button
+          type="button"
+          onClick={() => startTour('sub-dashboard')}
+          className={footerRow}
+          title="Replay the tour for this page"
+        >
           <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth="1.6" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
           </svg>
-          <span className={footerLabel}>Tips {tooltipsOn ? 'On' : 'Off'}</span>
+          <span className={footerLabel}>Take a tour</span>
         </button>
         <form action={subLogoutWithSlug}>
           <button type="submit" className={footerRow}>
