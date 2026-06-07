@@ -38,9 +38,10 @@ export default async function TimeTrackingPage() {
       .limit(2000),
     adminClient
       .from('users')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, company_name')
       .eq('tenant_id', tenant.id)
       .eq('role', 'subcontractor')
+      .order('company_name', { ascending: true, nullsFirst: false })
       .order('first_name'),
     adminClient
       .from('projects')

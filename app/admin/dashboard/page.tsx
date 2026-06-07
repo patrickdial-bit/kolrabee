@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getUnreadCounts } from '@/lib/message-reads'
 import AdminDashboardClient from './AdminDashboardClient'
 import type { Project } from '@/lib/types'
+import { subDisplayName } from '@/lib/types'
 
 export type DashboardStageKey = 'available' | 'active' | 'completed' | 'paid'
 
@@ -54,10 +55,10 @@ export default async function AdminDashboardPage() {
   if (uniqueIds.length > 0) {
     const { data: subs } = await adminClient
       .from('users')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, company_name')
       .in('id', uniqueIds)
     for (const sub of subs ?? []) {
-      subNameMap[sub.id] = `${sub.first_name} ${sub.last_name}`
+      subNameMap[sub.id] = subDisplayName(sub)
     }
   }
 

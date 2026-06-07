@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import AppShell from '@/components/AppShell'
+import { subDisplayName, subPersonName } from '@/lib/types'
 import { startSubImpersonation } from '@/app/super-admin/impersonate/actions'
 
 type SubRow = {
@@ -71,8 +72,8 @@ export default function SubcontractorsClient({ subs }: Props) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-900">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-200">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-200">Company</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-200">Contact</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-200">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-200">Tenant</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-200">W-9</th>
@@ -89,8 +90,8 @@ export default function SubcontractorsClient({ subs }: Props) {
               ) : (
                 filtered.map((s) => (
                   <tr key={s.id} className={`hover:bg-gray-50 ${s.status === 'deleted' ? 'opacity-50' : ''}`}>
-                    <td className="px-4 py-3 text-sm text-gray-900">{s.first_name} {s.last_name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{s.company_name || '—'}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{subDisplayName(s)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{subPersonName(s) || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{s.email}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       <div className="font-medium text-gray-900">{s.tenantName}</div>

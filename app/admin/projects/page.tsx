@@ -1,6 +1,7 @@
 import { getCurrentUser, type Project } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getUnreadCounts } from '@/lib/message-reads'
+import { subDisplayName } from '@/lib/types'
 import ProjectsClient from './ProjectsClient'
 
 export type PlatformInvite = {
@@ -45,10 +46,10 @@ export default async function AdminProjectsPage({
   if (uniqueIds.length > 0) {
     const { data: subs } = await adminClient
       .from('users')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, company_name')
       .in('id', uniqueIds)
     for (const sub of subs ?? []) {
-      subNameMap[sub.id] = `${sub.first_name} ${sub.last_name}`
+      subNameMap[sub.id] = subDisplayName(sub)
     }
   }
 
@@ -88,7 +89,7 @@ export default async function AdminProjectsPage({
   if (availableProjectIds.length > 0) {
     const { data: rawInvites } = await adminClient
       .from('project_invitations')
-      .select('id, project_id, status, subcontractor:users!project_invitations_subcontractor_id_fkey(first_name, last_name)')
+      .select('id, project_id, status, subcontractor:users!project_invitations_subcontractor_id_fkey(first_name, last_name, company_name)')
       .in('project_id', availableProjectIds)
       .order('invited_at', { ascending: true })
     for (const inv of rawInvites ?? []) {
@@ -97,7 +98,7 @@ export default async function AdminProjectsPage({
       list.push({
         id: inv.id,
         status: inv.status as 'invited' | 'accepted' | 'declined',
-        subcontractor_name: sub ? `${sub.first_name} ${sub.last_name}` : 'Unknown',
+        subcontractor_name: sub ? subDisplayName(sub) : 'Unknown',
       })
     }
   }
