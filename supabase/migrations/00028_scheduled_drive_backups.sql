@@ -13,12 +13,18 @@ ALTER TABLE tenant_integrations
 -- photo or document created after their last backup — i.e. need backing up.
 -- Oldest last_backup_at first (nulls first) so never-backed-up jobs go first and
 -- the nightly cadence works through the backlog. Service-role only.
+-- plpgsql (not sql) so the body is parsed at first call, not at CREATE time.
+-- This keeps the migration resilient where a referenced table isn't present at
+-- apply time (e.g. an incremental preview branch); on the real DB the tables
+-- exist and the query runs normally.
 CREATE OR REPLACE FUNCTION projects_needing_backup(p_limit INT DEFAULT 10)
 RETURNS TABLE (project_id UUID, tenant_id UUID)
-LANGUAGE sql
+LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+BEGIN
+  RETURN QUERY
   SELECT p.id, p.tenant_id
   FROM projects p
   JOIN tenant_integrations ti
@@ -41,6 +47,7 @@ AS $$
     )
   ORDER BY p.last_backup_at ASC NULLS FIRST
   LIMIT p_limit;
+END;
 $$;
 
 -- Keep this off the public PostgREST surface — the cron calls it via the
