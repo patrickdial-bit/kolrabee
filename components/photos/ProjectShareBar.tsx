@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { createProjectShare, getProjectDownloadUrls, revokeShare } from '@/lib/share-actions'
 import { zipAndDownload } from '@/lib/zip'
+import BackupButton from '@/components/BackupButton'
 
 // Download-all (client-side ZIP) + public share-link controls for a project's
 // photo gallery. Rendered on the per-project documentation lens.
@@ -63,6 +64,9 @@ export default function ProjectShareBar({ projectId, projectName }: { projectId:
 
   return (
     <div className="relative flex items-center gap-2">
+      {/* Full job backup: photos + documents, organized ZIP. */}
+      <BackupButton projectId={projectId} />
+
       <button
         type="button"
         onClick={downloadAll}
