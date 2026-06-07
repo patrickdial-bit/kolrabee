@@ -133,6 +133,9 @@ export type Project = {
   previous_start_date: string | null
   previous_start_time: string | null
   schedule_change_acknowledged_at: string | null
+  drive_folder_id: string | null
+  drive_folder_url: string | null
+  last_backup_at: string | null
   version: number
   created_at: string
 }

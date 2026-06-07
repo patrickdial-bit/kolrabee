@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTenantActive } from '@/lib/types'
+import { getIntegrationStatus, ensureProjectFolder } from '@/lib/integrations/backup'
 
 export async function createProject(formData: FormData) {
   const customerName = formData.get('customer_name') as string
@@ -110,6 +111,21 @@ export async function createProject(formData: FormData) {
       // Non-fatal: project created but attachments may have failed
       console.error('Failed to save attachments')
     }
+  }
+
+  // Cloud backup: auto-create the project's folder in the connected drive so it
+  // exists from day one. Best-effort — never block project creation on it.
+  try {
+    const integration = await getIntegrationStatus(tenant.id)
+    if (integration.connected && integration.autoCreateFolders) {
+      await ensureProjectFolder(tenant.id, {
+        id: project.id,
+        job_number: trimmedJobNumber,
+        customer_name: customerName.trim(),
+      })
+    }
+  } catch {
+    // Non-fatal: folder can be created later from the project page.
   }
 
   revalidatePath('/admin/dashboard')

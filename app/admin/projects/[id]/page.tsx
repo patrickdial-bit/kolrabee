@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder } from '@/lib/types'
 import { subDisplayName } from '@/lib/types'
 import { getProjectPhotos } from '@/lib/photo-actions'
+import { getIntegrationStatus } from '@/lib/integrations/backup'
 import ProjectDetailClient from './ProjectDetailClient'
 
 interface PageProps {
@@ -99,6 +100,9 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     created_by_name: c.creator ? `${c.creator.first_name} ${c.creator.last_name}` : 'Admin',
   }))
 
+  // Cloud backup connection — controls whether the "Back up to Drive" action shows.
+  const integration = await getIntegrationStatus(tenant.id)
+
   // Jobsite photos with signed thumbnail URLs for the gallery.
   const photos = await getProjectPhotos(project.id)
 
@@ -129,6 +133,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       changeOrders={changeOrders}
       currentUserId={appUser.id}
       photos={photos}
+      driveConnected={integration.connected}
     />
   )
 }
