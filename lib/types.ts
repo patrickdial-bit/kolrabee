@@ -116,7 +116,9 @@ export type Project = {
   payout_amount: number
   estimated_labor_hours: number | null
   work_order_link: string | null
-  status: 'available' | 'accepted' | 'in_progress' | 'pending_completion' | 'completed' | 'paid' | 'cancelled'
+  // 'imported' = CompanyCam documentation import; kept out of the dispatch
+  // pipeline (no tab, not counted toward plan limits).
+  status: 'available' | 'accepted' | 'in_progress' | 'pending_completion' | 'completed' | 'paid' | 'cancelled' | 'imported'
   companycam_link: string | null
   notes: string | null
   admin_notes: string | null

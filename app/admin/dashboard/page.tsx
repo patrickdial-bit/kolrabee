@@ -103,7 +103,7 @@ export default async function AdminDashboardPage() {
   // Exclude CompanyCam 'imported' projects — they're documentation-only and
   // kept out of the dispatch pipeline, so they shouldn't flood the dashboard.
   const recentProjects: RecentProject[] = [...projects]
-    .filter((p) => (p.status as string) !== 'imported')
+    .filter((p) => p.status !== 'imported')
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 6)
     .map((p) => ({
