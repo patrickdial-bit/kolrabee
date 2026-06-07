@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SubRating, ProjectAttachment, JobMessage } from '@/lib/types'
+import { subDisplayName } from '@/lib/types'
 import { getProjectPhotos } from '@/lib/photo-actions'
 import ProjectDetailClient from './ProjectDetailClient'
 
@@ -29,19 +30,21 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   // Fetch invitations with subcontractor info
   const { data: invitations } = await adminClient
     .from('project_invitations')
-    .select('*, subcontractor:users!project_invitations_subcontractor_id_fkey(id, first_name, last_name, email)')
+    .select('*, subcontractor:users!project_invitations_subcontractor_id_fkey(id, first_name, last_name, email, company_name)')
     .eq('project_id', project.id)
     .eq('tenant_id', tenant.id)
 
   // Fetch the accepted_by user info if applicable
-  let acceptedByUser: { first_name: string; last_name: string; email: string } | null = null
+  let acceptedByUser:
+    | { first_name: string; last_name: string; email: string; company_name: string | null; display_name: string }
+    | null = null
   if (project.accepted_by) {
     const { data: user } = await adminClient
       .from('users')
-      .select('first_name, last_name, email')
+      .select('first_name, last_name, email, company_name')
       .eq('id', project.accepted_by)
       .single()
-    acceptedByUser = user
+    acceptedByUser = user ? { ...user, display_name: subDisplayName(user) } : null
   }
 
   // Fetch rating for this project
@@ -86,7 +89,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     status: inv.status as 'invited' | 'accepted' | 'declined',
     invited_at: inv.invited_at,
     subcontractor_name: inv.subcontractor
-      ? `${inv.subcontractor.first_name} ${inv.subcontractor.last_name}`
+      ? subDisplayName(inv.subcontractor)
       : 'Unknown',
     subcontractor_email: inv.subcontractor?.email ?? '',
   }))

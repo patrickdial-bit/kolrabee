@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import { toast } from 'sonner'
 import { getSubcontractors, sendInvitations } from './invite-actions'
+import { subDisplayName, subPersonName } from '@/lib/types'
 
 interface Sub {
   id: string
@@ -154,10 +155,10 @@ export default function InviteSubsModal({
                         />
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 truncate">
-                            {sub.first_name} {sub.last_name}
+                            {subDisplayName(sub)}
                           </p>
-                          {sub.company_name && (
-                            <p className="text-xs text-gray-500 truncate">{sub.company_name}</p>
+                          {sub.company_name && subPersonName(sub) && (
+                            <p className="text-xs text-gray-500 truncate">{subPersonName(sub)}</p>
                           )}
                         </div>
                       </label>
@@ -177,7 +178,7 @@ export default function InviteSubsModal({
                       <li key={sub.id} className="flex items-center gap-3 px-2 py-1.5 opacity-50">
                         <input type={isFreePlan ? 'radio' : 'checkbox'} disabled className="h-4 w-4 border-gray-300" />
                         <span className="text-sm text-gray-500">
-                          {sub.first_name} {sub.last_name}
+                          {subDisplayName(sub)}
                         </span>
                       </li>
                     ))}
@@ -195,7 +196,7 @@ export default function InviteSubsModal({
                       .map((sub) => (
                         <li key={sub.id} className="flex items-center gap-3 px-2 py-1.5 opacity-50">
                           <input type={isFreePlan ? 'radio' : 'checkbox'} checked disabled className="h-4 w-4 border-gray-300" />
-                          <span className="text-sm text-gray-500">{sub.first_name} {sub.last_name}</span>
+                          <span className="text-sm text-gray-500">{subDisplayName(sub)}</span>
                         </li>
                       ))}
                   </ul>

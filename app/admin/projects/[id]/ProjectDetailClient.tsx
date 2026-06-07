@@ -41,7 +41,7 @@ interface MessageWithSender {
 interface ProjectDetailClientProps {
   project: Project
   invitations: InvitationWithName[]
-  acceptedByUser: { first_name: string; last_name: string; email: string } | null
+  acceptedByUser: { first_name: string; last_name: string; email: string; company_name: string | null; display_name: string } | null
   tenantName: string
   tenantId: string
   tenantPlan: string
@@ -444,8 +444,10 @@ export default function ProjectDetailClient({
 
               {project.status !== 'available' && acceptedByUser && (
                 <div className="mb-6 rounded-md bg-yellow-50 border border-yellow-200 p-4">
-                  <p className="text-sm font-medium text-yellow-800">Accepted by: {acceptedByUser.first_name} {acceptedByUser.last_name}</p>
-                  <p className="text-sm text-yellow-700">{acceptedByUser.email}</p>
+                  <p className="text-sm font-medium text-yellow-800">Accepted by: {acceptedByUser.display_name}</p>
+                  <p className="text-sm text-yellow-700">
+                    {acceptedByUser.company_name ? `${acceptedByUser.first_name} ${acceptedByUser.last_name} · ` : ''}{acceptedByUser.email}
+                  </p>
                 </div>
               )}
 
@@ -773,7 +775,7 @@ export default function ProjectDetailClient({
                     <div>
                       <p className="text-sm font-bold text-amber-900">Heads up: this project has an assigned subcontractor</p>
                       <p className="mt-1 text-sm text-amber-800">
-                        <strong>{acceptedByUser.first_name} {acceptedByUser.last_name}</strong> has accepted this job.
+                        <strong>{acceptedByUser.display_name}</strong> has accepted this job.
                         Saving will email them the new schedule and flag the change on their dashboard. Please also follow up directly to make sure they got it.
                       </p>
                     </div>

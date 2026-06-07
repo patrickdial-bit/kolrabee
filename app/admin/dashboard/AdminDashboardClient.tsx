@@ -1,29 +1,15 @@
 'use client'
 
-import { useState, useMemo, useCallback, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
-import StatusTabs from '@/components/StatusTabs'
-import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
-import Tooltip from '@/components/Tooltip'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Project } from '@/lib/types'
-import type { PlatformInvite, ProjectInviteSummary } from './page'
-import ChatDrawer from '@/components/ChatDrawer'
-import { sendMessage, getMessages } from '@/app/admin/projects/[id]/message-actions'
-import { cancelSubInvite, editSubInvite } from '@/app/admin/subcontractors/actions'
-
-type SortKey = 'customer_name' | 'start_date' | 'payout_amount' | 'estimated_labor_hours' | 'address'
-type SortDir = 'asc' | 'desc'
+import type { DashboardStage, DashboardStageKey, RecentProject, TopSub } from './page'
 
 interface AdminDashboardClientProps {
-  projects: Project[]
-  subNameMap: Record<string, string>
+  adminFirstName: string
   tenantName: string
-  tenantId: string
   tenantSlug: string
   tenantPlan: string
   trialEndsAt: string | null
@@ -31,20 +17,37 @@ interface AdminDashboardClientProps {
   maxSubcontractors: number
   projectCount: number
   subCount: number
-  platformInvites: PlatformInvite[]
-  currentUserId: string
-  unreadCounts: Record<string, number>
-  projectInvites: Record<string, ProjectInviteSummary[]>
-  photoCounts: Record<string, number>
+  stages: DashboardStage[]
+  paidThisMonth: number
+  completionRate: number
+  recentProjects: RecentProject[]
+  topSubs: TopSub[]
+  pendingInviteCount: number
+  unreadTotal: number
+  pendingCompletionCount: number
 }
 
-const STATUS_TABS = ['Available', 'Accepted', 'Completed', 'Paid']
+// Stage → label, accent color, and the Projects-page tab it deep-links to.
+const STAGE_META: Record<DashboardStageKey, { label: string; tab: string; dot: string; bar: string }> = {
+  available: { label: 'Available', tab: 'Available', dot: 'bg-slate-400', bar: 'bg-slate-400' },
+  active: { label: 'Accepted / In Progress', tab: 'Accepted', dot: 'bg-amber-500', bar: 'bg-amber-500' },
+  completed: { label: 'Completed', tab: 'Completed', dot: 'bg-indigo-500', bar: 'bg-indigo-500' },
+  paid: { label: 'Paid', tab: 'Paid', dot: 'bg-primary-600', bar: 'bg-primary-600' },
+}
+
+const STATUS_BADGE: Record<Project['status'], { label: string; className: string }> = {
+  available: { label: 'Available', className: 'bg-slate-100 text-slate-700' },
+  accepted: { label: 'Accepted', className: 'bg-amber-100 text-amber-700' },
+  in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-700' },
+  pending_completion: { label: 'Pending Completion', className: 'bg-indigo-100 text-indigo-700' },
+  completed: { label: 'Completed', className: 'bg-indigo-100 text-indigo-700' },
+  paid: { label: 'Paid', className: 'bg-primary-100 text-primary-700' },
+  cancelled: { label: 'Cancelled', className: 'bg-gray-100 text-gray-500' },
+}
 
 export default function AdminDashboardClient({
-  projects,
-  subNameMap,
+  adminFirstName,
   tenantName,
-  tenantId,
   tenantSlug,
   tenantPlan,
   trialEndsAt,
@@ -52,719 +55,386 @@ export default function AdminDashboardClient({
   maxSubcontractors,
   projectCount,
   subCount,
-  platformInvites,
-  currentUserId,
-  unreadCounts: initialUnreadCounts,
-  projectInvites,
-  photoCounts,
+  stages,
+  paidThisMonth,
+  completionRate,
+  recentProjects,
+  topSubs,
+  pendingInviteCount,
+  unreadTotal,
+  pendingCompletionCount,
 }: AdminDashboardClientProps) {
-  const [activeTab, setActiveTab] = useState('Available')
-  const [search, setSearch] = useState('')
-  const [sortKey, setSortKey] = useState<SortKey>('start_date')
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
-  const [inviteProjectId, setInviteProjectId] = useState<string | null>(null)
-  const [linkCopied, setLinkCopied] = useState(false)
-  const [chatProject, setChatProject] = useState<Project | null>(null)
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>(initialUnreadCounts)
-  const [editingInviteId, setEditingInviteId] = useState<string | null>(null)
-  const [editInviteEmail, setEditInviteEmail] = useState('')
-  const [editInviteName, setEditInviteName] = useState('')
-  const [, startInviteAction] = useTransition()
-  const router = useRouter()
+  const byKey = (k: DashboardStageKey) => stages.find((s) => s.key === k) ?? { key: k, count: 0, value: 0 }
+  const available = byKey('available')
+  const active = byKey('active')
+  const completed = byKey('completed')
+  const paid = byKey('paid')
 
-  function startEditInvite(invite: PlatformInvite) {
-    setEditingInviteId(invite.id)
-    setEditInviteEmail(invite.email)
-    setEditInviteName(invite.name ?? '')
-  }
+  const pipelineValue = available.value + active.value
+  const pipelineCount = available.count + active.count
+  const maxStageValue = Math.max(1, ...stages.map((s) => s.value))
 
-  function cancelEditInvite() {
-    setEditingInviteId(null)
-    setEditInviteEmail('')
-    setEditInviteName('')
-  }
+  const unlimited = (n: number) => n < 0 || n >= 999999
+  const projectsPct = unlimited(maxProjects) ? 0 : Math.min(100, Math.round((projectCount / Math.max(1, maxProjects)) * 100))
+  const subsPct = unlimited(maxSubcontractors) ? 0 : Math.min(100, Math.round((subCount / Math.max(1, maxSubcontractors)) * 100))
 
-  function saveEditInvite(inviteId: string) {
-    startInviteAction(async () => {
-      const result = await editSubInvite(inviteId, editInviteEmail, editInviteName)
-      if (result?.error) {
-        toast.error(result.error)
-      } else {
-        toast.success('Invite updated and re-sent.')
-        cancelEditInvite()
-        router.refresh()
-      }
-    })
-  }
-
-  function handleCancelInvite(invite: PlatformInvite) {
-    if (!confirm(`Cancel the invite for ${invite.email}?`)) return
-    startInviteAction(async () => {
-      const result = await cancelSubInvite(invite.id)
-      if (result?.error) {
-        toast.error(result.error)
-      } else {
-        toast.success(`Invite for ${invite.email} cancelled.`)
-        router.refresh()
-      }
-    })
-  }
-
-  const subLoginUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/${tenantSlug}/login`
-    : `/${tenantSlug}/login`
-
-  const copySubLoginLink = useCallback(() => {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/${tenantSlug}/login`
-    )
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
-  }, [tenantSlug])
-
-  const toggleSort = useCallback((key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('asc')
-    }
-  }, [sortKey])
-
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {}
-    c['Available'] = projects.filter((p) => p.status === 'available').length
-    c['Accepted'] = projects.filter((p) => p.status === 'accepted' || p.status === 'in_progress').length
-    c['Completed'] = projects.filter((p) => p.status === 'pending_completion' || p.status === 'completed').length
-    c['Paid'] = projects.filter((p) => p.status === 'paid').length
-    return c
-  }, [projects])
-
-  const totals = useMemo(() => {
-    const sumPayout = (filter: (p: Project) => boolean) =>
-      projects.filter(filter).reduce((sum, p) => sum + (p.payout_amount ?? 0), 0)
-    return {
-      Available: sumPayout((p) => p.status === 'available'),
-      Accepted: sumPayout((p) => p.status === 'accepted' || p.status === 'in_progress'),
-      Completed: sumPayout((p) => p.status === 'pending_completion' || p.status === 'completed'),
-      Paid: sumPayout((p) => p.status === 'paid'),
-    }
-  }, [projects])
-
-  const filtered = useMemo(() => {
-    let result: Project[]
-    if (activeTab === 'Available') {
-      result = projects.filter((p) => p.status === 'available')
-    } else if (activeTab === 'Accepted') {
-      result = projects.filter((p) => p.status === 'accepted' || p.status === 'in_progress')
-    } else if (activeTab === 'Completed') {
-      result = projects.filter((p) => p.status === 'pending_completion' || p.status === 'completed')
-    } else {
-      result = projects.filter((p) => p.status === 'paid')
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      result = result.filter(
-        (p) =>
-          (p.job_number && p.job_number.toLowerCase().includes(q)) ||
-          p.customer_name.toLowerCase().includes(q) ||
-          p.address.toLowerCase().includes(q)
-      )
-    }
-
-    result.sort((a, b) => {
-      const dir = sortDir === 'asc' ? 1 : -1
-      switch (sortKey) {
-        case 'customer_name':
-          return dir * a.customer_name.localeCompare(b.customer_name)
-        case 'start_date': {
-          if (!a.start_date && !b.start_date) return 0
-          if (!a.start_date) return 1
-          if (!b.start_date) return -1
-          return dir * (new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-        }
-        case 'payout_amount':
-          return dir * ((a.payout_amount ?? 0) - (b.payout_amount ?? 0))
-        case 'estimated_labor_hours':
-          return dir * ((a.estimated_labor_hours ?? 0) - (b.estimated_labor_hours ?? 0))
-        case 'address':
-          return dir * a.address.localeCompare(b.address)
-        default:
-          return 0
-      }
-    })
-
-    return result
-  }, [projects, activeTab, search, sortKey, sortDir])
+  const trialDaysLeft =
+    tenantPlan === 'trial' && trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : null
 
   const dashboardTourSteps: TourStep[] = [
     {
-      target: '#tour-add-project',
-      title: 'Create a New Project',
-      content: 'Click here to add a new project. Fill in the job details, payout, and any links to work orders or photos.',
+      target: '#tour-kpis',
+      title: 'Your Key Metrics',
+      content: 'A quick read on pipeline value, revenue this month, active jobs, and your crew — updated in real time.',
       placement: 'bottom',
     },
     {
-      target: '#tour-search-projects',
-      title: 'Search Projects',
-      content: 'Quickly find projects by customer name, job number, or address.',
+      target: '#tour-pipeline',
+      title: 'Pipeline at a Glance',
+      content: 'See how your jobs are distributed across stages. Click any stage to jump straight to those projects.',
       placement: 'bottom',
     },
     {
-      target: '#tour-usage-stats',
-      title: 'Plan Usage',
-      content: 'Track how many projects and subcontractors you\'re using against your plan limits.',
-      placement: 'bottom',
-    },
-    {
-      target: '#tour-status-tabs',
-      title: 'Filter by Status',
-      content: 'Switch between Available, Accepted, and Paid tabs to see projects at each stage.',
-      placement: 'bottom',
-    },
-    {
-      target: '#tour-project-table',
-      title: 'Your Projects',
-      content: 'Click any column header to sort. Use the Invite button to send projects to subcontractors. Edit, cancel, or mark projects as paid from here.',
+      target: '#tour-recent',
+      title: 'Recent Activity',
+      content: 'Your most recently created projects show up here so you can pick up where you left off.',
       placement: 'top',
     },
   ]
 
-  function renderInviteSummary(projectId: string) {
-    const invites = projectInvites[projectId] ?? []
-    if (invites.length === 0) return null
-    const pending = invites.filter((i) => i.status === 'invited')
-    const declined = invites.filter((i) => i.status === 'declined')
-    const tooltipParts: string[] = []
-    if (pending.length > 0) {
-      tooltipParts.push(`Pending: ${pending.map((i) => i.subcontractor_name).join(', ')}`)
-    }
-    if (declined.length > 0) {
-      tooltipParts.push(`Declined: ${declined.map((i) => i.subcontractor_name).join(', ')}`)
-    }
-    const tooltipText = tooltipParts.join('  ·  ') || 'No invitations'
-    return (
-      <Tooltip text={tooltipText} position="bottom">
-        <Link
-          href={`/admin/projects/${projectId}`}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-ember whitespace-nowrap"
-        >
-          {pending.length > 0 && <span>{pending.length} pending</span>}
-          {pending.length > 0 && declined.length > 0 && <span className="text-gray-300">·</span>}
-          {declined.length > 0 && <span className="text-red-600">{declined.length} declined</span>}
-        </Link>
-      </Tooltip>
-    )
+  const attention: { label: string; href: string; tone: string }[] = []
+  if (trialDaysLeft !== null) {
+    attention.push({
+      label: trialDaysLeft === 0 ? 'Trial expired — subscribe to keep going' : `Trial ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'}`,
+      href: '/admin/billing',
+      tone: 'amber',
+    })
+  }
+  if (pendingCompletionCount > 0) {
+    attention.push({
+      label: `${pendingCompletionCount} job${pendingCompletionCount === 1 ? '' : 's'} awaiting your review`,
+      href: '/admin/projects?status=Completed',
+      tone: 'indigo',
+    })
+  }
+  if (unreadTotal > 0) {
+    attention.push({
+      label: `${unreadTotal} unread message${unreadTotal === 1 ? '' : 's'}`,
+      href: '/admin/projects?status=Accepted',
+      tone: 'primary',
+    })
+  }
+  if (pendingInviteCount > 0) {
+    attention.push({
+      label: `${pendingInviteCount} subcontractor invite${pendingInviteCount === 1 ? '' : 's'} pending`,
+      href: '/admin/projects',
+      tone: 'slate',
+    })
+  }
+
+  const toneClasses: Record<string, string> = {
+    amber: 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100',
+    indigo: 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100',
+    primary: 'border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100',
+    slate: 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100',
   }
 
   return (
     <AppShell variant="admin" companyName={tenantName}>
-
-      <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {adminFirstName ? `Welcome back, ${adminFirstName}` : 'Dashboard'}
+            </h1>
+            <p className="mt-1 text-sm text-gray-500">Here&apos;s what&apos;s happening at {tenantName || 'your company'} today.</p>
+          </div>
           <div className="flex items-center gap-3">
-            <div id="tour-search-projects" className="relative">
-              <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            <Link
+              href="/admin/projects"
+              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              View Projects
+            </Link>
+            <Link
+              href="/admin/projects/new"
+              className="inline-flex items-center justify-center gap-1.5 rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
               </svg>
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="block w-48 sm:w-64 rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember"
-              />
-            </div>
-            <Tooltip text="Create a new project with job details, payout, and links">
+              Add Project
+            </Link>
+          </div>
+        </div>
+
+        {/* Attention strip */}
+        {attention.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {attention.map((a, i) => (
               <Link
-                id="tour-add-project"
-                href="/admin/projects/new"
-                className="inline-flex items-center justify-center rounded-md bg-ember px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
+                key={i}
+                href={a.href}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${toneClasses[a.tone]}`}
               >
-                Add Project
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+                {a.label}
               </Link>
-            </Tooltip>
+            ))}
+          </div>
+        )}
+
+        {/* KPI cards */}
+        <div id="tour-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard
+            label="Pipeline Value"
+            value={formatCurrency(pipelineValue)}
+            sub={`${pipelineCount} open project${pipelineCount === 1 ? '' : 's'}`}
+            icon={
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+            }
+            accent="text-primary-600"
+          />
+          <KpiCard
+            label="Revenue This Month"
+            value={formatCurrency(paidThisMonth)}
+            sub={`${paid.count} job${paid.count === 1 ? '' : 's'} paid all-time`}
+            icon={
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            }
+            accent="text-emerald-600"
+          />
+          <KpiCard
+            label="Active Jobs"
+            value={String(active.count)}
+            sub={`${completed.count} awaiting payment`}
+            icon={
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
+            }
+            accent="text-amber-600"
+          />
+          <KpiCard
+            label="Subcontractors"
+            value={unlimited(maxSubcontractors) ? String(subCount) : `${subCount}/${maxSubcontractors}`}
+            sub={`${completionRate}% completion rate`}
+            icon={
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+            }
+            accent="text-forest-500"
+          />
+        </div>
+
+        {/* Pipeline */}
+        <div id="tour-pipeline" className="mb-6 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900">Pipeline</h2>
+            <Link href="/admin/projects" className="text-xs font-semibold text-ember hover:text-primary-700">View all projects →</Link>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {stages.map((stage) => {
+              const meta = STAGE_META[stage.key]
+              const pct = Math.round((stage.value / maxStageValue) * 100)
+              return (
+                <Link
+                  key={stage.key}
+                  href={`/admin/projects?status=${meta.tab}`}
+                  className="group rounded-lg border border-gray-200 p-4 hover:border-ember hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+                    <span className="text-xs font-medium text-gray-500">{meta.label}</span>
+                  </div>
+                  <p className="mt-2 text-xl font-bold text-gray-900">{formatCurrency(stage.value)}</p>
+                  <p className="text-xs text-gray-400">{stage.count} project{stage.count === 1 ? '' : 's'}</p>
+                  <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div className={`h-full rounded-full ${meta.bar}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </div>
 
-        {/* Project value totals */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Available</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(totals.Available)}</p>
-            <p className="text-xs text-gray-400">{counts['Available']} project{counts['Available'] === 1 ? '' : 's'}</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Accepted / In-Progress</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(totals.Accepted)}</p>
-            <p className="text-xs text-gray-400">{counts['Accepted']} project{counts['Accepted'] === 1 ? '' : 's'}</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{formatCurrency(totals.Completed)}</p>
-            <p className="text-xs text-gray-400">{counts['Completed']} project{counts['Completed'] === 1 ? '' : 's'}</p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Paid</p>
-            <p className="mt-1 text-2xl font-bold text-ember">{formatCurrency(totals.Paid)}</p>
-            <p className="text-xs text-gray-400">{counts['Paid']} project{counts['Paid'] === 1 ? '' : 's'}</p>
-          </div>
-        </div>
-
-        {/* Trial Banner */}
-        {tenantPlan === 'trial' && trialEndsAt && (() => {
-          const daysLeft = Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-          const expired = daysLeft === 0
-          return (
-            <div className={`mb-6 rounded-lg border p-4 ${expired ? 'bg-amber-50 border-amber-200' : 'bg-amber-50 border-amber-200'}`}>
-              <div className="flex items-center justify-between">
-                <p className={`text-sm font-medium ${expired ? 'text-amber-800' : 'text-amber-800'}`}>
-                  {expired
-                    ? 'Your free trial has expired. Subscribe to continue creating projects.'
-                    : `Free trial: ${daysLeft} day${daysLeft !== 1 ? 's' : ''} remaining`}
-                </p>
-                <Link href="/admin/billing" className="text-sm font-semibold text-ember hover:text-primary-700">
-                  {expired ? 'Subscribe Now' : 'View Plans'}
+        {/* Two-column body */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent projects */}
+          <div id="tour-recent" className="lg:col-span-2 rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <h2 className="text-sm font-semibold text-gray-900">Recent Projects</h2>
+              <Link href="/admin/projects" className="text-xs font-semibold text-ember hover:text-primary-700">View all →</Link>
+            </div>
+            {recentProjects.length === 0 ? (
+              <div className="px-5 py-12 text-center">
+                <p className="text-sm font-medium text-gray-900">No projects yet</p>
+                <p className="mt-1 text-sm text-gray-500">Create your first project to get started.</p>
+                <Link href="/admin/projects/new" className="mt-4 inline-flex items-center rounded-md bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
+                  Add Project
                 </Link>
               </div>
-            </div>
-          )
-        })()}
-
-        {/* Plan Usage */}
-        <div id="tour-usage-stats" className="grid grid-cols-2 gap-4 mb-6">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Projects Used</p>
-            <p className="mt-1 text-lg font-bold text-gray-900">
-              {projectCount}/{maxProjects < 0 || maxProjects >= 999999 ? '∞' : maxProjects}
-            </p>
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Subcontractors</p>
-            <p className="mt-1 text-lg font-bold text-gray-900">
-              {subCount}/{maxSubcontractors < 0 || maxSubcontractors >= 999999 ? '∞' : maxSubcontractors}
-            </p>
-          </div>
-        </div>
-
-        {/* Subcontractor Login Link */}
-        {tenantSlug && (
-          <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Subcontractor Login Link</p>
-                <p className="text-sm text-gray-600 truncate">{subLoginUrl}</p>
-              </div>
-              <button
-                onClick={copySubLoginLink}
-                className={`flex-shrink-0 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  linkCopied
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {linkCopied ? (
-                  <>
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
-                    </svg>
-                    Copy Link
-                  </>
-                )}
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-gray-400">Send this link to your subcontractors so they can log in to their portal.</p>
-          </div>
-        )}
-
-        {/* Platform Invites */}
-        {platformInvites.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Subcontractor Invites</h2>
-            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Name</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Email</th>
-                    <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Invited</th>
-                    <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {platformInvites.map((invite) => {
-                    const isEditing = editingInviteId === invite.id
-                    return (
-                      <tr key={invite.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-2.5 text-sm text-gray-900">
-                          {isEditing ? (
-                            <input
-                              type="text"
-                              value={editInviteName}
-                              onChange={(e) => setEditInviteName(e.target.value)}
-                              placeholder="Name (optional)"
-                              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
-                            />
-                          ) : (
-                            invite.name || '—'
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-sm text-gray-600">
-                          {isEditing ? (
-                            <input
-                              type="email"
-                              value={editInviteEmail}
-                              onChange={(e) => setEditInviteEmail(e.target.value)}
-                              className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-ember focus:outline-none focus:ring-1 focus:ring-ember"
-                            />
-                          ) : (
-                            invite.email
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-sm text-gray-500">
-                          {new Date(invite.invited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </td>
-                        <td className="px-4 py-2.5 text-right">
-                          {isEditing ? (
-                            <div className="inline-flex items-center gap-2">
-                              <button
-                                onClick={() => saveEditInvite(invite.id)}
-                                className="rounded-md bg-ember px-2.5 py-1 text-xs font-semibold text-white hover:bg-primary-700"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={cancelEditInvite}
-                                className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="inline-flex items-center gap-2">
-                              <button
-                                onClick={() => startEditInvite(invite)}
-                                className="rounded-md bg-ember/10 px-2.5 py-1 text-xs font-semibold text-ember hover:bg-ember/15"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleCancelInvite(invite)}
-                                className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-100"
-                              >
-                                Cancel invite
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tabs */}
-        <div id="tour-status-tabs">
-          <StatusTabs tabs={STATUS_TABS} activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
-        </div>
-
-        {/* Table */}
-        <div id="tour-project-table" className="mt-6">
-          {filtered.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-              <h3 className="text-sm font-semibold text-gray-900">No {activeTab.toLowerCase()} projects</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {activeTab === 'Available' ? 'Get started by creating a new project.' : `No ${activeTab.toLowerCase()} projects yet.`}
-              </p>
-            </div>
-          ) : (
-            <>
-            {/* Mobile cards */}
-            <div className="md:hidden space-y-3">
-              {filtered.map((project) => (
-                <div key={project.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="min-w-0 flex-1">
-                      <Link href={`/admin/projects/${project.id}`} className="text-sm font-semibold text-gray-900 hover:text-ember">
-                        {project.customer_name}
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {recentProjects.map((p) => {
+                  const badge = STATUS_BADGE[p.status]
+                  return (
+                    <li key={p.id}>
+                      <Link href={`/admin/projects/${p.id}`} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-gray-900">
+                            {p.customer_name}
+                            {p.job_number && <span className="ml-1 font-normal text-gray-400">#{p.job_number}</span>}
+                          </p>
+                          <p className="truncate text-xs text-gray-500">
+                            {p.accepted_by_name ? `Assigned to ${p.accepted_by_name}` : `Added ${formatDate(p.created_at)}`}
+                          </p>
+                        </div>
+                        <span className={`hidden sm:inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                        <span className="shrink-0 text-sm font-semibold text-gray-900 tabular-nums w-20 text-right">
+                          {formatCurrency(p.payout_amount)}
+                        </span>
                       </Link>
-                      {project.job_number && <span className="ml-1 text-xs text-gray-400">#{project.job_number}</span>}
-                    </div>
-                    <span className="text-sm font-bold text-gray-900 ml-2">{formatCurrency(project.payout_amount)}</span>
-                  </div>
-                  <div className="space-y-1 text-xs text-gray-500 mb-3">
-                    <p>{formatDateTime(project.start_date, project.start_time)}</p>
-                    <p className="truncate">{project.address}</p>
-                    {(activeTab === 'Accepted' || activeTab === 'Completed') && project.accepted_by && subNameMap[project.accepted_by] && (
-                      <p className="text-ember font-medium">{activeTab === 'Completed' ? 'Completed by' : 'Accepted by'}: {subNameMap[project.accepted_by]}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {activeTab === 'Available' && (
-                      <>
-                        <button
-                          onClick={() => setInviteProjectId(project.id)}
-                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
-                        >
-                          Invite
-                        </button>
-                        {renderInviteSummary(project.id)}
-                      </>
-                    )}
-                    {activeTab === 'Accepted' && (
-                      <>
-                        <button onClick={() => setChatProject(project)}
-                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-                          Chat
-                        </button>
-                        <Link href={`/admin/projects/${project.id}`}
-                          className="rounded-md bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-200">
-                          Cancel
-                        </Link>
-                      </>
-                    )}
-                    {activeTab === 'Completed' && (
-                      <>
-                        <button onClick={() => setChatProject(project)}
-                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-                          Chat
-                        </button>
-                        <Link href={`/admin/projects/${project.id}`}
-                          className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
-                          Mark Paid
-                        </Link>
-                      </>
-                    )}
-                    <Link href={`/admin/projects/${project.id}`}
-                      className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50">
-                      Details
-                    </Link>
-                    {project.work_order_link && (
-                      <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                        className="text-xs font-medium text-ember">WO</a>
-                    )}
-                  </div>
-                </div>
-              ))}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Right rail */}
+          <div className="space-y-6">
+            {/* Plan usage */}
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-gray-900">Plan Usage</h2>
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600">{tenantPlan}</span>
+              </div>
+              <UsageBar
+                label="Projects"
+                used={projectCount}
+                max={maxProjects}
+                pct={projectsPct}
+                unlimited={unlimited(maxProjects)}
+              />
+              <div className="mt-4">
+                <UsageBar
+                  label="Subcontractors"
+                  used={subCount}
+                  max={maxSubcontractors}
+                  pct={subsPct}
+                  unlimited={unlimited(maxSubcontractors)}
+                />
+              </div>
+              {(tenantPlan === 'free' || tenantPlan === 'trial') && (
+                <Link href="/admin/billing" className="mt-4 inline-block text-xs font-semibold text-ember hover:text-primary-700">
+                  Upgrade plan →
+                </Link>
+              )}
             </div>
 
-            {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-forest">
-                  <tr>
-                    {activeTab === 'Available' && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">Invite</th>
-                    )}
-                    <SortTh label="Project Number / ID" sortKey="customer_name" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
-                    {(activeTab === 'Accepted' || activeTab === 'Completed') && (
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white">{activeTab === 'Completed' ? 'Completed by' : 'Accepted by'}</th>
-                    )}
-                    <SortTh label="Project Start" sortKey="start_date" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
-                    <SortTh label="Payout" sortKey="payout_amount" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
-                    <SortTh label="Est. Hours" sortKey="estimated_labor_hours" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="right" />
-                    <SortTh label="Address" sortKey="address" currentKey={sortKey} dir={sortDir} onSort={toggleSort} align="left" />
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Work Order</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Notes</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Photos</th>
-                    {(activeTab === 'Accepted' || activeTab === 'Completed') && (
-                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Chat</th>
-                    )}
-                    {activeTab === 'Accepted' && (
-                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Action</th>
-                    )}
-                    {(activeTab === 'Accepted' || activeTab === 'Completed') && (
-                      <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Paid</th>
-                    )}
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Edit</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Delete</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filtered.map((project) => (
-                    <tr key={project.id} className="hover:bg-gray-50 transition-colors">
-                      {activeTab === 'Available' && (
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex flex-col items-start gap-1.5">
-                            <button
-                              onClick={() => setInviteProjectId(project.id)}
-                              className="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 transition-colors"
-                            >
-                              Invite
-                            </button>
-                            {renderInviteSummary(project.id)}
-                          </div>
-                        </td>
-                      )}
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {project.customer_name}
-                        {project.job_number && <span className="ml-1 text-gray-500">#{project.job_number}</span>}
-                      </td>
-                      {(activeTab === 'Accepted' || activeTab === 'Completed') && (
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                          {project.accepted_by && subNameMap[project.accepted_by]
-                            ? (
-                              <Link href={`/admin/subcontractors/${project.accepted_by}`} className="text-ember hover:text-primary-700 font-medium">
-                                {subNameMap[project.accepted_by]}
-                              </Link>
-                            )
-                            : '—'}
-                        </td>
-                      )}
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                        {formatDateTime(project.start_date, project.start_time)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                        {formatCurrency(project.payout_amount)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 text-right">
-                        {project.estimated_labor_hours != null ? Number(project.estimated_labor_hours).toFixed(2) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 max-w-[200px] truncate">
-                        {project.address}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        {project.work_order_link ? (
-                          <a href={project.work_order_link} target="_blank" rel="noopener noreferrer"
-                            className="text-ember hover:text-primary-700 font-medium">Link</a>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        {project.notes ? (
-                          <Link href={`/admin/projects/${project.id}`} className="text-ember hover:text-primary-700 font-medium">
-                            View Note
-                          </Link>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        <Link href={`/admin/photos/galleries/${project.id}`}
-                          className="text-ember hover:text-primary-700 font-medium">
-                          {(photoCounts[project.id] ?? 0) > 0 ? photoCounts[project.id] : 'View'}
-                        </Link>
-                      </td>
-                      {(activeTab === 'Accepted' || activeTab === 'Completed') && (
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                          <button onClick={() => setChatProject(project)}
-                            className="relative text-gray-400 hover:text-ember transition-colors">
-                            <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                            </svg>
-                            {unreadCounts[project.id] > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                                {unreadCounts[project.id]}
-                              </span>
-                            )}
-                          </button>
-                        </td>
-                      )}
-                      {activeTab === 'Accepted' && (
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                          <Link href={`/admin/projects/${project.id}`}
-                            className="inline-flex items-center rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors">
-                            Cancel
-                          </Link>
-                        </td>
-                      )}
-                      {(activeTab === 'Accepted' || activeTab === 'Completed') && (
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                          <Link href={`/admin/projects/${project.id}`}
-                            className="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-green-700 transition-colors">
-                            Mark Paid
-                          </Link>
-                        </td>
-                      )}
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        <Link href={`/admin/projects/${project.id}`} className="text-amber-600 hover:text-amber-800">
-                          <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                          </svg>
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                        <Link href={`/admin/projects/${project.id}`} className="text-amber-600 hover:text-amber-800">
-                          <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                          </svg>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* Quick actions */}
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h2>
+              <div className="space-y-1">
+                <QuickAction href="/admin/projects/new" label="New Project" />
+                <QuickAction href="/admin/subcontractors" label="Manage Subcontractors" />
+                <QuickAction href="/admin/time-tracking" label="Time Tracking" />
+                <QuickAction href="/admin/photos/galleries" label="Photo Galleries" />
+              </div>
             </div>
-            </>
-          )}
+
+            {/* Top subcontractors */}
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-900">Top Subcontractors</h2>
+                <Link href="/admin/subcontractors" className="text-xs font-semibold text-ember hover:text-primary-700">All →</Link>
+              </div>
+              {topSubs.length === 0 ? (
+                <p className="text-sm text-gray-500">No paid jobs yet.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {topSubs.map((s, i) => (
+                    <li key={s.id} className="flex items-center gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-700">
+                        {i + 1}
+                      </span>
+                      <Link href={`/admin/subcontractors/${s.id}`} className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900 hover:text-ember">{s.name}</p>
+                        <p className="text-xs text-gray-500">{s.jobs} job{s.jobs === 1 ? '' : 's'} paid</p>
+                      </Link>
+                      <span className="shrink-0 text-sm font-semibold text-gray-900 tabular-nums">{formatCurrency(s.paid)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Invite modal */}
-      {inviteProjectId && (
-        <InviteSubsModal
-          projectId={inviteProjectId}
-          tenantId={tenantId}
-          tenantPlan={tenantPlan}
-          existingInvitationSubIds={[]}
-          onClose={() => {
-            setInviteProjectId(null)
-            router.refresh()
-          }}
-        />
-      )}
-
-      {/* Chat drawer */}
-      <ChatDrawer
-        isOpen={!!chatProject}
-        onClose={() => setChatProject(null)}
-        projectId={chatProject?.id ?? ''}
-        projectTitle={chatProject ? `${chatProject.customer_name}${chatProject.job_number ? ` #${chatProject.job_number}` : ''}` : ''}
-        currentUserId={currentUserId}
-        onSend={sendMessage}
-        onFetchMessages={getMessages}
-        tenantPlan={tenantPlan}
-        onRead={() => {
-          if (chatProject) {
-            setUnreadCounts((prev) => { const next = { ...prev }; delete next[chatProject.id]; return next })
-          }
-        }}
-      />
-
-      {/* Guided tour for first-time users */}
       <GuidedTour steps={dashboardTourSteps} tourKey="admin-dashboard" />
     </AppShell>
   )
 }
 
-function SortTh({ label, sortKey: key, currentKey, dir, onSort, align }: {
-  label: string; sortKey: SortKey; currentKey: SortKey; dir: SortDir
-  onSort: (k: SortKey) => void; align: 'left' | 'right'
+function KpiCard({ label, value, sub, icon, accent }: {
+  label: string
+  value: string
+  sub: string
+  icon: React.ReactNode
+  accent: string
 }) {
-  const active = key === currentKey
   return (
-    <th
-      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-white cursor-pointer select-none hover:bg-forest-700 transition-colors ${align === 'right' ? 'text-right' : 'text-left'}`}
-      onClick={() => onSort(key)}
-    >
-      <span className="inline-flex items-center gap-1">
-        {label}
-        <svg className={`h-3.5 w-3.5 ${active ? 'opacity-100' : 'opacity-40'}`} fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-          {active && dir === 'desc'
-            ? <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-            : <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />}
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</p>
+        <svg className={`h-5 w-5 ${accent}`} fill="none" viewBox="0 0 24 24" strokeWidth="1.6" stroke="currentColor" aria-hidden="true">
+          {icon}
         </svg>
-      </span>
-    </th>
+      </div>
+      <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
+      <p className="mt-0.5 text-xs text-gray-400">{sub}</p>
+    </div>
+  )
+}
+
+function UsageBar({ label, used, max, pct, unlimited }: {
+  label: string
+  used: number
+  max: number
+  pct: number
+  unlimited: boolean
+}) {
+  const near = !unlimited && pct >= 80
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600">{label}</span>
+        <span className="font-semibold text-gray-900">{used}/{unlimited ? '∞' : max}</span>
+      </div>
+      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+        <div
+          className={`h-full rounded-full transition-all ${unlimited ? 'bg-primary-300' : near ? 'bg-amber-500' : 'bg-primary-600'}`}
+          style={{ width: unlimited ? '12%' : `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function QuickAction({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+    >
+      {label}
+      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+      </svg>
+    </Link>
   )
 }

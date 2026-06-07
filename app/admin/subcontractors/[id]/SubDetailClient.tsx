@@ -8,7 +8,7 @@ import AppShell from '@/components/AppShell'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
 import StarRating from '@/components/StarRating'
-import { isSubCompliant } from '@/lib/types'
+import { isSubCompliant, subDisplayName, subPersonName } from '@/lib/types'
 import type { ReliabilityStats } from '@/lib/types'
 import { softDeleteSub, reactivateSub } from '../actions'
 import { getDocumentUrl, uploadDocumentForSub, updateInsuranceForSub } from './doc-actions'
@@ -101,7 +101,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
         setDocError(result.error)
         toast.error(result.error)
       } else {
-        toast.success(`${docType.toUpperCase()} uploaded for ${sub.first_name} ${sub.last_name}.`)
+        toast.success(`${docType.toUpperCase()} uploaded for ${subDisplayName(sub)}.`)
         router.refresh()
       }
     } catch {
@@ -131,16 +131,16 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
   }
 
   function handleStatusToggle() {
-    if (sub.status === 'active' && !confirm(`Remove ${sub.first_name} ${sub.last_name}? They won't receive new invitations.`)) return
+    if (sub.status === 'active' && !confirm(`Remove ${subDisplayName(sub)}? They won't receive new invitations.`)) return
     startTransition(async () => {
       if (sub.status === 'active') {
         const result = await softDeleteSub(sub.id)
         if (result?.error) toast.error(result.error)
-        else toast.success(`${sub.first_name} ${sub.last_name} removed.`)
+        else toast.success(`${subDisplayName(sub)} removed.`)
       } else {
         const result = await reactivateSub(sub.id)
         if (result?.error) toast.error(result.error)
-        else toast.success(`${sub.first_name} ${sub.last_name} reactivated.`)
+        else toast.success(`${subDisplayName(sub)} reactivated.`)
       }
       router.refresh()
     })
@@ -167,7 +167,7 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {sub.first_name} {sub.last_name}
+                  {subDisplayName(sub)}
                 </h1>
                 <span
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
@@ -179,6 +179,9 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
                   {sub.status === 'active' ? 'Active' : 'Deleted'}
                 </span>
               </div>
+              {sub.company_name && subPersonName(sub) && (
+                <p className="mt-1 text-sm text-gray-500">Contact: {subPersonName(sub)}</p>
+              )}
               <dl className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-3 text-sm">
                 <div>
                   <dt className="text-gray-500">Email</dt>

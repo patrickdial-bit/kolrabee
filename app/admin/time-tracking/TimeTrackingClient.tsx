@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { formatMinutes, sumDurationMinutes, weekRange } from '@/lib/time-tracking'
+import { subDisplayName } from '@/lib/types'
 import { deleteTimeEntry, updateTimeEntry } from './actions'
 
 type Entry = {
@@ -19,7 +20,7 @@ type Entry = {
   edited_by_admin_id: string | null
   edited_at: string | null
 }
-type Sub = { id: string; first_name: string; last_name: string }
+type Sub = { id: string; first_name: string; last_name: string; company_name: string | null }
 type ProjectRow = { id: string; customer_name: string; job_number: string | null }
 
 interface Props {
@@ -82,7 +83,7 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
     }
   }, [timezone, weekOffset])
 
-  const subMap = useMemo(() => new Map(subs.map((s) => [s.id, `${s.first_name} ${s.last_name}`])), [subs])
+  const subMap = useMemo(() => new Map(subs.map((s) => [s.id, subDisplayName(s)])), [subs])
   const projectMap = useMemo(
     () => new Map(projects.map((p) => [p.id, p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name])),
     [projects]
@@ -243,7 +244,7 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
         >
           <option value="all">All subcontractors</option>
           {subs.map((s) => (
-            <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>
+            <option key={s.id} value={s.id}>{subDisplayName(s)}</option>
           ))}
         </select>
         <select

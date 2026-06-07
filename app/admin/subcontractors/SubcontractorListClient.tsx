@@ -7,7 +7,7 @@ import AppShell from '@/components/AppShell'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
-import { isSubCompliant } from '@/lib/types'
+import { isSubCompliant, subDisplayName, subPersonName } from '@/lib/types'
 import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
 import { setTimeClockEnabled } from './time-clock-actions'
 import { getDocumentUrl } from './[id]/doc-actions'
@@ -31,7 +31,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('active')
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'compliant' | 'not_compliant'>('all')
-  const [sortKey, setSortKey] = useState<SubSortKey>('last_name')
+  const [sortKey, setSortKey] = useState<SubSortKey>('company_name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -277,9 +277,9 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0 flex-1">
                       <Link href={`/admin/subcontractors/${sub.id}`} className="text-sm font-semibold text-gray-900 hover:text-ember">
-                        {sub.first_name} {sub.last_name}
+                        {subDisplayName(sub)}
                       </Link>
-                      {sub.company_name && <p className="text-xs text-gray-500">{sub.company_name}</p>}
+                      {sub.company_name && subPersonName(sub) && <p className="text-xs text-gray-500">{subPersonName(sub)}</p>}
                     </div>
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
                       compliant
@@ -423,7 +423,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                               type="button"
                               role="switch"
                               aria-checked={current}
-                              aria-label={`${current ? 'Disable' : 'Enable'} time clock for ${sub.first_name} ${sub.last_name}`}
+                              aria-label={`${current ? 'Disable' : 'Enable'} time clock for ${subDisplayName(sub)}`}
                               disabled={disabled}
                               onClick={() => handleToggleTimeClock(sub.id, current)}
                               className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${

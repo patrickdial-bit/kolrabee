@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, extractCity } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isSubCompliant, isTenantActive, getNotificationPrefs } from '@/lib/types'
+import { isSubCompliant, isTenantActive, getNotificationPrefs, subDisplayName } from '@/lib/types'
 import { sendInviteEmail } from '@/lib/email'
 import type { AppUser, Project } from '@/lib/types'
 
@@ -15,6 +15,7 @@ export async function getSubcontractors(tenantId: string) {
     .eq('tenant_id', tenantId)
     .eq('role', 'subcontractor')
     .eq('status', 'active')
+    .order('company_name', { ascending: true, nullsFirst: false })
     .order('first_name', { ascending: true })
 
   if (error) {
@@ -70,7 +71,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
 
   const nonCompliant = (subs ?? []).filter((s: AppUser) => !isSubCompliant(s))
   if (nonCompliant.length > 0) {
-    const names = nonCompliant.map((s: AppUser) => `${s.first_name} ${s.last_name}`).join(', ')
+    const names = nonCompliant.map((s: AppUser) => subDisplayName(s)).join(', ')
     return { error: `Cannot invite: ${names} — missing W-9, COI, or insurance is expired.` }
   }
 

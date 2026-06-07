@@ -270,6 +270,27 @@ export type ReliabilityStats = {
   completionRate: number
 }
 
+// Primary display name for a subcontractor. Subcontractors represent the
+// business they operate as, so we lead with the company name and fall back to
+// their personal name only when no company is on file. Used everywhere a sub is
+// named to an admin: lists, dropdowns, search, project assignments, etc.
+export function subDisplayName(
+  sub: { company_name?: string | null; first_name?: string | null; last_name?: string | null }
+): string {
+  const company = sub.company_name?.trim()
+  if (company) return company
+  const personal = `${sub.first_name ?? ''} ${sub.last_name ?? ''}`.trim()
+  return personal || 'Unknown'
+}
+
+// Personal (contact) name for a subcontractor — first + last. Use as a
+// secondary line alongside subDisplayName, or where a human contact is meant.
+export function subPersonName(
+  sub: { first_name?: string | null; last_name?: string | null }
+): string {
+  return `${sub.first_name ?? ''} ${sub.last_name ?? ''}`.trim()
+}
+
 // Helper to check if a sub is compliant (has current W-9 and non-expired COI)
 export function isSubCompliant(sub: AppUser): boolean {
   const hasW9 = !!sub.w9_file_url
