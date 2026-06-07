@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useTooltips } from '@/lib/tooltip-context'
 
 export interface TourStep {
   target: string          // CSS selector for the element to highlight
@@ -21,17 +20,32 @@ export default function GuidedTour({ steps, tourKey, onComplete }: GuidedTourPro
   const [active, setActive] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
-  const { enabled: tooltipsOn } = useTooltips()
 
   const storageKey = `tour_completed_${tourKey}`
 
+  // Auto-run this screen's tour ONCE, on first visit. After it's completed or
+  // dismissed we never auto-show it again (it's marked done in dismiss()).
+  // Replaying is explicit, via the "Take a tour" button (event below).
   useEffect(() => {
-    // Show tour on every load while tooltips are on,
-    // or show once if tooltips were turned off before completing it
-    if (!tooltipsOn) return
+    if (typeof window === 'undefined') return
+    if (localStorage.getItem(storageKey) === 'true') return
     const timer = setTimeout(() => setActive(true), 600)
     return () => clearTimeout(timer)
-  }, [tooltipsOn])
+  }, [storageKey])
+
+  // Explicit launch (the sidebar "Take a tour" button) starts this tour on
+  // demand, regardless of whether it was completed before.
+  useEffect(() => {
+    function onStart(e: Event) {
+      const detail = (e as CustomEvent<{ tourKey: string }>).detail
+      if (detail?.tourKey === tourKey) {
+        setCurrentStep(0)
+        setActive(true)
+      }
+    }
+    window.addEventListener('kolrabee:start-tour', onStart as EventListener)
+    return () => window.removeEventListener('kolrabee:start-tour', onStart as EventListener)
+  }, [tourKey])
 
   const updateRect = useCallback(() => {
     if (!active || !steps[currentStep]) return

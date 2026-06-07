@@ -285,13 +285,15 @@ export default function SubProjectDetailClient({
                 <p className="mt-1 text-xs text-yellow-700">
                   Changed on {formatDate(project.schedule_changed_at)}. Please update your calendar.
                 </p>
-                <button
-                  onClick={handleAcknowledgeSchedule}
-                  disabled={loading === 'acknowledge'}
-                  className="mt-3 inline-flex items-center rounded-md bg-yellow-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yellow-800 disabled:opacity-50"
-                >
-                  {loading === 'acknowledge' ? 'Acknowledging...' : 'Got it'}
-                </button>
+                <Tooltip text="Confirm you've seen the new schedule so the office knows you're aware.">
+                  <button
+                    onClick={handleAcknowledgeSchedule}
+                    disabled={loading === 'acknowledge'}
+                    className="mt-3 inline-flex items-center rounded-md bg-yellow-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-yellow-800 disabled:opacity-50"
+                  >
+                    {loading === 'acknowledge' ? 'Acknowledging...' : 'Got it'}
+                  </button>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -333,12 +335,16 @@ export default function SubProjectDetailClient({
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('project.payout')}</dt>
                 <dd className="mt-1 text-lg font-semibold text-gray-900">
-                  {formatCurrency(project.payout_amount)}
-                  {project.estimated_labor_hours ? (
-                    <span className="ml-2 text-sm font-semibold text-emerald-600">
-                      ({formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr)
+                  <Tooltip text="What you'll earn for this job, including any scope changes.">
+                    <span className="inline-flex items-center">
+                      {formatCurrency(project.payout_amount)}
+                      {project.estimated_labor_hours ? (
+                        <span className="ml-2 text-sm font-semibold text-emerald-600">
+                          ({formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr)
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
+                  </Tooltip>
                 </dd>
               </div>
 
@@ -408,12 +414,14 @@ export default function SubProjectDetailClient({
                       </svg>
                       <span className="text-sm text-gray-900">{att.file_name}</span>
                     </div>
-                    <button
-                      onClick={() => handleDownloadAttachment(att.id)}
-                      className="text-xs font-medium text-ember hover:text-primary-700"
-                    >
-                      Download
-                    </button>
+                    <Tooltip text="Open or save this job document." position="left">
+                      <button
+                        onClick={() => handleDownloadAttachment(att.id)}
+                        className="text-xs font-medium text-ember hover:text-primary-700"
+                      >
+                        Download
+                      </button>
+                    </Tooltip>
                   </li>
                 ))}
               </ul>
@@ -532,19 +540,31 @@ export default function SubProjectDetailClient({
             {/* Before acceptance: Accept + Decline */}
             {isBeforeAcceptance && !showAcceptConfirm && (
               <div className="flex gap-3">
-                <button
-                  onClick={() => setShowAcceptConfirm(true)}
-                  className="flex-1 rounded-lg bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
-                >
-                  {t('project.accept_job')}
-                </button>
-                <button
-                  onClick={handleDecline}
-                  disabled={loading === 'decline'}
-                  className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                >
-                  {loading === 'decline' ? t('project.declining') : t('project.decline')}
-                </button>
+                <div className="flex-1">
+                  <Tooltip text="Take this job. It's reserved for you and the full address unlocks.">
+                    <div className="block w-full">
+                      <button
+                        onClick={() => setShowAcceptConfirm(true)}
+                        className="w-full rounded-lg bg-ember px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
+                      >
+                        {t('project.accept_job')}
+                      </button>
+                    </div>
+                  </Tooltip>
+                </div>
+                <div className="flex-1">
+                  <Tooltip text="Pass on this job. It stays available for other subs.">
+                    <div className="block w-full">
+                      <button
+                        onClick={handleDecline}
+                        disabled={loading === 'decline'}
+                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        {loading === 'decline' ? t('project.declining') : t('project.decline')}
+                      </button>
+                    </div>
+                  </Tooltip>
+                </div>
               </div>
             )}
 
@@ -575,37 +595,53 @@ export default function SubProjectDetailClient({
             {/* Accepted: Start Job + Mark Complete + Cancel */}
             {isAcceptedByMe && project.status === 'accepted' && !showCancelConfirm && !showCompleteConfirm && (
               <div className="space-y-3">
-                <button
-                  onClick={handleStartJob}
-                  disabled={loading === 'start'}
-                  className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-600 transition-colors disabled:opacity-50"
-                >
-                  {loading === 'start' ? 'Starting...' : 'Start Job'}
-                </button>
-                <button
-                  onClick={() => setShowCompleteConfirm(true)}
-                  className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
-                >
-                  {t('project.mark_complete')}
-                </button>
-                <button
-                  onClick={() => setShowCancelConfirm(true)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
-                >
-                  {t('project.cancel_acceptance')}
-                </button>
+                <Tooltip text="Tell the office you're on site and working this job.">
+                  <div className="block w-full">
+                    <button
+                      onClick={handleStartJob}
+                      disabled={loading === 'start'}
+                      className="w-full rounded-lg bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-600 transition-colors disabled:opacity-50"
+                    >
+                      {loading === 'start' ? 'Starting...' : 'Start Job'}
+                    </button>
+                  </div>
+                </Tooltip>
+                <Tooltip text="Mark the work finished so it can be approved and paid.">
+                  <div className="block w-full">
+                    <button
+                      onClick={() => setShowCompleteConfirm(true)}
+                      className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+                    >
+                      {t('project.mark_complete')}
+                    </button>
+                  </div>
+                </Tooltip>
+                <Tooltip text="Give up this job. It goes back to available for others.">
+                  <div className="block w-full">
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      {t('project.cancel_acceptance')}
+                    </button>
+                  </div>
+                </Tooltip>
               </div>
             )}
 
             {/* In Progress: Mark Complete */}
             {isAcceptedByMe && project.status === 'in_progress' && !showCompleteConfirm && (
               <div className="space-y-3">
-                <button
-                  onClick={() => setShowCompleteConfirm(true)}
-                  className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
-                >
-                  {t('project.mark_complete')}
-                </button>
+                <Tooltip text="Mark the work finished so it can be approved and paid.">
+                  <div className="block w-full">
+                    <button
+                      onClick={() => setShowCompleteConfirm(true)}
+                      className="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+                    >
+                      {t('project.mark_complete')}
+                    </button>
+                  </div>
+                </Tooltip>
               </div>
             )}
 

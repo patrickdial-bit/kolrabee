@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import AppShell from '@/components/AppShell'
+import Tooltip from '@/components/Tooltip'
 import type { IntegrationStatus } from '@/lib/integrations/backup'
 import { disconnectGoogleDrive, updateAutoCreateFolders, updateAutoBackup } from './actions'
 
@@ -126,44 +127,52 @@ export default function BackupSettingsClient({
           <div className="mt-6 flex flex-wrap items-center gap-3">
             {status.connected ? (
               <>
-                <button
-                  onClick={handleDisconnect}
-                  disabled={isPending}
-                  className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
-                >
-                  Disconnect
-                </button>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={autoCreate}
-                    onChange={(e) => handleToggleAuto(e.target.checked)}
+                <Tooltip text="Stop linking new projects to Drive — files already backed up stay safe in your Drive">
+                  <button
+                    onClick={handleDisconnect}
                     disabled={isPending}
-                    className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
-                  />
-                  Auto-create a Drive folder when a new project is added
-                </label>
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={autoBackup}
-                    onChange={(e) => handleToggleAutoBackup(e.target.checked)}
-                    disabled={isPending}
-                    className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
-                  />
-                  Nightly auto-backup of jobs with new photos or documents
-                </label>
+                    className="inline-flex items-center rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                  >
+                    Disconnect
+                  </button>
+                </Tooltip>
+                <Tooltip text="When on, each new project automatically gets its own Google Drive folder">
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={autoCreate}
+                      onChange={(e) => handleToggleAuto(e.target.checked)}
+                      disabled={isPending}
+                      className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
+                    />
+                    Auto-create a Drive folder when a new project is added
+                  </label>
+                </Tooltip>
+                <Tooltip text="When on, jobs with new photos or documents are copied to Drive every night">
+                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={autoBackup}
+                      onChange={(e) => handleToggleAutoBackup(e.target.checked)}
+                      disabled={isPending}
+                      className="h-4 w-4 rounded border-gray-300 text-ember focus:ring-ember"
+                    />
+                    Nightly auto-backup of jobs with new photos or documents
+                  </label>
+                </Tooltip>
               </>
             ) : (
-              <a
-                href="/api/integrations/google/start"
-                aria-disabled={!status.configured}
-                className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white ${
-                  status.configured ? 'bg-ember hover:bg-primary-700' : 'bg-gray-300 pointer-events-none'
-                }`}
-              >
-                Connect Google Drive
-              </a>
+              <Tooltip text="Sign in with Google to start backing up job photos and documents to your Drive">
+                <a
+                  href="/api/integrations/google/start"
+                  aria-disabled={!status.configured}
+                  className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white ${
+                    status.configured ? 'bg-ember hover:bg-primary-700' : 'bg-gray-300 pointer-events-none'
+                  }`}
+                >
+                  Connect Google Drive
+                </a>
+              </Tooltip>
             )}
           </div>
         </div>
