@@ -65,6 +65,9 @@ CREATE TABLE IF NOT EXISTS projects (
   accepted_by UUID REFERENCES users(id),
   accepted_at TIMESTAMPTZ,
   paid_at TIMESTAMPTZ,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
+  geocoded_at TIMESTAMPTZ,
   version INT DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -127,6 +127,9 @@ export type Project = {
   accepted_by: string | null
   accepted_at: string | null
   paid_at: string | null
+  latitude: number | null
+  longitude: number | null
+  geocoded_at: string | null
   completion_requested_by: string | null
   completion_requested_at: string | null
   schedule_changed_at: string | null

@@ -76,6 +76,7 @@ export default function AppShell(props: AppShellProps) {
         items: [
           { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', active: pathname.startsWith('/admin/dashboard') },
           { href: '/admin/projects', label: 'Projects', icon: 'projects', active: pathname.startsWith('/admin/projects') },
+          { href: '/admin/map', label: 'Map', icon: 'map', active: pathname.startsWith('/admin/map') },
           { href: '/admin/subcontractors', label: 'Subcontractors', icon: 'subcontractors', active: pathname.startsWith('/admin/subcontractors') },
           { href: '/admin/team', label: 'Team', icon: 'team', active: pathname.startsWith('/admin/team') },
           { href: '/admin/time-tracking', label: 'Time Tracking', icon: 'time', active: pathname.startsWith('/admin/time-tracking') },
@@ -134,6 +135,7 @@ export default function AppShell(props: AppShellProps) {
       {
         items: [
           { href: `/${slug}/dashboard`, label: 'Dashboard', icon: 'dashboard', active: isActive(`/${slug}/dashboard`) },
+          { href: `/${slug}/map`, label: 'Map', icon: 'map', active: isActive(`/${slug}/map`) },
           ...(isCrewLeader
             ? [{ href: `/${slug}/crew`, label: 'Crew', icon: 'crew' as const, active: isActive(`/${slug}/crew`) }]
             : []),
