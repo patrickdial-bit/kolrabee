@@ -6,6 +6,7 @@ import { createProject } from './actions'
 import Tooltip from '@/components/Tooltip'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import DatePicker from '@/components/DatePicker'
+import AddressFields from '@/components/AddressFields'
 
 interface SelectedFile {
   file: File
@@ -161,12 +162,10 @@ export default function NewProjectForm() {
           </div>
 
           <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+            <p className="block text-sm font-medium text-gray-700 mb-2">
               Project Site Address <span className="text-amber-500">*</span>
-            </label>
-            <input type="text" id="address" name="address" required
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
-              placeholder="Enter full address (street, city, state, zip)" />
+            </p>
+            <AddressFields />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

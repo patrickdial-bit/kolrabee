@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 import { geocodeAndStoreProject } from '@/lib/geocode'
+import { readAddressFromForm } from '@/lib/address'
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL
@@ -55,7 +56,6 @@ async function notifyAssignedSubOfReschedule(args: {
 
 export async function updateProject(projectId: string, formData: FormData) {
   const customerName = formData.get('customer_name') as string
-  const address = formData.get('address') as string
   const jobNumber = formData.get('job_number') as string
   const startDate = formData.get('start_date') as string
   const startTime = formData.get('start_time') as string
@@ -70,9 +70,11 @@ export async function updateProject(projectId: string, formData: FormData) {
     return { error: 'Customer name is required.' }
   }
 
-  if (!address?.trim()) {
-    return { error: 'Address is required.' }
+  const addressResult = readAddressFromForm(formData)
+  if ('error' in addressResult) {
+    return { error: addressResult.error }
   }
+  const address = addressResult.address
 
   const payoutAmount = parseFloat(payoutAmountRaw)
   if (isNaN(payoutAmount) || payoutAmount < 0) {
