@@ -6,6 +6,7 @@ import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+import { geocodeAndStoreProject } from '@/lib/geocode'
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL
@@ -91,10 +92,12 @@ export async function updateProject(projectId: string, formData: FormData) {
 
   const { data: existing } = await adminClient
     .from('projects')
-    .select('start_date, start_time, accepted_by, job_number, customer_name')
+    .select('start_date, start_time, accepted_by, job_number, customer_name, address')
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .single()
+
+  const addressChanged = !existing || (existing.address ?? '').trim() !== address.trim()
 
   const newStartDate = startDate || null
   const newStartTime = startTime || null
@@ -134,6 +137,11 @@ export async function updateProject(projectId: string, formData: FormData) {
       return { error: `A project with job number "${trimmedJobNumber}" already exists. Pick a different number or cancel the existing project first.` }
     }
     return { error: 'Failed to update project.' }
+  }
+
+  // Re-geocode when the address changes so the map stays accurate. Best-effort.
+  if (addressChanged) {
+    await geocodeAndStoreProject(projectId, address.trim())
   }
 
   if (scheduleChanged && subAssigned && existing) {
