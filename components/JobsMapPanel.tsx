@@ -1,12 +1,13 @@
 'use client'
 
-// JobsMapPanel — chrome around <JobsMap>: client-only dynamic import, a status
-// legend, an empty state, and a count of jobs that couldn't be placed on the
-// map (missing/failed geocoding). Used by both the admin and subcontractor map
-// pages so the two surfaces stay visually consistent.
+// JobsMapPanel — chrome around <JobsMap>: client-only dynamic import, an
+// interactive stage filter (toggle pins on/off by job status), an empty state,
+// and a count of jobs that couldn't be placed on the map (missing/failed
+// geocoding). Used by both the admin and subcontractor map pages so the two
+// surfaces stay visually consistent.
 
 import dynamic from 'next/dynamic'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { MapPoint } from '@/components/JobsMap'
 
 const JobsMap = dynamic(() => import('@/components/JobsMap'), {
@@ -37,14 +38,78 @@ export default function JobsMapPanel({
   unplaced?: number
   emptyMessage?: string
 }) {
-  // Only show legend entries for statuses actually present on the map.
-  const activeStatuses = useMemo(() => {
-    const set = new Set(points.map((p) => p.status))
-    return LEGEND.filter((l) => set.has(l.status))
+  // Track hidden stages (empty = all shown). Storing the hidden set means stages
+  // that appear later default to visible.
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+
+  // Legend entries + counts for the statuses actually present on the map.
+  const stages = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of points) {
+      const key = p.status ?? ''
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    return LEGEND.filter((l) => counts.has(l.status)).map((l) => ({ ...l, count: counts.get(l.status) ?? 0 }))
   }, [points])
+
+  const visiblePoints = useMemo(
+    () => points.filter((p) => !hidden.has(p.status ?? '')),
+    [points, hidden],
+  )
+
+  function toggle(status: string) {
+    setHidden((prev) => {
+      const next = new Set(prev)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next
+    })
+  }
+
+  const allShown = hidden.size === 0
+  const noneVisible = points.length > 0 && visiblePoints.length === 0
 
   return (
     <div className="space-y-3">
+      {/* Stage filter */}
+      {stages.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-500 mr-1">Stages:</span>
+          {stages.map((s) => {
+            const off = hidden.has(s.status)
+            return (
+              <button
+                key={s.status}
+                type="button"
+                onClick={() => toggle(s.status)}
+                aria-pressed={!off}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  off
+                    ? 'border-gray-200 bg-white text-gray-400'
+                    : 'border-gray-300 bg-gray-50 text-gray-700'
+                }`}
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: off ? '#d1d5db' : s.color }}
+                />
+                <span className={off ? 'line-through' : ''}>{s.label}</span>
+                <span className={off ? 'text-gray-300' : 'text-gray-400'}>({s.count})</span>
+              </button>
+            )
+          })}
+          {!allShown && (
+            <button
+              type="button"
+              onClick={() => setHidden(new Set())}
+              className="text-xs font-medium text-ember hover:underline"
+            >
+              Show all
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
         {points.length === 0 ? (
           <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2 bg-gray-50 px-6 text-center">
@@ -53,25 +118,22 @@ export default function JobsMapPanel({
             </svg>
             <p className="text-sm text-gray-500">{emptyMessage}</p>
           </div>
+        ) : noneVisible ? (
+          <div className="flex h-[60vh] w-full flex-col items-center justify-center gap-2 bg-gray-50 px-6 text-center">
+            <p className="text-sm text-gray-500">No jobs match the selected stages.</p>
+            <button type="button" onClick={() => setHidden(new Set())} className="text-sm font-medium text-ember hover:underline">
+              Show all stages
+            </button>
+          </div>
         ) : (
-          <JobsMap points={points} className="h-[60vh] w-full" />
+          <JobsMap points={visiblePoints} className="h-[60vh] w-full" />
         )}
       </div>
 
-      {(activeStatuses.length > 0 || unplaced > 0) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 text-xs text-gray-600">
-          {activeStatuses.map((l) => (
-            <span key={l.label} className="inline-flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: l.color }} />
-              {l.label}
-            </span>
-          ))}
-          {unplaced > 0 && (
-            <span className="text-gray-400">
-              {unplaced} job{unplaced === 1 ? '' : 's'} not yet placed on the map
-            </span>
-          )}
-        </div>
+      {unplaced > 0 && (
+        <p className="px-1 text-xs text-gray-400">
+          {unplaced} job{unplaced === 1 ? '' : 's'} not yet placed on the map
+        </p>
       )}
     </div>
   )
