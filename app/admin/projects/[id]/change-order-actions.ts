@@ -1,5 +1,7 @@
 'use server'
 
+import { getSiteUrl } from '@/lib/site-url'
+
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -7,8 +9,7 @@ import { sendChangeOrderEmail } from '@/lib/email'
 import { getNotificationPrefs } from '@/lib/types'
 
 function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL
-    || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  return getSiteUrl()
 }
 
 // Statuses where adjusting scope/pay is sensible. Paid jobs are settled,

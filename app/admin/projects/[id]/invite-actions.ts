@@ -1,5 +1,7 @@
 'use server'
 
+import { getSiteUrl } from '@/lib/site-url'
+
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser, extractCity } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -107,7 +109,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
 
   // Send invitation emails (fire-and-forget — don't block on email failures)
   if (project && subs) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = getSiteUrl()
     const projectUrl = `${siteUrl}/${tenant.slug}/projects/${projectId}`
     const city = extractCity(project.address)
 

@@ -1,5 +1,7 @@
 'use server'
 
+import { getSiteUrl } from '@/lib/site-url'
+
 import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -53,7 +55,7 @@ export async function sendMessage(projectId: string, body: string) {
   if (sub) {
     const prefs = getNotificationPrefs(sub)
     if (prefs.new_message) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      const siteUrl = getSiteUrl()
       sendMessageNotificationEmail({
         to: sub.email,
         senderName: `${appUser.first_name} ${appUser.last_name}`,

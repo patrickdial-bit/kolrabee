@@ -3,6 +3,7 @@ import { getStripe, PLAN_PRICES } from '@/lib/stripe'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PlanId } from '@/lib/stripe'
+import { getSiteUrl } from '@/lib/site-url'
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const siteUrl = getSiteUrl()
     const adminClient = createAdminClient()
 
     // Create or reuse Stripe customer

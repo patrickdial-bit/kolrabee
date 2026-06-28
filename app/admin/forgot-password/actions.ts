@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSiteUrl } from '@/lib/site-url'
 
 export async function forgotPasswordAction(
   _prevState: { error?: string; success?: boolean } | null,
@@ -15,7 +16,7 @@ export async function forgotPasswordAction(
   const supabase = await createClient()
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/admin/reset-password`,
+    redirectTo: `${getSiteUrl()}/admin/reset-password`,
   })
 
   if (error) {

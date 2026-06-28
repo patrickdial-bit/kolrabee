@@ -7,11 +7,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 import { geocodeAndStoreProject } from '@/lib/geocode'
+import { getSiteUrl } from '@/lib/site-url'
 import { readAddressFromForm } from '@/lib/address'
 
 function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL
-    || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  return getSiteUrl()
 }
 
 async function notifyAssignedSubOfReschedule(args: {
@@ -310,7 +310,7 @@ export async function approveCompletion(projectId: string) {
     if (sub) {
       const prefs = getNotificationPrefs(sub)
       if (prefs.project_completion_approved) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const siteUrl = getSiteUrl()
         sendCompletionApprovedEmail({
           to: sub.email,
           subName: sub.first_name,
@@ -365,7 +365,7 @@ export async function markPaid(projectId: string) {
     if (sub) {
       const prefs = getNotificationPrefs(sub)
       if (prefs.project_updates) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+        const siteUrl = getSiteUrl()
         sendPaidEmail({
           to: sub.email,
           subName: sub.first_name,

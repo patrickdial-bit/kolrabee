@@ -1,5 +1,7 @@
 'use server'
 
+import { getSiteUrl } from '@/lib/site-url'
+
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUser } from '@/lib/helpers'
@@ -100,7 +102,7 @@ export async function inviteSubToJoin(email: string, name: string) {
   }
 
   const normalizedEmail = email.toLowerCase().trim()
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const baseUrl = getSiteUrl()
   const params = new URLSearchParams({ email: normalizedEmail })
   if (name) params.set('name', name)
   const joinUrl = `${baseUrl}/${tenant.slug}/join?${params.toString()}`
@@ -227,7 +229,7 @@ export async function editSubInvite(inviteId: string, email: string, name: strin
   }
 
   // Re-send the invite email so the recipient (especially if email changed) gets the updated link.
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const baseUrl = getSiteUrl()
   const params = new URLSearchParams({ email: normalizedEmail })
   if (trimmedName) params.set('name', trimmedName)
   const joinUrl = `${baseUrl}/${tenant.slug}/join?${params.toString()}`

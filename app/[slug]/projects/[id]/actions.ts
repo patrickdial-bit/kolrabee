@@ -1,5 +1,7 @@
 'use server'
 
+import { getSiteUrl } from '@/lib/site-url'
+
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getCurrentSub } from '@/lib/helpers'
@@ -83,7 +85,7 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
       .eq('role', 'admin')
       .eq('status', 'active')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = getSiteUrl()
     const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
@@ -161,7 +163,7 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
       .eq('role', 'admin')
       .eq('status', 'active')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = getSiteUrl()
     const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
@@ -209,7 +211,7 @@ export async function markInProgress(projectId: string, expectedVersion: number,
 
   // Notify admin(s)
   const project = data[0]
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const siteUrl = getSiteUrl()
   const projectUrl = `${siteUrl}/admin/projects/${projectId}`
   const { data: admins } = await adminClient
     .from('users')
@@ -323,7 +325,7 @@ export async function markCompleted(projectId: string, expectedVersion: number, 
 
   // Notify admin(s)
   const project = data[0]
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const siteUrl = getSiteUrl()
   const projectUrl = `${siteUrl}/admin/projects/${projectId}`
   const { data: admins } = await adminClient
     .from('users')
@@ -382,7 +384,7 @@ export async function declineProject(projectId: string, slug: string) {
       .eq('role', 'admin')
       .eq('status', 'active')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = getSiteUrl()
     const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {

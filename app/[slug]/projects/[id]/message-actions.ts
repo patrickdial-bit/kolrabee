@@ -1,5 +1,7 @@
 'use server'
 
+import { getSiteUrl } from '@/lib/site-url'
+
 import { revalidatePath } from 'next/cache'
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -64,7 +66,7 @@ export async function sendSubMessage(projectId: string, body: string, slug: stri
       jobNumber: project.job_number,
       customerName: project.customer_name,
       messagePreview: body.trim().slice(0, 200),
-      loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/projects/${projectId}`,
+      loginUrl: `${getSiteUrl()}/admin/projects/${projectId}`,
     })
   }
 
