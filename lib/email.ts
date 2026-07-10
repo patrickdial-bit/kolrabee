@@ -1,6 +1,15 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy init (like getStripe) so importing this module never throws at build
+// time when RESEND_API_KEY isn't set.
+let _resend: Resend | null = null
+
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY)
+  }
+  return _resend
+}
 
 const DEFAULT_FROM = 'Kolrabee <notifications@contact.kolrabee.com>'
 
@@ -9,6 +18,15 @@ function getFrom(tenantName: string, notificationEmail: string | null) {
     return `${tenantName} via Kolrabee <notifications@contact.kolrabee.com>`
   }
   return DEFAULT_FROM
+}
+
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 type InviteEmailParams = {
@@ -89,7 +107,7 @@ export async function sendPlatformInviteEmail(params: {
   const greeting = name ? `Hi ${name},` : 'Hi,'
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -121,7 +139,7 @@ export async function sendAdminInviteEmail(params: {
   const greeting = name ? `Hi ${name},` : 'Hi,'
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -147,7 +165,7 @@ export async function sendInviteEmail(params: InviteEmailParams) {
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -178,7 +196,7 @@ export async function sendAcceptEmail(params: AcceptEmailParams) {
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -210,7 +228,7 @@ export async function sendDeclineEmail(params: DeclineEmailParams) {
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -243,7 +261,7 @@ export async function sendCompletionRequestEmail(params: {
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -277,7 +295,7 @@ export async function sendCompletionApprovedEmail(params: {
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -315,7 +333,7 @@ export async function sendMessageNotificationEmail(params: {
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -323,9 +341,9 @@ export async function sendMessageNotificationEmail(params: {
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #1a1a1a; margin-bottom: 4px;">New Message</h2>
-          <p style="color: #666; margin-top: 0;"><strong>${senderName}</strong> sent a message on <strong>${jobLabel}${customerName}</strong>:</p>
+          <p style="color: #666; margin-top: 0;"><strong>${escapeHtml(senderName)}</strong> sent a message on <strong>${escapeHtml(jobLabel + customerName)}</strong>:</p>
           <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="color: #374151; margin: 0; white-space: pre-wrap;">${messagePreview}</p>
+            <p style="color: #374151; margin: 0; white-space: pre-wrap;">${escapeHtml(messagePreview)}</p>
           </div>
           <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View &amp; Reply</a>
         </div>
@@ -336,13 +354,85 @@ export async function sendMessageNotificationEmail(params: {
   }
 }
 
+export type DailyHoursJobSection = {
+  jobLabel: string
+  todayLabel: string
+  estimateLine: string
+  overEstimate: boolean
+  painters: Array<{
+    name: string
+    totalLabel: string
+    entries: Array<{ range: string }>
+  }>
+}
+
+/** Daily digest: painter hours per job vs estimated labor hours — sent to admins */
+export async function sendDailyHoursEmail(params: {
+  to: string
+  tenantName: string
+  notificationEmail: string | null
+  dayLabel: string
+  totalLabel: string
+  jobs: DailyHoursJobSection[]
+  timeTrackingUrl: string
+}) {
+  const { to, tenantName, notificationEmail, dayLabel, totalLabel, jobs, timeTrackingUrl } = params
+
+  const jobSections = jobs
+    .map(
+      (job) => `
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0;">
+          <h3 style="color: #1a1a1a; margin: 0 0 4px; font-size: 16px;">${escapeHtml(job.jobLabel)}</h3>
+          <p style="color: #374151; margin: 0 0 2px; font-size: 14px;">Today: <strong>${job.todayLabel}</strong></p>
+          <p style="color: ${job.overEstimate ? '#dc2626' : '#6b7280'}; margin: 0 0 12px; font-size: 13px;">${escapeHtml(job.estimateLine)}</p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+              <th style="text-align: left; color: #6b7280; font-size: 12px; text-transform: uppercase; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">Painter</th>
+              <th style="text-align: left; color: #6b7280; font-size: 12px; text-transform: uppercase; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">Clock in – out</th>
+              <th style="text-align: right; color: #6b7280; font-size: 12px; text-transform: uppercase; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">Hours</th>
+            </tr>
+            ${job.painters
+              .map(
+                (p) => `
+            <tr>
+              <td style="padding: 6px 8px 6px 0; color: #111827; vertical-align: top;">${escapeHtml(p.name)}</td>
+              <td style="padding: 6px 8px 6px 0; color: #374151; vertical-align: top;">${p.entries.map((en) => escapeHtml(en.range)).join('<br>')}</td>
+              <td style="padding: 6px 0; color: #111827; text-align: right; vertical-align: top; white-space: nowrap;">${p.totalLabel}</td>
+            </tr>`
+              )
+              .join('')}
+          </table>
+        </div>`
+    )
+    .join('')
+
+  try {
+    await getResend().emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `Painter hours for ${dayLabel} — ${totalLabel}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">Daily Hours Report</h2>
+          <p style="color: #666; margin-top: 0;">${escapeHtml(dayLabel)} · <strong>${totalLabel}</strong> logged across ${jobs.length} job${jobs.length === 1 ? '' : 's'}</p>
+          ${jobSections}
+          <a href="${timeTrackingUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Open Time Tracking</a>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send daily hours email:', err)
+  }
+}
+
 /** Email 7: Sub cancelled an accepted project — notify admin */
 export async function sendCancelEmail(params: CancelEmailParams) {
   const { to, subName, tenantName, notificationEmail, jobNumber, customerName, projectUrl } = params
   const jobLabel = jobNumber ? `Job #${jobNumber} — ` : ''
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -378,7 +468,7 @@ export async function sendPaidEmail(params: {
   const formattedPayout = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(payout)
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -452,7 +542,7 @@ export async function sendScheduleChangedEmail(params: {
   const newWhen = formatDateTimeForEmail(newStartDate, newStartTime)
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -518,7 +608,7 @@ export async function sendChangeOrderEmail(params: {
   const accent = isIncrease ? '#16a34a' : '#d97706'
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,
@@ -556,7 +646,7 @@ export async function sendStatusUpdateEmail(params: StatusUpdateEmailParams) {
   const color = newStatus === 'in_progress' ? '#2563eb' : '#16a34a'
 
   try {
-    await resend.emails.send({
+    await getResend().emails.send({
       from: getFrom(tenantName, notificationEmail),
       replyTo: notificationEmail || undefined,
       to,

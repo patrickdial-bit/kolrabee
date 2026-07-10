@@ -32,7 +32,9 @@ export default async function TimeTrackingPage() {
   const [{ data: entries }, { data: subs }, { data: projects }] = await Promise.all([
     adminClient
       .from('time_entries')
-      .select('id, subcontractor_id, project_id, clock_in, clock_out, duration_minutes, notes, edited_by_admin_id, edited_at')
+      // Embed the project and crew member on each entry so the job label never
+      // depends on a separate (row-capped) projects fetch.
+      .select('id, subcontractor_id, crew_member_id, project_id, clock_in, clock_out, duration_minutes, notes, edited_by_admin_id, edited_at, project:project_id (customer_name, job_number), crew_member:crew_member_id (first_name, last_name)')
       .eq('tenant_id', tenant.id)
       .order('clock_in', { ascending: false })
       .limit(2000),
@@ -46,7 +48,9 @@ export default async function TimeTrackingPage() {
     adminClient
       .from('projects')
       .select('id, customer_name, job_number')
-      .eq('tenant_id', tenant.id),
+      .eq('tenant_id', tenant.id)
+      .order('created_at', { ascending: false })
+      .limit(2000),
   ])
 
   return (

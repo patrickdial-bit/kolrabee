@@ -54,6 +54,7 @@ export type NotificationPreferences = {
   project_rescheduled: boolean
   project_change_order: boolean
   new_message: boolean
+  daily_hours_summary: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
@@ -66,6 +67,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   project_rescheduled: true,
   project_change_order: true,
   new_message: true,
+  daily_hours_summary: true,
 }
 
 export function getNotificationPrefs(user: { notification_preferences: NotificationPreferences | null }): NotificationPreferences {
