@@ -54,7 +54,8 @@ export async function sendMessage(projectId: string, body: string) {
     const prefs = getNotificationPrefs(sub)
     if (prefs.new_message) {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-      sendMessageNotificationEmail({
+      // Await so the serverless function isn't frozen before the email goes out
+      await sendMessageNotificationEmail({
         to: sub.email,
         senderName: `${appUser.first_name} ${appUser.last_name}`,
         tenantName: tenant.name,
@@ -62,7 +63,7 @@ export async function sendMessage(projectId: string, body: string) {
         jobNumber: project.job_number,
         customerName: project.customer_name,
         messagePreview: body.trim().slice(0, 200),
-        loginUrl: `${siteUrl}/${tenant.slug}/login`,
+        loginUrl: `${siteUrl}/${tenant.slug}/projects/${projectId}`,
       })
     }
   }

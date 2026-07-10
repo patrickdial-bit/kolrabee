@@ -53,20 +53,23 @@ export async function sendSubMessage(projectId: string, body: string, slug: stri
     .eq('status', 'active')
 
   const senderName = `${appUser.first_name} ${appUser.last_name}`
-  for (const admin of admins ?? []) {
-    const prefs = getNotificationPrefs(admin)
-    if (!prefs.new_message) continue
-    sendMessageNotificationEmail({
-      to: admin.email,
-      senderName,
-      tenantName: tenant.name,
-      notificationEmail: tenant.notification_email,
-      jobNumber: project.job_number,
-      customerName: project.customer_name,
-      messagePreview: body.trim().slice(0, 200),
-      loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/projects/${projectId}`,
-    })
-  }
+  // Await so the serverless function isn't frozen before the emails go out
+  await Promise.all(
+    (admins ?? [])
+      .filter((admin) => getNotificationPrefs(admin).new_message)
+      .map((admin) =>
+        sendMessageNotificationEmail({
+          to: admin.email,
+          senderName,
+          tenantName: tenant.name,
+          notificationEmail: tenant.notification_email,
+          jobNumber: project.job_number,
+          customerName: project.customer_name,
+          messagePreview: body.trim().slice(0, 200),
+          loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/projects/${projectId}`,
+        })
+      )
+  )
 
   revalidatePath(`/${slug}/projects/${projectId}`)
   return { success: true }

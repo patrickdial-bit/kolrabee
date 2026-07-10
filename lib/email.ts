@@ -11,6 +11,15 @@ function getFrom(tenantName: string, notificationEmail: string | null) {
   return DEFAULT_FROM
 }
 
+function escapeHtml(text: string) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 type InviteEmailParams = {
   to: string
   subName: string
@@ -323,9 +332,9 @@ export async function sendMessageNotificationEmail(params: {
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #1a1a1a; margin-bottom: 4px;">New Message</h2>
-          <p style="color: #666; margin-top: 0;"><strong>${senderName}</strong> sent a message on <strong>${jobLabel}${customerName}</strong>:</p>
+          <p style="color: #666; margin-top: 0;"><strong>${escapeHtml(senderName)}</strong> sent a message on <strong>${escapeHtml(jobLabel + customerName)}</strong>:</p>
           <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0;">
-            <p style="color: #374151; margin: 0; white-space: pre-wrap;">${messagePreview}</p>
+            <p style="color: #374151; margin: 0; white-space: pre-wrap;">${escapeHtml(messagePreview)}</p>
           </div>
           <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">View &amp; Reply</a>
         </div>
