@@ -13,6 +13,7 @@ import { deleteTimeEntry, updateTimeEntry } from './actions'
 type Entry = {
   id: string
   subcontractor_id: string
+  crew_member_id: string | null
   project_id: string
   clock_in: string
   clock_out: string | null
@@ -20,9 +21,16 @@ type Entry = {
   notes: string | null
   edited_by_admin_id: string | null
   edited_at: string | null
+  project: { customer_name: string; job_number: string | null } | null
+  crew_member: { first_name: string; last_name: string } | null
 }
 type Sub = { id: string; first_name: string; last_name: string; company_name: string | null }
 type ProjectRow = { id: string; customer_name: string; job_number: string | null }
+
+function projectLabel(p: { customer_name: string; job_number: string | null } | null | undefined): string | null {
+  if (!p) return null
+  return p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name
+}
 
 interface Props {
   tenantTimezone: string
@@ -85,10 +93,25 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
   }, [timezone, weekOffset])
 
   const subMap = useMemo(() => new Map(subs.map((s) => [s.id, subDisplayName(s)])), [subs])
+  const subPersonMap = useMemo(
+    () => new Map(subs.map((s) => [s.id, `${s.first_name} ${s.last_name}`.trim() || subDisplayName(s)])),
+    [subs]
+  )
   const projectMap = useMemo(
     () => new Map(projects.map((p) => [p.id, p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name])),
     [projects]
   )
+
+  // Prefer the project embedded on the entry (always present via the SQL join);
+  // the projectMap is only a fallback for the filter dropdown's separate fetch.
+  function jobLabelFor(g: { projectId: string; entries: Entry[] }): string {
+    return projectLabel(g.entries[0]?.project) ?? projectMap.get(g.projectId) ?? '—'
+  }
+
+  function painterName(e: Entry): string {
+    if (e.crew_member) return `${e.crew_member.first_name} ${e.crew_member.last_name}`.trim()
+    return `${subPersonMap.get(e.subcontractor_id) ?? 'Unknown'} (lead)`
+  }
 
   const inWeek = useMemo(() => {
     const startMs = new Date(startUtc).getTime()
@@ -167,13 +190,14 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
 
   function exportCsv() {
     const rows = [
-      ['Subcontractor', 'Job', 'Clock In', 'Clock Out', 'Duration (min)', 'Notes', 'Edited By Admin', 'Edited At'],
+      ['Subcontractor', 'Painter', 'Job', 'Clock In', 'Clock Out', 'Duration (min)', 'Notes', 'Edited By Admin', 'Edited At'],
     ]
     for (const g of groups) {
       for (const e of g.entries) {
         rows.push([
           subMap.get(g.subId) ?? g.subId,
-          projectMap.get(g.projectId) ?? g.projectId,
+          painterName(e),
+          jobLabelFor(g),
           formatZoned(e.clock_in, timezone, "yyyy-MM-dd HH:mm"),
           e.clock_out ? formatZoned(e.clock_out, timezone, "yyyy-MM-dd HH:mm") : '',
           e.duration_minutes !== null ? String(e.duration_minutes) : '',
@@ -298,7 +322,7 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
                   <React.Fragment key={key}>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-900">{subMap.get(g.subId) ?? '—'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{projectMap.get(g.projectId) ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{jobLabelFor(g)}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{weekLabel}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right tabular-nums">
                         <Tooltip text="Total hours logged this week for this subcontractor on this job">
@@ -321,6 +345,7 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
                           <table className="min-w-full">
                             <thead>
                               <tr className="text-xs font-semibold uppercase text-gray-500">
+                                <th className="text-left py-1">Painter</th>
                                 <th className="text-left py-1">Clock in</th>
                                 <th className="text-left py-1">Clock out</th>
                                 <th className="text-right py-1">Duration</th>
@@ -333,6 +358,7 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
                                 <tr key={e.id} className="text-sm">
                                   {editingId === e.id ? (
                                     <>
+                                      <td className="py-2 text-gray-700 pr-3">{painterName(e)}</td>
                                       <td className="py-2">
                                         <input
                                           type="datetime-local"
@@ -377,6 +403,7 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
                                     </>
                                   ) : (
                                     <>
+                                      <td className="py-2 text-gray-700 pr-3">{painterName(e)}</td>
                                       <td className="py-2 text-gray-700">{formatZoned(e.clock_in, timezone)}</td>
                                       <td className="py-2 text-gray-700">
                                         {e.clock_out ? formatZoned(e.clock_out, timezone) : <span className="text-amber-600">Open</span>}

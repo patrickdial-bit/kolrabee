@@ -1,4 +1,4 @@
-import { startOfWeek, endOfWeek, addWeeks, formatISO, format } from 'date-fns'
+import { startOfWeek, endOfWeek, addWeeks, startOfDay, endOfDay, addDays, formatISO, format } from 'date-fns'
 import { toZonedTime, fromZonedTime } from 'date-fns-tz'
 
 export type TimeEntry = {
@@ -39,6 +39,20 @@ export function weekRange(reference: Date, timezone: string, weekOffset = 0): { 
   const startUtc = fromZonedTime(startZoned, timezone)
   const endUtc = fromZonedTime(endZoned, timezone)
   return { startUtc: formatISO(startUtc), endUtc: formatISO(endUtc) }
+}
+
+// Day range (00:00 → 23:59:59.999) in a given IANA timezone.
+// Returns UTC ISO bounds suitable for DB queries plus a human label.
+export function dayRange(reference: Date, timezone: string, dayOffset = 0): { startUtc: string; endUtc: string; dayLabel: string } {
+  const zoned = toZonedTime(reference, timezone)
+  const targetZoned = addDays(zoned, dayOffset)
+  const startZoned = startOfDay(targetZoned)
+  const endZoned = endOfDay(targetZoned)
+  return {
+    startUtc: formatISO(fromZonedTime(startZoned, timezone)),
+    endUtc: formatISO(fromZonedTime(endZoned, timezone)),
+    dayLabel: format(startZoned, 'EEEE, MMM d, yyyy'),
+  }
 }
 
 export function formatWeekLabel(startUtc: string, timezone: string): string {
