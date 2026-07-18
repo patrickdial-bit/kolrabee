@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendLeadNotificationEmail } from '@/lib/email'
 import { scoreLead } from '@/lib/marketing'
+import { recordConsent } from '@/lib/compliance'
 import { getNotificationPrefs, MK_LEAD_SOURCE_LABELS, type MkLeadSource } from '@/lib/types'
 
 // Public lead-capture endpoint (marketing engine M4). Accepts submissions from
@@ -174,6 +175,28 @@ export async function POST(request: NextRequest) {
     event_type: 'created',
     detail: `Captured via ${MK_LEAD_SOURCE_LABELS[source]}${isRepeatCustomer ? ' · existing customer match' : ''}`,
   })
+
+  // M13 consent capture: an inbound inquiry unlocks response contact on the
+  // channels the homeowner volunteered. (Not express written consent — SMS
+  // marketing stays locked unless the form explicitly collected it.)
+  if (phone) {
+    await recordConsent(adminClient, {
+      tenantId: tenant.id,
+      contactType: 'phone',
+      contactValue: phone,
+      consentType: 'inbound_inquiry',
+      source: `lead:${lead.id} (${source})`,
+    })
+  }
+  if (email) {
+    await recordConsent(adminClient, {
+      tenantId: tenant.id,
+      contactType: 'email',
+      contactValue: email,
+      consentType: 'inbound_inquiry',
+      source: `lead:${lead.id} (${source})`,
+    })
+  }
 
   // Speed-to-lead: notify every active admin right away (awaited so the
   // serverless function doesn't freeze before the emails go out).

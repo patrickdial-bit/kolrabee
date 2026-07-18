@@ -20,6 +20,7 @@ import {
   addLeadNote,
   convertLeadToProject,
   createCampaign,
+  markLeadDoNotContact,
   updateCampaignSpend,
   updateCampaignStatus,
   updateLeadStatus,
@@ -161,6 +162,18 @@ export default function LeadsClient({ tenantSlug, leads, campaigns, events, proj
       else {
         toast.success('Note added.')
         setNoteDraft('')
+        router.refresh()
+      }
+    })
+  }
+
+  function handleDoNotContact(leadId: string) {
+    if (!confirm('Suppress this person across all brands? Phone, email, and address will be blocked from every future campaign. This is permanent.')) return
+    startTransition(async () => {
+      const result = await markLeadDoNotContact(leadId)
+      if (result?.error) toast.error(result.error)
+      else {
+        toast.success('Contact suppressed across all brands.')
         router.refresh()
       }
     })
@@ -558,6 +571,13 @@ Content-Type: application/json
                                   Add
                                 </button>
                               </div>
+                              <button
+                                onClick={() => handleDoNotContact(lead.id)}
+                                disabled={isPending}
+                                className="pt-1 text-xs font-medium text-red-500 hover:text-red-700 disabled:opacity-50"
+                              >
+                                Do not contact (suppress across all brands)
+                              </button>
                             </div>
                             <div>
                               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">Timeline</p>

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { geocodeAndStoreProject } from '@/lib/geocode'
+import { recordSuppression } from '@/lib/compliance'
 import { mkLeadName, type MkLeadStatus } from '@/lib/types'
 
 const VALID_STATUSES: MkLeadStatus[] = ['new', 'contacted', 'qualified', 'booked', 'lost']
@@ -127,6 +128,45 @@ export async function convertLeadToProject(leadId: string) {
   revalidatePath('/admin/leads')
   revalidatePath('/admin/dashboard')
   return { success: true, projectId: project.id }
+}
+
+// M13: permanent cross-brand opt-out. Suppresses the lead's phone, email, and
+// address globally — one opt-out honors everywhere — and closes the lead.
+export async function markLeadDoNotContact(leadId: string) {
+  const { appUser, tenant } = await getCurrentUser()
+  const adminClient = createAdminClient()
+
+  const { data: lead } = await adminClient
+    .from('mk_leads')
+    .select('id, phone, email, address')
+    .eq('id', leadId)
+    .eq('tenant_id', tenant.id)
+    .single()
+  if (!lead) return { error: 'Lead not found.' }
+
+  const base = {
+    tenantId: tenant.id,
+    scope: 'global' as const,
+    kind: 'internal_opt_out' as const,
+    reason: 'Requested no further contact',
+    source: `lead:${leadId}`,
+    createdBy: appUser.id,
+  }
+  if (lead.phone) await recordSuppression(adminClient, { ...base, contactType: 'phone', contactValue: lead.phone })
+  if (lead.email) await recordSuppression(adminClient, { ...base, contactType: 'email', contactValue: lead.email })
+  if (lead.address) await recordSuppression(adminClient, { ...base, contactType: 'address', contactValue: lead.address })
+
+  await adminClient.from('mk_leads').update({ status: 'lost' }).eq('id', leadId).eq('tenant_id', tenant.id)
+  await adminClient.from('mk_lead_events').insert({
+    tenant_id: tenant.id,
+    lead_id: leadId,
+    event_type: 'do_not_contact',
+    detail: 'Opted out — phone/email/address suppressed across all brands',
+    created_by: appUser.id,
+  })
+
+  revalidatePath('/admin/leads')
+  return { success: true }
 }
 
 export async function createCampaign(formData: FormData) {
