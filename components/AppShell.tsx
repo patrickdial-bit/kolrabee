@@ -76,6 +76,7 @@ export default function AppShell(props: AppShellProps) {
         items: [
           { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', active: pathname.startsWith('/admin/dashboard') },
           { href: '/admin/projects', label: 'Projects', icon: 'projects', active: pathname.startsWith('/admin/projects') },
+          { href: '/admin/leads', label: 'Leads', icon: 'leads', active: pathname.startsWith('/admin/leads') },
           { href: '/admin/map', label: 'Map', icon: 'map', active: pathname.startsWith('/admin/map') },
           { href: '/admin/subcontractors', label: 'Subcontractors', icon: 'subcontractors', active: pathname.startsWith('/admin/subcontractors') },
           { href: '/admin/team', label: 'Team', icon: 'team', active: pathname.startsWith('/admin/team') },

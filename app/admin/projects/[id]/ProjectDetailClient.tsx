@@ -427,6 +427,15 @@ export default function ProjectDetailClient({
                   <input type="number" name="estimated_labor_hours" min="0" step="0.01" defaultValue={project.estimated_labor_hours ?? ''}
                     className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Revenue ($)</label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                    <input type="number" name="revenue_amount" min="0" step="0.01" defaultValue={project.revenue_amount ?? ''}
+                      className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">What the customer pays you — powers marketing ROI.</p>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Work Order Link</label>
@@ -488,6 +497,19 @@ export default function ProjectDetailClient({
                   <dt className="text-sm font-medium text-gray-500">Estimated Labor Hours</dt>
                   <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours != null ? Number(project.estimated_labor_hours).toFixed(2) : '—'}</dd>
                 </div>
+                {project.revenue_amount != null && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Customer Revenue</dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">
+                      {formatCurrency(Number(project.revenue_amount))}
+                      {project.project_type !== 'door_to_door' && Number(project.revenue_amount) > 0 && (
+                        <span className="ml-2 text-xs font-medium text-gray-500">
+                          {formatCurrency(Number(project.revenue_amount) - Number(project.payout_amount))} gross after payout
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                )}
                 {project.work_order_link && (
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Work Order</dt>
