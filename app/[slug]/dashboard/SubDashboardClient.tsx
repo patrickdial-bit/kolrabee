@@ -19,7 +19,7 @@ import {
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendSubMessage, getSubMessages } from '@/app/[slug]/projects/[id]/message-actions'
 import WeeklyTimeSummary from '@/components/WeeklyTimeSummary'
-import StaleTimeEntryPrompt from '@/components/StaleTimeEntryPrompt'
+import StaleTimeEntryPrompt, { type StaleEntry } from '@/components/StaleTimeEntryPrompt'
 import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
 
 interface SubDashboardClientProps {
@@ -39,7 +39,7 @@ interface SubDashboardClientProps {
   unreadCounts: Record<string, number>
   timeClockEnabled: boolean
   openTimeEntry: { id: string; project_id: string; clock_in: string } | null
-  staleTimeEntry: { id: string; project_id: string; clock_in: string; projectLabel: string } | null
+  staleEntries: StaleEntry[]
   tenantTimezone: string
   isCrewLeader: boolean
   leaderName: string
@@ -73,7 +73,7 @@ export default function SubDashboardClient({
   unreadCounts: initialUnreadCounts,
   timeClockEnabled,
   openTimeEntry,
-  staleTimeEntry,
+  staleEntries,
   tenantTimezone,
   isCrewLeader,
   leaderName,
@@ -187,8 +187,8 @@ export default function SubDashboardClient({
       <main className="mx-auto max-w-full px-4 sm:px-6 lg:px-8 py-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('dash.title')}</h1>
 
-        {timeClockEnabled && staleTimeEntry && (
-          <StaleTimeEntryPrompt slug={slug} entry={staleTimeEntry} />
+        {timeClockEnabled && staleEntries.length > 0 && (
+          <StaleTimeEntryPrompt slug={slug} entries={staleEntries} />
         )}
 
         {timeClockEnabled && (

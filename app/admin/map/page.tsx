@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { backfillProjectGeocodes } from '@/lib/geocode'
+import { backfillProjectGeocodes, getAreaCenter, jitterPoint } from '@/lib/geocode'
 import { formatCurrency } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import type { MapPoint } from '@/components/JobsMap'
@@ -27,7 +27,7 @@ export default async function AdminMapPage() {
   // appears on the map without a manual backfill. Best-effort and capped.
   const needsGeocode = projects.filter((p) => !p.geocoded_at && p.address?.trim())
   if (needsGeocode.length > 0) {
-    await backfillProjectGeocodes(needsGeocode)
+    await backfillProjectGeocodes(needsGeocode, tenant.service_area)
     const { data: refreshed } = await adminClient
       .from('projects')
       .select('id, customer_name, job_number, address, status, payout_amount, latitude, longitude, geocoded_at')
@@ -50,7 +50,28 @@ export default async function AdminMapPage() {
       href: `/admin/projects/${p.id}`,
     }))
 
-  const unplaced = projects.filter((p) => p.latitude == null || p.longitude == null).length
+  // Jobs whose addresses couldn't be pinpointed still show on the map — as
+  // soft approximate circles spread around the tenant's service area.
+  const unplacedProjects = projects.filter((p) => p.latitude == null || p.longitude == null)
+  const areaCenter = unplacedProjects.length > 0 ? await getAreaCenter(tenant.service_area) : null
+  if (areaCenter) {
+    for (const p of unplacedProjects) {
+      const spot = jitterPoint(areaCenter, p.id)
+      points.push({
+        id: p.id,
+        lat: spot.lat,
+        lng: spot.lng,
+        title: p.customer_name,
+        subtitle: [p.job_number ? `Job ${p.job_number}` : null, p.address].filter(Boolean).join(' · '),
+        status: p.status,
+        detail: formatCurrency(p.payout_amount ?? 0),
+        href: `/admin/projects/${p.id}`,
+        approximate: true,
+        approximateNote: "Approximate — this address couldn't be pinpointed, so it's shown in your service area.",
+      })
+    }
+  }
+  const unplaced = areaCenter ? 0 : unplacedProjects.length
 
   return (
     <AdminMapClient

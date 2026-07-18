@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentSub } from '@/lib/helpers'
 import { hasTimeTracking } from '@/lib/types'
+import { FORGOT_CLOCK_OUT_MS } from '@/lib/time-tracking'
 
 async function assertClockEnabled(slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
@@ -113,6 +114,17 @@ export async function clockOut(slug: string, entryId: string, overrideClockOut?:
     return { error: 'Already clocked out.' }
   }
 
+  // Guard against banking a forgotten shift: an entry open past the stale
+  // threshold can't be closed at "now" — the caller must supply the actual
+  // end time (the stale-recovery flow does).
+  if (!overrideClockOut && Date.now() - new Date(entry.clock_in).getTime() > FORGOT_CLOCK_OUT_MS) {
+    return {
+      error: 'This entry has been open more than 12 hours. Enter the actual end time instead.',
+      stale: true as const,
+      clockIn: entry.clock_in,
+    }
+  }
+
   const clockOutIso = overrideClockOut ?? new Date().toISOString()
   if (new Date(clockOutIso) <= new Date(entry.clock_in)) {
     return { error: 'Clock-out time must be after clock-in time.' }
@@ -131,6 +143,48 @@ export async function clockOut(slug: string, entryId: string, overrideClockOut?:
 
 export async function resolveStaleEntry(slug: string, entryId: string, actualClockOut: string) {
   return clockOut(slug, entryId, actualClockOut)
+}
+
+export async function resolveStaleCrewEntry(slug: string, entryId: string, actualClockOut: string) {
+  return clockOutCrewMember(slug, entryId, actualClockOut)
+}
+
+// Clock out every crew member still on the clock for this leader on a project
+// (used by the "clock out crew" sweep when the lead leaves the job). Entries
+// already past the stale threshold are skipped — those need an explicit end
+// time via the stale-recovery flow, not a "now" stamp days later.
+export async function clockOutCrewOnProject(slug: string, projectId: string) {
+  const result = await assertClockEnabled(slug)
+  if ('error' in result) return { error: result.error }
+  const { appUser, adminClient } = result
+
+  const { data: openRows } = await adminClient
+    .from('time_entries')
+    .select('id, clock_in')
+    .eq('subcontractor_id', appUser.id)
+    .eq('project_id', projectId)
+    .not('crew_member_id', 'is', null)
+    .is('clock_out', null)
+
+  let closed = 0
+  let staleSkipped = 0
+  const nowIso = new Date().toISOString()
+  for (const row of openRows ?? []) {
+    if (Date.now() - new Date(row.clock_in).getTime() > FORGOT_CLOCK_OUT_MS) {
+      staleSkipped++
+      continue
+    }
+    const { error } = await adminClient
+      .from('time_entries')
+      .update({ clock_out: nowIso })
+      .eq('id', row.id)
+      .is('clock_out', null)
+    if (!error) closed++
+  }
+
+  revalidatePath(`/${slug}/dashboard`)
+  revalidatePath(`/${slug}/projects/${projectId}`)
+  return { success: true as const, closed, staleSkipped }
 }
 
 export async function clockInCrewMember(
@@ -230,6 +284,16 @@ export async function clockOutCrewMember(slug: string, entryId: string, override
   }
   if (entry.clock_out !== null) {
     return { error: 'Already clocked out.' }
+  }
+
+  // Same forgotten-shift guard as the leader's clockOut: no "now" stamp on an
+  // entry that's been open past the stale threshold.
+  if (!overrideClockOut && Date.now() - new Date(entry.clock_in).getTime() > FORGOT_CLOCK_OUT_MS) {
+    return {
+      error: 'This entry has been open more than 12 hours. Enter the actual end time instead.',
+      stale: true as const,
+      clockIn: entry.clock_in,
+    }
   }
 
   const clockOutIso = overrideClockOut ?? new Date().toISOString()

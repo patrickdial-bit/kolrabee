@@ -137,7 +137,7 @@ export async function createProject(formData: FormData) {
 
   // Geocode the address so the job shows up on the map. Best-effort: never
   // block project creation if the geocoding service is slow or unavailable.
-  await geocodeAndStoreProject(project.id, address.trim())
+  await geocodeAndStoreProject(project.id, address.trim(), tenant.service_area)
 
   // Cloud backup: auto-create the project's folder in the connected drive so it
   // exists from day one. Best-effort — never block project creation on it.

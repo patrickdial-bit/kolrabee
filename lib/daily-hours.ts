@@ -52,7 +52,31 @@ export async function runDailyHoursDigest(): Promise<DigestSummary> {
         .lte('clock_in', endUtc)
         .order('clock_in', { ascending: true })
 
-      if (!entries || entries.length === 0) {
+      // Entries still open from BEFORE today — someone forgot to clock out.
+      // These must be surfaced even on days with no new activity.
+      const { data: carriedOpen } = await adminClient
+        .from('time_entries')
+        .select(
+          'clock_in, project:project_id (customer_name, job_number), subcontractor:subcontractor_id (first_name, last_name), crew_member:crew_member_id (first_name, last_name)'
+        )
+        .eq('tenant_id', tenant.id)
+        .is('clock_out', null)
+        .lt('clock_in', startUtc)
+
+      const openAlerts = (carriedOpen ?? []).map((e: any) => {
+        const painter = e.crew_member
+          ? `${e.crew_member.first_name} ${e.crew_member.last_name}`.trim()
+          : `${`${e.subcontractor?.first_name ?? ''} ${e.subcontractor?.last_name ?? ''}`.trim() || 'Unknown'} (lead)`
+        const jobLabel = e.project
+          ? e.project.job_number
+            ? `#${e.project.job_number} – ${e.project.customer_name}`
+            : e.project.customer_name
+          : 'Unknown job'
+        const since = format(toZonedTime(new Date(e.clock_in), timezone), 'EEE, MMM d h:mm a')
+        return { painter, jobLabel, sinceLabel: since }
+      })
+
+      if ((!entries || entries.length === 0) && openAlerts.length === 0) {
         summary.skipped++
         continue
       }
@@ -73,23 +97,25 @@ export async function runDailyHoursDigest(): Promise<DigestSummary> {
       }
 
       // All-time hours per project for the estimated-vs-actual comparison
-      const projectIds = Array.from(new Set((entries as any[]).map((e) => e.project_id)))
-      const { data: allEntries } = await adminClient
-        .from('time_entries')
-        .select('project_id, clock_in, clock_out, duration_minutes')
-        .eq('tenant_id', tenant.id)
-        .in('project_id', projectIds)
-
+      const projectIds = Array.from(new Set(((entries ?? []) as any[]).map((e) => e.project_id)))
       const toDateByProject = new Map<string, number>()
-      for (const id of projectIds) {
-        toDateByProject.set(
-          id,
-          sumDurationMinutes((allEntries ?? []).filter((e) => e.project_id === id))
-        )
+      if (projectIds.length > 0) {
+        const { data: allEntries } = await adminClient
+          .from('time_entries')
+          .select('project_id, clock_in, clock_out, duration_minutes')
+          .eq('tenant_id', tenant.id)
+          .in('project_id', projectIds)
+
+        for (const id of projectIds) {
+          toDateByProject.set(
+            id,
+            sumDurationMinutes((allEntries ?? []).filter((e) => e.project_id === id))
+          )
+        }
       }
 
-      const jobs = buildJobSections(entries as any[], toDateByProject, timezone)
-      const totalLabel = formatMinutes(sumDurationMinutes(entries as any[]))
+      const jobs = buildJobSections((entries ?? []) as any[], toDateByProject, timezone)
+      const totalLabel = formatMinutes(sumDurationMinutes((entries ?? []) as any[]))
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
       for (const admin of recipients) {
@@ -100,6 +126,7 @@ export async function runDailyHoursDigest(): Promise<DigestSummary> {
           dayLabel,
           totalLabel,
           jobs,
+          openAlerts,
           timeTrackingUrl: `${siteUrl}/admin/time-tracking`,
         })
         summary.emails++

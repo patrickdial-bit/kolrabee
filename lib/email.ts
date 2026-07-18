@@ -374,9 +374,25 @@ export async function sendDailyHoursEmail(params: {
   dayLabel: string
   totalLabel: string
   jobs: DailyHoursJobSection[]
+  /** Entries still open from before today — forgotten clock-outs to flag. */
+  openAlerts?: Array<{ painter: string; jobLabel: string; sinceLabel: string }>
   timeTrackingUrl: string
 }) {
-  const { to, tenantName, notificationEmail, dayLabel, totalLabel, jobs, timeTrackingUrl } = params
+  const { to, tenantName, notificationEmail, dayLabel, totalLabel, jobs, openAlerts = [], timeTrackingUrl } = params
+
+  const alertSection = openAlerts.length
+    ? `
+        <div style="border: 1px solid #fca5a5; background: #fef2f2; border-radius: 8px; padding: 12px 16px; margin: 16px 0;">
+          <p style="color: #b91c1c; font-weight: 700; margin: 0 0 6px; font-size: 14px;">⚠ Still on the clock from earlier days</p>
+          ${openAlerts
+            .map(
+              (a) => `
+          <p style="color: #7f1d1d; margin: 0 0 2px; font-size: 13px;">${escapeHtml(a.painter)} — since ${escapeHtml(a.sinceLabel)} on ${escapeHtml(a.jobLabel)}</p>`
+            )
+            .join('')}
+          <p style="color: #991b1b; margin: 6px 0 0; font-size: 12px;">These entries bank hours until someone clocks them out — have the crew leader enter the actual end time.</p>
+        </div>`
+    : ''
 
   const jobSections = jobs
     .map(
@@ -416,6 +432,7 @@ export async function sendDailyHoursEmail(params: {
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
           <h2 style="color: #1a1a1a; margin-bottom: 4px;">Daily Hours Report</h2>
           <p style="color: #666; margin-top: 0;">${escapeHtml(dayLabel)} · <strong>${totalLabel}</strong> logged across ${jobs.length} job${jobs.length === 1 ? '' : 's'}</p>
+          ${alertSection}
           ${jobSections}
           <a href="${timeTrackingUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Open Time Tracking</a>
         </div>

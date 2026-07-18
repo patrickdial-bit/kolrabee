@@ -127,20 +127,29 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
 
   // Group by sub + project.
   const groups = useMemo(() => {
-    const map = new Map<string, { subId: string; projectId: string; entries: Entry[]; totalMinutes: number }>()
+    const map = new Map<string, { subId: string; projectId: string; entries: Entry[]; totalMinutes: number; needsReview: boolean }>()
     for (const e of inWeek) {
       const key = `${e.subcontractor_id}::${e.project_id}`
       const existing = map.get(key)
       if (existing) {
         existing.entries.push(e)
       } else {
-        map.set(key, { subId: e.subcontractor_id, projectId: e.project_id, entries: [e], totalMinutes: 0 })
+        map.set(key, { subId: e.subcontractor_id, projectId: e.project_id, entries: [e], totalMinutes: 0, needsReview: false })
       }
     }
     const groups = Array.from(map.values())
+    // Flag suspicious groups: an entry open > 12h (forgotten clock-out) or a
+    // closed entry longer than 16h (physically implausible shift).
+    const OPEN_TOO_LONG_MS = 12 * 60 * 60 * 1000
+    const IMPLAUSIBLE_MINUTES = 16 * 60
     for (const g of groups) {
       g.totalMinutes = sumDurationMinutes(g.entries)
       g.entries.sort((a: Entry, b: Entry) => new Date(b.clock_in).getTime() - new Date(a.clock_in).getTime())
+      g.needsReview = g.entries.some(
+        (e) =>
+          (e.clock_out === null && Date.now() - new Date(e.clock_in).getTime() > OPEN_TOO_LONG_MS) ||
+          (e.duration_minutes !== null && e.duration_minutes > IMPLAUSIBLE_MINUTES)
+      )
     }
     return groups.sort((a, b) => b.totalMinutes - a.totalMinutes)
   }, [inWeek])
@@ -322,7 +331,16 @@ export default function TimeTrackingClient({ tenantTimezone, entries, subs, proj
                   <React.Fragment key={key}>
                     <tr className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm text-gray-900">{subMap.get(g.subId) ?? '—'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{jobLabelFor(g)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {jobLabelFor(g)}
+                        {g.needsReview && (
+                          <Tooltip text="Has an entry open more than 12 hours or longer than 16 hours — likely a forgotten clock-out.">
+                            <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                              ⚠ needs review
+                            </span>
+                          </Tooltip>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{weekLabel}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right tabular-nums">
                         <Tooltip text="Total hours logged this week for this subcontractor on this job">

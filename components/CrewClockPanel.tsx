@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { format } from 'date-fns'
 import {
   clockIn as clockInLeader,
   clockOut as clockOutLeader,
   clockInCrewMember,
   clockOutCrewMember,
+  clockOutCrewOnProject,
 } from '@/app/[slug]/dashboard/time-clock-actions'
 import { formatElapsed, formatMinutes } from '@/lib/time-tracking'
 
@@ -142,6 +144,10 @@ export default function CrewClockPanel({
   const [conflict, setConflict] = useState<RowConflict | null>(null)
   const [expanded, setExpanded] = useState(!compact)
   const [now, setNow] = useState<Date>(new Date())
+  // Forgotten-shift recovery: when a clock-out is rejected as stale, ask for
+  // the actual end time instead of stamping "now" days later.
+  const [staleFix, setStaleFix] = useState<{ entryId: string; isCrew: boolean; clockIn: string; label: string } | null>(null)
+  const [staleValue, setStaleValue] = useState('')
 
   // Tick every second when anyone is on the clock so elapsed times update.
   const hasOpen = openEntries.length > 0
@@ -175,14 +181,24 @@ export default function CrewClockPanel({
   }, [jobTotalsByActor, openHere, now])
 
   const onClockCount = openHere.size
+  const crewOpenHereCount = Array.from(openHere.keys()).filter((k) => k !== LEADER_KEY).length
+  const leaderOnClockHere = openHere.has(LEADER_KEY)
 
-  // Wind-down clock: minutes remaining on the job's labor estimate. Ticks down
-  // live while anyone is on the clock (totalMinutes recomputes with `now`).
+  // Wind-down clock: time remaining on the job's labor estimate, at second
+  // granularity so it ticks like a real clock while anyone is on the clock.
   const estimatedMinutes =
     estimatedLaborHours !== null && estimatedLaborHours > 0
       ? Math.round(estimatedLaborHours * 60)
       : null
-  const remainingMinutes = estimatedMinutes !== null ? estimatedMinutes - totalMinutes : null
+  const remainingMs = useMemo(() => {
+    if (estimatedMinutes === null) return null
+    let workedMs = 0
+    for (const v of Object.values(jobTotalsByActor)) workedMs += v * 60000
+    for (const e of Array.from(openHere.values())) {
+      workedMs += Math.max(0, now.getTime() - new Date(e.clock_in).getTime())
+    }
+    return estimatedMinutes * 60000 - workedMs
+  }, [estimatedMinutes, jobTotalsByActor, openHere, now])
   const estimatePct = estimatedMinutes ? Math.min(100, (totalMinutes / estimatedMinutes) * 100) : 0
 
   function actorMinutes(key: string): number {
@@ -209,13 +225,61 @@ export default function CrewClockPanel({
     })
   }
 
+  function beginStaleFix(entryId: string, isCrew: boolean, clockIn: string, label: string) {
+    setStaleFix({ entryId, isCrew, clockIn, label })
+    setStaleValue(format(new Date(clockIn), "yyyy-MM-dd'T'HH:mm"))
+  }
+
+  function saveStaleFix() {
+    if (!staleFix || !staleValue) return
+    const iso = new Date(staleValue).toISOString()
+    if (new Date(iso) <= new Date(staleFix.clockIn)) {
+      toast.error('Clock-out time must be after clock-in time.')
+      return
+    }
+    startTransition(async () => {
+      const result = staleFix.isCrew
+        ? await clockOutCrewMember(slug, staleFix.entryId, iso)
+        : await clockOutLeader(slug, staleFix.entryId, iso)
+      if (result?.error) toast.error(result.error)
+      else {
+        toast.success('Entry corrected.')
+        setStaleFix(null)
+        router.refresh()
+      }
+    })
+  }
+
+  function handleSweepCrew() {
+    setPendingActor('sweep')
+    startTransition(async () => {
+      const result = await clockOutCrewOnProject(slug, projectId)
+      if ('error' in result && result.error) {
+        toast.error(result.error)
+      } else if ('closed' in result && result.closed !== undefined) {
+        if (result.closed > 0) toast.success(`${result.closed} crew member${result.closed === 1 ? '' : 's'} clocked out.`)
+        if ((result.staleSkipped ?? 0) > 0) {
+          toast.warning(`${result.staleSkipped} entr${result.staleSkipped === 1 ? 'y' : 'ies'} open more than 12 hours — enter the actual end time for those.`)
+        }
+        router.refresh()
+      }
+      setPendingActor(null)
+    })
+  }
+
   function handleClockOutLeader() {
     const open = openHere.get(LEADER_KEY)
     if (!open) return
     setPendingActor(LEADER_KEY)
     startTransition(async () => {
       const result = await clockOutLeader(slug, open.id)
-      if (result?.error) toast.error(result.error)
+      if (result?.error) {
+        if ('stale' in result && result.stale) {
+          beginStaleFix(open.id, false, open.clock_in, leaderName + ' (you)')
+        } else {
+          toast.error(result.error)
+        }
+      }
       else { toast.success('Clocked out.'); router.refresh() }
       setPendingActor(null)
     })
@@ -244,7 +308,13 @@ export default function CrewClockPanel({
     setPendingActor(member.id)
     startTransition(async () => {
       const result = await clockOutCrewMember(slug, open.id)
-      if (result?.error) toast.error(result.error)
+      if (result?.error) {
+        if ('stale' in result && result.stale) {
+          beginStaleFix(open.id, true, open.clock_in, `${member.first_name} ${member.last_name}`)
+        } else {
+          toast.error(result.error)
+        }
+      }
       else { toast.success(`${member.first_name} clocked out.`); router.refresh() }
       setPendingActor(null)
     })
@@ -268,17 +338,24 @@ export default function CrewClockPanel({
               </span>
             )}
           </p>
-          {remainingMinutes !== null && estimatedMinutes !== null && (
-            <div className="mt-1">
-              <p
-                className={`font-mono text-xs tabular-nums ${
-                  remainingMinutes < 0 ? 'font-semibold text-red-600' : 'text-gray-600'
-                }`}
-              >
-                {remainingMinutes >= 0
-                  ? `${formatMinutes(remainingMinutes)} left of ${formatMinutes(estimatedMinutes)} estimate`
-                  : `${formatMinutes(-remainingMinutes)} over the ${formatMinutes(estimatedMinutes)} estimate`}
-              </p>
+          {remainingMs !== null && estimatedMinutes !== null && (
+            <div className="mt-1.5">
+              {/* Digital wind-down clock: LED-style readout of time left on the estimate */}
+              <div className="inline-flex items-baseline gap-2 rounded-md bg-gray-900 px-2.5 py-1 shadow-inner">
+                <span
+                  className={`font-mono text-base font-bold tabular-nums tracking-[0.15em] ${
+                    remainingMs < 0
+                      ? 'text-red-400 [text-shadow:0_0_6px_rgba(248,113,113,0.6)]'
+                      : 'text-emerald-400 [text-shadow:0_0_6px_rgba(52,211,153,0.5)]'
+                  }`}
+                >
+                  {remainingMs < 0 ? '-' : ''}
+                  {formatElapsed(Math.abs(remainingMs))}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  {remainingMs < 0 ? 'over est.' : `left of ${formatMinutes(estimatedMinutes)}`}
+                </span>
+              </div>
               <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
                 <div
                   className={`h-full rounded-full ${
@@ -300,6 +377,53 @@ export default function CrewClockPanel({
           <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
         </svg>
       </button>
+
+      {/* Sweep nudge: the lead is off the clock but crew are still running */}
+      {!leaderOnClockHere && crewOpenHereCount > 0 && (
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5">
+          <p className="text-xs text-amber-800">
+            {crewOpenHereCount} crew member{crewOpenHereCount === 1 ? ' is' : 's are'} still on the clock.
+          </p>
+          <button
+            onClick={handleSweepCrew}
+            disabled={isPending}
+            className="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+          >
+            {isPending && pendingActor === 'sweep' ? 'Clocking out…' : 'Clock out crew'}
+          </button>
+        </div>
+      )}
+
+      {/* Forgotten-shift fix: stale entries need the real end time, not "now" */}
+      {staleFix && (
+        <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2.5">
+          <p className="text-xs text-amber-800">
+            <strong>{staleFix.label}</strong> has been on the clock since{' '}
+            {format(new Date(staleFix.clockIn), 'MMM d, h:mm a')}. Enter the actual end time:
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <input
+              type="datetime-local"
+              value={staleValue}
+              onChange={(e) => setStaleValue(e.target.value)}
+              className="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs"
+            />
+            <button
+              onClick={saveStaleFix}
+              disabled={isPending}
+              className="rounded-md bg-amber-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setStaleFix(null)}
+              className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {expanded && (
         <div className="mt-2 divide-y divide-gray-200 border-t border-gray-200">

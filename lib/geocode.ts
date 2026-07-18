@@ -12,13 +12,23 @@ const USER_AGENT = 'Kolrabee/1.0 (job-mapping; +https://kolrabee.com)'
 
 export type GeoPoint = { lat: number; lng: number }
 
+const ZIP_RE = /\d{5}/
+
 /**
  * Geocode a free-text address to a coordinate. Returns null on any failure
  * (network error, timeout, no result) so callers can degrade gracefully.
+ *
+ * When the address has no zip code and an areaHint is given (the tenant's
+ * service area, e.g. "Columbus, OH"), the hint is appended so a bare street
+ * like "68 Parkdale Dr" resolves in the right city instead of the first
+ * same-named street anywhere in the US.
  */
-export async function geocodeAddress(address: string): Promise<GeoPoint | null> {
-  const query = address?.trim()
+export async function geocodeAddress(address: string, areaHint?: string | null): Promise<GeoPoint | null> {
+  let query = address?.trim()
   if (!query) return null
+  if (areaHint?.trim() && !ZIP_RE.test(query)) {
+    query = `${query}, ${areaHint.trim()}`
+  }
 
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 6000)
@@ -49,9 +59,9 @@ export async function geocodeAddress(address: string): Promise<GeoPoint | null> 
  * Geocode a project's address and persist the result (or just the attempt
  * timestamp on failure). Best-effort — swallows its own errors.
  */
-export async function geocodeAndStoreProject(projectId: string, address: string): Promise<void> {
+export async function geocodeAndStoreProject(projectId: string, address: string, areaHint?: string | null): Promise<void> {
   try {
-    const point = await geocodeAddress(address)
+    const point = await geocodeAddress(address, areaHint)
     const adminClient = createAdminClient()
     await adminClient
       .from('projects')
@@ -73,14 +83,39 @@ export async function geocodeAndStoreProject(projectId: string, address: string)
  */
 export async function backfillProjectGeocodes(
   projects: Array<{ id: string; address: string; geocoded_at: string | null }>,
+  areaHint: string | null = null,
   max = 5,
 ): Promise<void> {
   const pending = projects.filter((p) => !p.geocoded_at && p.address?.trim()).slice(0, max)
   for (const p of pending) {
     // Sequential with a small delay to stay under ~1 req/sec.
     // eslint-disable-next-line no-await-in-loop
-    await geocodeAndStoreProject(p.id, p.address)
+    await geocodeAndStoreProject(p.id, p.address, areaHint)
     // eslint-disable-next-line no-await-in-loop
     await new Promise((r) => setTimeout(r, 1100))
   }
+}
+
+// Center of a tenant's service area (e.g. "Columbus, OH"), used to place jobs
+// whose addresses couldn't be pinpointed. Cached per server instance so map
+// loads don't re-hit Nominatim.
+const areaCenterCache = new Map<string, GeoPoint | null>()
+
+export async function getAreaCenter(area: string | null | undefined): Promise<GeoPoint | null> {
+  const key = area?.trim()
+  if (!key) return null
+  if (areaCenterCache.has(key)) return areaCenterCache.get(key) ?? null
+  const point = await geocodeAddress(key)
+  areaCenterCache.set(key, point)
+  return point
+}
+
+// Deterministic small offset from a center point (~within 2km) so multiple
+// unpinpointed jobs spread out instead of stacking on one spot.
+export function jitterPoint(center: GeoPoint, seed: string, radiusDeg = 0.02): GeoPoint {
+  let h = 0
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0
+  const angle = (((h >>> 0) % 1000) / 1000) * Math.PI * 2
+  const radius = 0.005 + (((h >>> 10) % 1000) / 1000) * radiusDeg
+  return { lat: center.lat + Math.sin(angle) * radius, lng: center.lng + Math.cos(angle) * radius }
 }

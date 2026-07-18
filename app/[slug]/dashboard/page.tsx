@@ -106,7 +106,7 @@ export default async function SubDashboardPage({
   const timeTrackingAvailable = hasTimeTracking(tenant)
   let timeClockEnabled = false
   let openEntry: { id: string; project_id: string; clock_in: string } | null = null
-  let staleOpenEntry: { id: string; project_id: string; clock_in: string; projectLabel: string } | null = null
+  let staleEntries: Array<{ id: string; clock_in: string; projectLabel: string; actorName: string; isCrew: boolean }> = []
   let crewMembers: CrewMemberLite[] = []
   let crewOpenEntries: CrewOpenEntry[] = []
   let jobTotals: Record<string, Record<string, number>> = {}
@@ -151,15 +151,25 @@ export default async function SubDashboardPage({
         })
         if (r.crew_member_id == null) {
           openEntry = { id: r.id, project_id: r.project_id, clock_in: r.clock_in }
-          const ageMs = Date.now() - new Date(r.clock_in).getTime()
-          if (ageMs > 12 * 60 * 60 * 1000) {
-            staleOpenEntry = {
-              id: r.id,
-              project_id: r.project_id,
-              clock_in: r.clock_in,
-              projectLabel: otherProjectLabel,
-            }
-          }
+        }
+        // Stale detection covers the leader AND every crew member — a crew
+        // entry left open banks phantom hours just the same.
+        const ageMs = Date.now() - new Date(r.clock_in).getTime()
+        if (ageMs > 12 * 60 * 60 * 1000) {
+          const member = r.crew_member_id
+            ? crewMembers.find((m) => m.id === r.crew_member_id)
+            : null
+          staleEntries.push({
+            id: r.id,
+            clock_in: r.clock_in,
+            projectLabel: otherProjectLabel,
+            actorName: r.crew_member_id == null
+              ? 'You'
+              : member
+                ? `${member.first_name} ${member.last_name}`
+                : 'Crew member',
+            isCrew: r.crew_member_id != null,
+          })
         }
       }
 
@@ -201,7 +211,7 @@ export default async function SubDashboardPage({
       unreadCounts={unreadCounts}
       timeClockEnabled={timeTrackingAvailable && timeClockEnabled}
       openTimeEntry={openEntry}
-      staleTimeEntry={staleOpenEntry}
+      staleEntries={staleEntries}
       tenantTimezone={tenant.timezone ?? 'America/New_York'}
       isCrewLeader={isCrewLeader(appUser)}
       leaderName={appUser.first_name}
