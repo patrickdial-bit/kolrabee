@@ -56,9 +56,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true }, { headers: CORS_HEADERS })
   }
 
+  // Preferred: a source token identifies tenant + source without exposing the
+  // tenant slug. Fallback: explicit tenant slug (legacy/manual integrations).
+  const sourceToken = str(body.source_token, 80)
   const slug = str(body.tenant, 100)
-  if (!slug) {
-    return NextResponse.json({ error: 'tenant is required.' }, { status: 400, headers: CORS_HEADERS })
+  if (!sourceToken && !slug) {
+    return NextResponse.json({ error: 'source_token or tenant is required.' }, { status: 400, headers: CORS_HEADERS })
   }
 
   // Support either a single "name" or first/last.
@@ -89,11 +92,31 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient()
 
-  const { data: tenant } = await adminClient
-    .from('tenants')
-    .select('id, name, slug, notification_email, status')
-    .eq('slug', slug)
-    .single()
+  // Resolve the tenant via source token (preferred) or slug.
+  let sourceId: string | null = null
+  let sourceKind: string | null = null
+  let tenant: { id: string; name: string; slug: string; notification_email: string | null; status: string } | null = null
+
+  if (sourceToken) {
+    const { data: src } = await adminClient
+      .from('mk_lead_sources')
+      .select('id, kind, status, tenant:tenant_id (id, name, slug, notification_email, status)')
+      .eq('token', sourceToken)
+      .maybeSingle()
+    if (!src || src.status !== 'active') {
+      return NextResponse.json({ error: 'Unknown or paused source.' }, { status: 404, headers: CORS_HEADERS })
+    }
+    sourceId = src.id
+    sourceKind = src.kind
+    tenant = (src as any).tenant
+  } else {
+    const { data } = await adminClient
+      .from('tenants')
+      .select('id, name, slug, notification_email, status')
+      .eq('slug', slug!)
+      .single()
+    tenant = data
+  }
 
   if (!tenant || tenant.status !== 'active') {
     return NextResponse.json({ error: 'Unknown tenant.' }, { status: 404, headers: CORS_HEADERS })
@@ -103,7 +126,15 @@ export async function POST(request: NextRequest) {
   const service = str(body.service ?? body.service_requested, 200)
   const message = str(body.message, 2000)
   const sourceRaw = str(body.source, 30) as MkLeadSource | null
-  const source: MkLeadSource = sourceRaw && VALID_SOURCES.includes(sourceRaw) ? sourceRaw : 'landing_form'
+  const kindToSource: Record<string, MkLeadSource> = {
+    website_form: 'landing_form',
+    meta_lead_form: 'meta_lead_form',
+    google_lead_form: 'google',
+    webhook: 'manual',
+  }
+  const source: MkLeadSource =
+    (sourceKind && kindToSource[sourceKind]) ||
+    (sourceRaw && VALID_SOURCES.includes(sourceRaw) ? sourceRaw : 'landing_form')
   const utmCampaign = str(body.utm_campaign, 200)
 
   // Repeat-customer signal: name appears in this tenant's job history.
@@ -160,6 +191,7 @@ export async function POST(request: NextRequest) {
       score,
       score_reasons: reasons,
       status: 'new',
+      source_id: sourceId,
     })
     .select('id')
     .single()

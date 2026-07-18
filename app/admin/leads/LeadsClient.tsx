@@ -15,12 +15,14 @@ import {
   type MkLeadEvent,
   type MkLeadStatus,
 } from '@/lib/types'
-import type { AttributedProject } from './page'
+import type { AttributedProject, LeadSourceRow } from './page'
 import {
   addLeadNote,
   convertLeadToProject,
   createCampaign,
+  createLeadSource,
   markLeadDoNotContact,
+  toggleLeadSource,
   updateCampaignSpend,
   updateCampaignStatus,
   updateLeadStatus,
@@ -32,6 +34,14 @@ interface Props {
   campaigns: MkCampaign[]
   events: MkLeadEvent[]
   projects: AttributedProject[]
+  sources: LeadSourceRow[]
+}
+
+const SOURCE_KIND_LABELS: Record<LeadSourceRow['kind'], string> = {
+  website_form: 'Website form',
+  meta_lead_form: 'Meta lead ads',
+  google_lead_form: 'Google lead form',
+  webhook: 'Custom webhook',
 }
 
 const STATUS_BADGE: Record<MkLeadStatus, string> = {
@@ -59,7 +69,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   )
 }
 
-export default function LeadsClient({ tenantSlug, leads, campaigns, events, projects }: Props) {
+export default function LeadsClient({ tenantSlug, leads, campaigns, events, projects, sources }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [statusFilter, setStatusFilter] = useState<'all' | MkLeadStatus>('all')
@@ -179,6 +189,22 @@ export default function LeadsClient({ tenantSlug, leads, campaigns, events, proj
     })
   }
 
+  function handleCreateSource(formData: FormData) {
+    startTransition(async () => {
+      const result = await createLeadSource(formData)
+      if (result?.error) toast.error(result.error)
+      else { toast.success('Source connected.'); router.refresh() }
+    })
+  }
+
+  function handleToggleSource(sourceId: string, status: 'active' | 'paused') {
+    startTransition(async () => {
+      const result = await toggleLeadSource(sourceId, status)
+      if (result?.error) toast.error(result.error)
+      else router.refresh()
+    })
+  }
+
   function handleCreateCampaign(formData: FormData) {
     startTransition(async () => {
       const result = await createCampaign(formData)
@@ -251,16 +277,79 @@ Content-Type: application/json
       </div>
 
       {showEndpointHelp && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-sm font-semibold text-gray-900 mb-1">Send leads from any form</p>
-          <p className="text-xs text-gray-600 mb-3">
-            Point your landing page, website form, or a Zapier/Make step (e.g. relaying Meta lead
-            forms) at this endpoint. Include <code className="rounded bg-gray-100 px-1">fbclid</code>/
-            <code className="rounded bg-gray-100 px-1">gclid</code> and{' '}
-            <code className="rounded bg-gray-100 px-1">utm_campaign</code> so leads attach to the right
-            campaign automatically.
-          </p>
-          <pre className="overflow-x-auto rounded-md bg-gray-900 p-3 text-xs text-emerald-300">{captureSnippet}</pre>
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Lead sources</p>
+              <p className="text-xs text-gray-600">
+                Connect each place leads come from. Every source gets its own secure key, so you can see
+                which channel produced every lead and pause any source instantly.
+              </p>
+            </div>
+          </div>
+
+          <form action={handleCreateSource} className="flex flex-wrap gap-2">
+            <input name="name" required placeholder="Source name (e.g. Spring Meta campaign)" className="rounded-md border border-gray-300 px-3 py-2 text-sm" />
+            <select name="kind" className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm">
+              <option value="website_form">Website form</option>
+              <option value="meta_lead_form">Meta lead ads</option>
+              <option value="google_lead_form">Google lead form</option>
+              <option value="webhook">Custom webhook</option>
+            </select>
+            <button type="submit" disabled={isPending} className="rounded-md bg-ember px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              Add source
+            </button>
+          </form>
+
+          {sources.length === 0 ? (
+            <p className="text-xs text-gray-500">No sources yet — add your website form and each ad platform above.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100 rounded-md border border-gray-200">
+              {sources.map((s) => {
+                const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                const webhookUrl = `${origin}/api/leads/webhook/${s.token}`
+                const leadCount = leads.filter((l) => (l as any).source_id === s.id).length
+                return (
+                  <li key={s.id} className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium text-gray-900">
+                        {s.name}
+                        <span className="ml-2 text-xs text-gray-500">{SOURCE_KIND_LABELS[s.kind]} · {leadCount} lead{leadCount === 1 ? '' : 's'}</span>
+                        {s.status === 'paused' && <span className="ml-2 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-600">paused</span>}
+                      </p>
+                      <button
+                        onClick={() => handleToggleSource(s.id, s.status === 'active' ? 'paused' : 'active')}
+                        disabled={isPending}
+                        className="text-xs font-medium text-gray-500 hover:text-gray-800 disabled:opacity-50"
+                      >
+                        {s.status === 'active' ? 'Pause' : 'Resume'}
+                      </button>
+                    </div>
+                    {s.kind === 'website_form' ? (
+                      <pre className="mt-2 overflow-x-auto rounded-md bg-gray-900 p-2 text-[11px] leading-relaxed text-emerald-300">{`<form onsubmit="event.preventDefault();fetch('${origin}/api/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_token:'${s.token}',name:this.name.value,email:this.email.value,phone:this.phone.value,message:this.message.value,fbclid:new URLSearchParams(location.search).get('fbclid'),gclid:new URLSearchParams(location.search).get('gclid'),utm_campaign:new URLSearchParams(location.search).get('utm_campaign')})}).then(()=>this.reset())">
+  <input name="name" placeholder="Name" required />
+  <input name="phone" placeholder="Phone" />
+  <input name="email" placeholder="Email" />
+  <textarea name="message" placeholder="What do you need done?"></textarea>
+  <button>Get my free estimate</button>
+</form>`}</pre>
+                    ) : (
+                      <div className="mt-2">
+                        <p className="text-[11px] text-gray-500">
+                          {s.kind === 'meta_lead_form'
+                            ? 'Point the Meta leadgen webhook here (verify token = the key in this URL), or use it as the Zapier/Make webhook URL:'
+                            : s.kind === 'google_lead_form'
+                              ? 'Use as the webhook delivery URL for Google Lead Form extensions (or via Zapier/Make):'
+                              : 'POST JSON {name, phone, email, address, service, message} to:'}
+                        </p>
+                        <code className="mt-1 block overflow-x-auto rounded-md bg-gray-900 p-2 text-[11px] text-emerald-300">{webhookUrl}</code>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       )}
 

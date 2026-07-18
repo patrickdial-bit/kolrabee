@@ -169,6 +169,45 @@ export async function markLeadDoNotContact(leadId: string) {
   return { success: true }
 }
 
+export async function createLeadSource(formData: FormData) {
+  const { tenant } = await getCurrentUser()
+  const name = (formData.get('name') as string)?.trim()
+  if (!name) return { error: 'Source name is required.' }
+  const kindRaw = formData.get('kind') as string
+  const kind = ['website_form', 'meta_lead_form', 'google_lead_form', 'webhook'].includes(kindRaw)
+    ? kindRaw
+    : 'webhook'
+
+  const { randomUUID } = await import('crypto')
+  const token = `src_${randomUUID().replace(/-/g, '')}`
+
+  const adminClient = createAdminClient()
+  const { error } = await adminClient.from('mk_lead_sources').insert({
+    tenant_id: tenant.id,
+    name: name.slice(0, 150),
+    kind,
+    token,
+  })
+  if (error) return { error: 'Failed to create source.' }
+
+  revalidatePath('/admin/leads')
+  return { success: true }
+}
+
+export async function toggleLeadSource(sourceId: string, status: 'active' | 'paused') {
+  const { tenant } = await getCurrentUser()
+  const adminClient = createAdminClient()
+  const { data: rows, error } = await adminClient
+    .from('mk_lead_sources')
+    .update({ status })
+    .eq('id', sourceId)
+    .eq('tenant_id', tenant.id)
+    .select('id')
+  if (error || !rows?.length) return { error: 'Failed to update source.' }
+  revalidatePath('/admin/leads')
+  return { success: true }
+}
+
 export async function createCampaign(formData: FormData) {
   const { tenant } = await getCurrentUser()
 

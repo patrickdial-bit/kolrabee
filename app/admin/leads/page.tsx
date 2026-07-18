@@ -6,6 +6,14 @@ import type { MkCampaign, MkLead, MkLeadEvent } from '@/lib/types'
 import AppShell from '@/components/AppShell'
 import LeadsClient from './LeadsClient'
 
+export type LeadSourceRow = {
+  id: string
+  name: string
+  kind: 'website_form' | 'meta_lead_form' | 'google_lead_form' | 'webhook'
+  token: string
+  status: 'active' | 'paused'
+}
+
 export type AttributedProject = {
   id: string
   status: string
@@ -40,7 +48,7 @@ export default async function LeadsPage() {
 
   const adminClient = createAdminClient()
 
-  const [{ data: leadsData }, { data: campaignsData }] = await Promise.all([
+  const [{ data: leadsData }, { data: campaignsData }, { data: sourcesData }] = await Promise.all([
     adminClient
       .from('mk_leads')
       .select('*')
@@ -52,6 +60,11 @@ export default async function LeadsPage() {
       .select('*')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false }),
+    adminClient
+      .from('mk_lead_sources')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .order('created_at', { ascending: true }),
   ])
 
   const leads = (leadsData ?? []) as MkLead[]
@@ -87,6 +100,7 @@ export default async function LeadsPage() {
         campaigns={campaigns}
         events={events}
         projects={projects}
+        sources={(sourcesData ?? []) as LeadSourceRow[]}
       />
     </AppShell>
   )
