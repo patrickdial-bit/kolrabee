@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder } from '@/lib/types'
+import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder, DoorKnock } from '@/lib/types'
 import { subDisplayName } from '@/lib/types'
+import { sumDurationMinutes } from '@/lib/time-tracking'
 import { getProjectPhotos } from '@/lib/photo-actions'
 import { getIntegrationStatus } from '@/lib/integrations/backup'
 import ProjectDetailClient from './ProjectDetailClient'
@@ -100,6 +101,28 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     created_by_name: c.creator ? `${c.creator.first_name} ${c.creator.last_name}` : 'Admin',
   }))
 
+  // Door-to-door activity: the rep's knock log plus clocked time for hourly pay.
+  let doorKnocks: DoorKnock[] = []
+  let doorClockedMinutes = 0
+  if ((project as any).project_type === 'door_to_door') {
+    const [{ data: knockRows }, { data: timeRows }] = await Promise.all([
+      adminClient
+        .from('door_knocks')
+        .select('*')
+        .eq('project_id', project.id)
+        .eq('tenant_id', tenant.id)
+        .order('knocked_at', { ascending: false })
+        .limit(500),
+      adminClient
+        .from('time_entries')
+        .select('clock_in, clock_out, duration_minutes')
+        .eq('project_id', project.id)
+        .eq('tenant_id', tenant.id),
+    ])
+    doorKnocks = (knockRows ?? []) as DoorKnock[]
+    doorClockedMinutes = sumDurationMinutes(timeRows ?? [])
+  }
+
   // Cloud backup connection — controls whether the "Back up to Drive" action shows.
   const integration = await getIntegrationStatus(tenant.id)
 
@@ -134,6 +157,8 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       currentUserId={appUser.id}
       photos={photos}
       driveConnected={integration.connected}
+      doorKnocks={doorKnocks}
+      doorClockedMinutes={doorClockedMinutes}
     />
   )
 }

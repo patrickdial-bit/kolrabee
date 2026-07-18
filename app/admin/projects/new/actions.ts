@@ -15,6 +15,8 @@ export async function createProject(formData: FormData) {
   const startDate = formData.get('start_date') as string
   const startTime = formData.get('start_time') as string
   const payoutAmountRaw = formData.get('payout_amount') as string
+  const projectType = formData.get('project_type') === 'door_to_door' ? 'door_to_door' : 'standard'
+  const hourlyRateRaw = formData.get('hourly_rate') as string
   const estimatedLaborHoursRaw = formData.get('estimated_labor_hours') as string
   const workOrderLink = formData.get('work_order_link') as string
   const companycamLink = formData.get('companycam_link') as string
@@ -29,9 +31,26 @@ export async function createProject(formData: FormData) {
     return { error: 'Address is required.' }
   }
 
-  const payoutAmount = parseFloat(payoutAmountRaw)
-  if (isNaN(payoutAmount) || payoutAmount < 0) {
-    return { error: 'A valid payout amount is required.' }
+  // Door-to-door jobs are paid hourly: the fixed payout starts at 0 and is
+  // computed from clocked hours × hourly_rate when the job is marked paid.
+  let payoutAmount = 0
+  if (projectType === 'door_to_door') {
+    const parsed = payoutAmountRaw ? parseFloat(payoutAmountRaw) : 0
+    payoutAmount = isNaN(parsed) || parsed < 0 ? 0 : parsed
+  } else {
+    payoutAmount = parseFloat(payoutAmountRaw)
+    if (isNaN(payoutAmount) || payoutAmount < 0) {
+      return { error: 'A valid payout amount is required.' }
+    }
+  }
+
+  const hourlyRate = hourlyRateRaw ? parseFloat(hourlyRateRaw) : null
+  if (projectType === 'door_to_door') {
+    if (hourlyRate === null || isNaN(hourlyRate) || hourlyRate <= 0) {
+      return { error: 'A valid hourly rate is required for door-to-door jobs.' }
+    }
+  } else if (hourlyRate !== null && (isNaN(hourlyRate) || hourlyRate < 0)) {
+    return { error: 'Hourly rate must be a positive number.' }
   }
 
   const estimatedLaborHours = estimatedLaborHoursRaw ? parseFloat(estimatedLaborHoursRaw) : null
@@ -72,6 +91,8 @@ export async function createProject(formData: FormData) {
       start_date: startDate || null,
       start_time: startTime || null,
       payout_amount: payoutAmount,
+      project_type: projectType,
+      hourly_rate: projectType === 'door_to_door' ? hourlyRate : null,
       estimated_labor_hours: estimatedLaborHours,
       work_order_link: normalizeUrl(workOrderLink),
       status: 'available',

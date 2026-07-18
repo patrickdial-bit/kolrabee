@@ -29,6 +29,8 @@ export type MapPoint = {
   href?: string
   /** Draw a soft area instead of a precise pin (privacy for un-accepted jobs). */
   approximate?: boolean
+  /** Explicit pin color; overrides the status-derived color (e.g. door-knock outcomes). */
+  color?: string
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -109,7 +111,7 @@ export default function JobsMap({ points, className }: { points: MapPoint[]; cla
       for (const p of points) {
         if (typeof p.lat !== 'number' || typeof p.lng !== 'number') continue
         if (Number.isNaN(p.lat) || Number.isNaN(p.lng)) continue
-        const color = colorFor(p.status)
+        const color = p.color ?? colorFor(p.status)
 
         if (p.approximate) {
           L.circle([p.lat, p.lng], {

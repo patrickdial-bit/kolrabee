@@ -16,6 +16,7 @@ export default function NewProjectForm() {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([])
+  const [projectType, setProjectType] = useState<'standard' | 'door_to_door'>('standard')
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -186,20 +187,59 @@ export default function NewProjectForm() {
             </div>
           </div>
 
+          <div>
+            <label htmlFor="project_type" className="block text-sm font-medium text-gray-700 mb-1">
+              <Tooltip text="Standard jobs pay a fixed amount. Door-to-door jobs pay the rep hourly for time on the clock and track door outcomes." position="right">
+                <span>Job Type</span>
+              </Tooltip>
+            </label>
+            <select
+              id="project_type"
+              name="project_type"
+              value={projectType}
+              onChange={(e) => setProjectType(e.target.value === 'door_to_door' ? 'door_to_door' : 'standard')}
+              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
+            >
+              <option value="standard">Standard (fixed payout)</option>
+              <option value="door_to_door">Door to door (paid hourly)</option>
+            </select>
+            {projectType === 'door_to_door' && (
+              <p className="mt-1 text-xs text-gray-500">
+                The rep is paid their hourly rate for time on the clock and logs an outcome for every door.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label htmlFor="payout_amount" className="block text-sm font-medium text-gray-700 mb-1">
-                <Tooltip text="What you'll pay the sub for this job. They see this on the invite." position="right">
-                  <span>Project Payout ($ Amount) <span className="text-amber-500">*</span></span>
-                </Tooltip>
-              </label>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input type="number" id="payout_amount" name="payout_amount" required min="0" step="0.01"
-                  className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
-                  placeholder="0.00" />
+            {projectType === 'door_to_door' ? (
+              <div>
+                <label htmlFor="hourly_rate" className="block text-sm font-medium text-gray-700 mb-1">
+                  <Tooltip text="What the rep earns per hour on the clock. Pay is computed from their time entries." position="right">
+                    <span>Hourly Rate ($/hr) <span className="text-amber-500">*</span></span>
+                  </Tooltip>
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input type="number" id="hourly_rate" name="hourly_rate" required min="0.01" step="0.01"
+                    className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
+                    placeholder="0.00" />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label htmlFor="payout_amount" className="block text-sm font-medium text-gray-700 mb-1">
+                  <Tooltip text="What you'll pay the sub for this job. They see this on the invite." position="right">
+                    <span>Project Payout ($ Amount) <span className="text-amber-500">*</span></span>
+                  </Tooltip>
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input type="number" id="payout_amount" name="payout_amount" required min="0" step="0.01"
+                    className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 placeholder-gray-400 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm"
+                    placeholder="0.00" />
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="estimated_labor_hours" className="block text-sm font-medium text-gray-700 mb-1">

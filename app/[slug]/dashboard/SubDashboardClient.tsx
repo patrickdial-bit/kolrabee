@@ -493,12 +493,23 @@ function KanbanCard({
           <span className="line-clamp-1">{project.address}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-gray-900">{formatCurrency(project.payout_amount)}</span>
-          {project.estimated_labor_hours ? (
-            <span className="text-xs font-semibold text-emerald-600">
-              {formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr
-            </span>
-          ) : null}
+          {project.project_type === 'door_to_door' ? (
+            <>
+              <span className="text-sm font-bold text-gray-900">
+                {project.hourly_rate != null ? `${formatCurrency(project.hourly_rate)}/hr` : 'Hourly'}
+              </span>
+              <span className="text-xs font-semibold text-sky-600">Door to door</span>
+            </>
+          ) : (
+            <>
+              <span className="text-sm font-bold text-gray-900">{formatCurrency(project.payout_amount)}</span>
+              {project.estimated_labor_hours ? (
+                <span className="text-xs font-semibold text-emerald-600">
+                  {formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr
+                </span>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
 
@@ -524,6 +535,7 @@ function KanbanCard({
             members={crewMembers}
             openEntries={crewOpenEntries}
             jobTotalsByActor={jobTotals[project.id] ?? {}}
+            estimatedLaborHours={project.estimated_labor_hours != null ? Number(project.estimated_labor_hours) : null}
             compact
           />
         </div>

@@ -33,6 +33,7 @@ interface Props {
   members: CrewMemberLite[]
   openEntries: CrewOpenEntry[]
   jobTotalsByActor: Record<string, number>   // key 'leader' | crewMember.id → minutes (excluding running clock)
+  estimatedLaborHours?: number | null        // wind-down clock: remaining time vs this estimate
   compact?: boolean
 }
 
@@ -132,6 +133,7 @@ export default function CrewClockPanel({
   members,
   openEntries,
   jobTotalsByActor,
+  estimatedLaborHours = null,
   compact = false,
 }: Props) {
   const router = useRouter()
@@ -173,6 +175,15 @@ export default function CrewClockPanel({
   }, [jobTotalsByActor, openHere, now])
 
   const onClockCount = openHere.size
+
+  // Wind-down clock: minutes remaining on the job's labor estimate. Ticks down
+  // live while anyone is on the clock (totalMinutes recomputes with `now`).
+  const estimatedMinutes =
+    estimatedLaborHours !== null && estimatedLaborHours > 0
+      ? Math.round(estimatedLaborHours * 60)
+      : null
+  const remainingMinutes = estimatedMinutes !== null ? estimatedMinutes - totalMinutes : null
+  const estimatePct = estimatedMinutes ? Math.min(100, (totalMinutes / estimatedMinutes) * 100) : 0
 
   function actorMinutes(key: string): number {
     const stored = jobTotalsByActor[key] ?? 0
@@ -257,6 +268,27 @@ export default function CrewClockPanel({
               </span>
             )}
           </p>
+          {remainingMinutes !== null && estimatedMinutes !== null && (
+            <div className="mt-1">
+              <p
+                className={`font-mono text-xs tabular-nums ${
+                  remainingMinutes < 0 ? 'font-semibold text-red-600' : 'text-gray-600'
+                }`}
+              >
+                {remainingMinutes >= 0
+                  ? `${formatMinutes(remainingMinutes)} left of ${formatMinutes(estimatedMinutes)} estimate`
+                  : `${formatMinutes(-remainingMinutes)} over the ${formatMinutes(estimatedMinutes)} estimate`}
+              </p>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                <div
+                  className={`h-full rounded-full ${
+                    estimatePct >= 100 ? 'bg-red-500' : estimatePct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${estimatePct}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
         <svg
           className={`h-4 w-4 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}

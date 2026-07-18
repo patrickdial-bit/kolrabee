@@ -118,6 +118,10 @@ export type Project = {
   start_date: string | null
   start_time: string | null
   payout_amount: number
+  // 'door_to_door' jobs pay hourly (hourly_rate × clocked hours) instead of
+  // the fixed payout_amount; reps log door outcomes against them.
+  project_type: 'standard' | 'door_to_door'
+  hourly_rate: number | null
   estimated_labor_hours: number | null
   work_order_link: string | null
   // 'imported' = CompanyCam documentation import; kept out of the dispatch
@@ -143,6 +147,56 @@ export type Project = {
   last_backup_at: string | null
   version: number
   created_at: string
+}
+
+export type DoorKnockOutcome =
+  | 'not_home'
+  | 'not_interested'
+  | 'callback'
+  | 'lead'
+  | 'appointment'
+  | 'sale'
+  | 'do_not_knock'
+
+export type DoorKnock = {
+  id: string
+  tenant_id: string
+  project_id: string
+  subcontractor_id: string
+  outcome: DoorKnockOutcome
+  address: string | null
+  notes: string | null
+  latitude: number | null
+  longitude: number | null
+  knocked_at: string
+  created_at: string
+}
+
+// Industry-standard door dispositions (the SalesRabbit/SPOTIO convention),
+// each with a pin color for maps and button/badge classes for the logging UI.
+export const DOOR_KNOCK_OUTCOMES: {
+  value: DoorKnockOutcome
+  label: string
+  pinColor: string
+  buttonClass: string
+}[] = [
+  { value: 'not_home', label: 'Not Home', pinColor: '#9ca3af', buttonClass: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
+  { value: 'not_interested', label: 'Not Interested', pinColor: '#ef4444', buttonClass: 'bg-red-100 text-red-700 hover:bg-red-200' },
+  { value: 'callback', label: 'Callback', pinColor: '#f59e0b', buttonClass: 'bg-amber-100 text-amber-800 hover:bg-amber-200' },
+  { value: 'lead', label: 'Lead', pinColor: '#10b981', buttonClass: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+  { value: 'appointment', label: 'Appointment', pinColor: '#0ea5e9', buttonClass: 'bg-sky-100 text-sky-700 hover:bg-sky-200' },
+  { value: 'sale', label: 'Sale', pinColor: '#8b5cf6', buttonClass: 'bg-violet-100 text-violet-700 hover:bg-violet-200' },
+  { value: 'do_not_knock', label: 'Do Not Knock', pinColor: '#111827', buttonClass: 'bg-gray-800 text-white hover:bg-gray-900' },
+]
+
+export function doorKnockOutcomeMeta(outcome: DoorKnockOutcome) {
+  return DOOR_KNOCK_OUTCOMES.find((o) => o.value === outcome) ?? DOOR_KNOCK_OUTCOMES[0]
+}
+
+// A "contact" is any door that answered — everything except Not Home. Contact
+// rate (contacts ÷ knocks) is the standard canvassing health metric.
+export function isDoorContact(outcome: DoorKnockOutcome): boolean {
+  return outcome !== 'not_home'
 }
 
 export type ProjectInvitation = {
