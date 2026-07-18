@@ -87,6 +87,9 @@ export type Tenant = {
   trial_ends_at: string | null
   billing_email: string | null
   notification_email: string | null
+  // Home market, e.g. "Columbus, OH" — geocoding hint for zip-less addresses
+  // and the map fallback area for jobs that can't be pinpointed.
+  service_area: string | null
   max_projects: number
   max_subcontractors: number
   created_at: string

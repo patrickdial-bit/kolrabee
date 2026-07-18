@@ -157,7 +157,7 @@ export async function updateProject(projectId: string, formData: FormData) {
 
   // Re-geocode when the address changes so the map stays accurate. Best-effort.
   if (addressChanged) {
-    await geocodeAndStoreProject(projectId, address.trim())
+    await geocodeAndStoreProject(projectId, address.trim(), tenant.service_area)
   }
 
   if (scheduleChanged && subAssigned && existing) {

@@ -29,6 +29,8 @@ export type MapPoint = {
   href?: string
   /** Draw a soft area instead of a precise pin (privacy for un-accepted jobs). */
   approximate?: boolean
+  /** Popup note for approximate points; defaults to the accept-to-see-location privacy text. */
+  approximateNote?: string
   /** Explicit pin color; overrides the status-derived color (e.g. door-knock outcomes). */
   color?: string
 }
@@ -72,7 +74,8 @@ function popupHtml(p: MapPoint): string {
   if (p.subtitle) parts.push(`<div style="color:#475569;font-size:12px">${escapeHtml(p.subtitle)}</div>`)
   if (p.detail) parts.push(`<div style="color:#475569;font-size:12px;margin-top:2px">${escapeHtml(p.detail)}</div>`)
   if (p.approximate) {
-    parts.push(`<div style="color:#94a3b8;font-size:11px;margin-top:4px;font-style:italic">Approximate area — accept the job to see the exact location.</div>`)
+    const note = p.approximateNote ?? 'Approximate area — accept the job to see the exact location.'
+    parts.push(`<div style="color:#94a3b8;font-size:11px;margin-top:4px;font-style:italic">${escapeHtml(note)}</div>`)
   }
   if (p.href) {
     parts.push(`<a href="${escapeHtml(p.href)}" style="display:inline-block;margin-top:6px;color:#00A896;font-size:12px;font-weight:600">View job →</a>`)

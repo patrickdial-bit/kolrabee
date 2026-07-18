@@ -1,6 +1,6 @@
 import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { backfillProjectGeocodes } from '@/lib/geocode'
+import { backfillProjectGeocodes, getAreaCenter, jitterPoint } from '@/lib/geocode'
 import { extractCity, formatCurrency } from '@/lib/utils'
 import { isCrewLeader } from '@/lib/types'
 import type { Project } from '@/lib/types'
@@ -59,7 +59,7 @@ export default async function SubMapPage({ params }: { params: { slug: string } 
   const all = [...availableProjects, ...ownedProjects]
   const needsGeocode = all.filter((p) => !p.geocoded_at && p.address?.trim())
   if (needsGeocode.length > 0) {
-    await backfillProjectGeocodes(needsGeocode)
+    await backfillProjectGeocodes(needsGeocode, tenant.service_area)
     // Re-fetch coordinates for just the projects we touched.
     const ids = needsGeocode.map((p) => p.id)
     const { data: refreshed } = await adminClient
@@ -108,7 +108,30 @@ export default async function SubMapPage({ params }: { params: { slug: string } 
     })
   }
 
-  const unplaced = all.filter((p) => p.latitude == null || p.longitude == null).length
+  // Jobs whose addresses couldn't be pinpointed still show — as approximate
+  // circles spread around the tenant's service area. (Already-approximate
+  // presentation, so no extra privacy masking is needed.)
+  const unplacedProjects = all.filter((p) => p.latitude == null || p.longitude == null)
+  const areaCenter = unplacedProjects.length > 0 ? await getAreaCenter(tenant.service_area) : null
+  if (areaCenter) {
+    for (const p of unplacedProjects) {
+      const spot = jitterPoint(areaCenter, p.id)
+      const owned = ownedProjects.some((o) => o.id === p.id)
+      points.push({
+        id: p.id,
+        lat: spot.lat,
+        lng: spot.lng,
+        title: p.customer_name,
+        subtitle: owned ? [p.job_number ? `Job ${p.job_number}` : null, p.address].filter(Boolean).join(' · ') : extractCity(p.address),
+        status: owned ? p.status : 'available',
+        detail: formatCurrency(p.payout_amount ?? 0),
+        href: `/${slug}/projects/${p.id}`,
+        approximate: true,
+        approximateNote: "Approximate — this address couldn't be pinpointed, so it's shown in the general service area.",
+      })
+    }
+  }
+  const unplaced = areaCenter ? 0 : unplacedProjects.length
 
   return (
     <SubMapClient
