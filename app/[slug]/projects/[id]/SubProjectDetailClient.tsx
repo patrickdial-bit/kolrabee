@@ -12,8 +12,9 @@ import { acceptProject, acknowledgeScheduleChange, cancelAcceptedProject, declin
 import { sendSubMessage, getSubAttachmentUrl } from './message-actions'
 import type { ProjectAttachment, ChangeOrder } from '@/lib/types'
 import CrewClockPanel, { type CrewMemberLite, type CrewOpenEntry } from '@/components/CrewClockPanel'
+import DoorKnockPanel from '@/components/DoorKnockPanel'
 import ProjectPhotos from '@/components/ProjectPhotos'
-import type { PhotoWithUrl } from '@/lib/types'
+import type { DoorKnock, PhotoWithUrl } from '@/lib/types'
 import { formatMinutes } from '@/lib/time-tracking'
 
 interface MessageWithSender {
@@ -52,6 +53,7 @@ interface SubProjectDetailClientProps {
     clock_out: string | null
     duration_minutes: number | null
   }>
+  doorKnocks: DoorKnock[]
 }
 
 const statusBadgeClasses: Record<string, string> = {
@@ -95,6 +97,7 @@ export default function SubProjectDetailClient({
   crewOpenEntries,
   jobTotalsByActor,
   crewHistory,
+  doorKnocks,
 }: SubProjectDetailClientProps) {
   const { t } = useI18n()
   const [error, setError] = useState<string | null>(null)
@@ -335,16 +338,27 @@ export default function SubProjectDetailClient({
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('project.payout')}</dt>
                 <dd className="mt-1 text-lg font-semibold text-gray-900">
-                  <Tooltip text="What you'll earn for this job, including any scope changes.">
-                    <span className="inline-flex items-center">
-                      {formatCurrency(project.payout_amount)}
-                      {project.estimated_labor_hours ? (
-                        <span className="ml-2 text-sm font-semibold text-emerald-600">
-                          ({formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr)
+                  {project.project_type === 'door_to_door' ? (
+                    <Tooltip text="Door-to-door jobs pay hourly for your time on the clock.">
+                      <span className="inline-flex items-center">
+                        {project.hourly_rate != null ? `${formatCurrency(project.hourly_rate)}/hr` : 'Hourly'}
+                        <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">
+                          Door to door
                         </span>
-                      ) : null}
-                    </span>
-                  </Tooltip>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip text="What you'll earn for this job, including any scope changes.">
+                      <span className="inline-flex items-center">
+                        {formatCurrency(project.payout_amount)}
+                        {project.estimated_labor_hours ? (
+                          <span className="ml-2 text-sm font-semibold text-emerald-600">
+                            ({formatCurrency(project.payout_amount / project.estimated_labor_hours)}/hr)
+                          </span>
+                        ) : null}
+                      </span>
+                    </Tooltip>
+                  )}
                 </dd>
               </div>
 
@@ -453,6 +467,14 @@ export default function SubProjectDetailClient({
             </div>
           )}
 
+          {/* Door-to-door tracking — one tap per door, GPS pinned when allowed */}
+          {isAcceptedByMe && project.project_type === 'door_to_door' && (
+            <div className="border-t border-gray-200 px-6 py-5">
+              <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Door tracking</dt>
+              <DoorKnockPanel slug={slug} projectId={project.id} knocks={doorKnocks} />
+            </div>
+          )}
+
           {/* Crew time tracking */}
           {isAcceptedByMe && timeClockEnabled && (
             <div className="border-t border-gray-200 px-6 py-5">
@@ -465,6 +487,7 @@ export default function SubProjectDetailClient({
                 members={crewMembers}
                 openEntries={crewOpenEntries}
                 jobTotalsByActor={jobTotalsByActor}
+                estimatedLaborHours={project.estimated_labor_hours != null ? Number(project.estimated_labor_hours) : null}
               />
               {crewHistory.length > 0 && (
                 <div className="mt-4">

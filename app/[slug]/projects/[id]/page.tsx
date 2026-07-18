@@ -1,6 +1,6 @@
 import { getCurrentSub, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { ProjectAttachment, CrewMember, ChangeOrder } from '@/lib/types'
+import type { ProjectAttachment, CrewMember, ChangeOrder, DoorKnock } from '@/lib/types'
 import { hasGrowthFeatures, hasTimeTracking, isCrewLeader } from '@/lib/types'
 import type { CrewMemberLite, CrewOpenEntry } from '@/components/CrewClockPanel'
 import { getProjectPhotos } from '@/lib/photo-actions'
@@ -184,6 +184,20 @@ export default async function SubProjectDetailPage({
     }
   }
 
+  // Door-knock log for door-to-door jobs (this rep's entries, latest first).
+  let doorKnocks: DoorKnock[] = []
+  if (isAccepted && (project as any).project_type === 'door_to_door') {
+    const { data: knockRows } = await adminClient
+      .from('door_knocks')
+      .select('*')
+      .eq('project_id', id)
+      .eq('tenant_id', tenant.id)
+      .eq('subcontractor_id', appUser.id)
+      .order('knocked_at', { ascending: false })
+      .limit(100)
+    doorKnocks = (knockRows ?? []) as DoorKnock[]
+  }
+
   // Jobsite photos for the gallery (crews capture and view here).
   const photos = await getProjectPhotos(id)
 
@@ -209,6 +223,7 @@ export default async function SubProjectDetailPage({
       crewOpenEntries={crewOpenEntries}
       jobTotalsByActor={jobTotalsByActor}
       crewHistory={crewHistory}
+      doorKnocks={doorKnocks}
     />
   )
 }

@@ -19,7 +19,8 @@ import DatePicker from '@/components/DatePicker'
 import ProjectPhotos from '@/components/ProjectPhotos'
 import BackupButton from '@/components/BackupButton'
 import BackupToDriveButton from '@/components/BackupToDriveButton'
-import type { SubRating, ProjectAttachment, PhotoWithUrl } from '@/lib/types'
+import DoorActivityPanel from '@/components/DoorActivityPanel'
+import type { SubRating, ProjectAttachment, PhotoWithUrl, DoorKnock } from '@/lib/types'
 
 interface InvitationWithName {
   id: string
@@ -67,6 +68,8 @@ interface ProjectDetailClientProps {
   currentUserId: string
   photos: PhotoWithUrl[]
   driveConnected: boolean
+  doorKnocks: DoorKnock[]
+  doorClockedMinutes: number
 }
 
 const statusColors: Record<string, string> = {
@@ -99,6 +102,8 @@ export default function ProjectDetailClient({
   currentUserId,
   photos,
   driveConnected,
+  doorKnocks,
+  doorClockedMinutes,
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -397,14 +402,26 @@ export default function ProjectDetailClient({
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payout Amount *</label>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                    <input type="number" name="payout_amount" required min="0" step="0.01" defaultValue={project.payout_amount}
-                      className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
+                {project.project_type === 'door_to_door' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate ($/hr) *</label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input type="number" name="hourly_rate" required min="0.01" step="0.01" defaultValue={project.hourly_rate ?? ''}
+                        className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">Door-to-door job — pay is clocked hours × this rate.</p>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Payout Amount *</label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                      <input type="number" name="payout_amount" required min="0" step="0.01" defaultValue={project.payout_amount}
+                        className="block w-full rounded-md border border-gray-300 pl-7 pr-3 py-2 text-gray-900 focus:border-ember focus:ring-1 focus:ring-ember sm:text-sm" />
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Labor Hours</label>
                   <input type="number" name="estimated_labor_hours" min="0" step="0.01" defaultValue={project.estimated_labor_hours ?? ''}
@@ -453,10 +470,20 @@ export default function ProjectDetailClient({
                   <dt className="text-sm font-medium text-gray-500">Start Date/Time</dt>
                   <dd className="mt-1 text-sm text-gray-900">{formatDateTime(project.start_date, project.start_time)}</dd>
                 </div>
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Payout Amount</dt>
-                  <dd className="mt-1 text-sm font-semibold text-gray-900">{formatCurrency(project.payout_amount)}</dd>
-                </div>
+                {project.project_type === 'door_to_door' ? (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Pay</dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">
+                      {project.hourly_rate != null ? `${formatCurrency(project.hourly_rate)}/hr` : 'Hourly'}
+                      <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-700">Door to door</span>
+                    </dd>
+                  </div>
+                ) : (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Payout Amount</dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">{formatCurrency(project.payout_amount)}</dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Estimated Labor Hours</dt>
                   <dd className="mt-1 text-sm text-gray-900">{project.estimated_labor_hours != null ? Number(project.estimated_labor_hours).toFixed(2) : '—'}</dd>
@@ -678,6 +705,18 @@ export default function ProjectDetailClient({
             <p className="text-sm text-gray-500">No change orders yet. Add one when scope or pay changes after the job is posted.</p>
           )}
         </div>
+
+        {/* Door-to-door activity — rep canvassing stats, pins, and knock log */}
+        {project.project_type === 'door_to_door' && (
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Door-to-Door Activity</h2>
+            <DoorActivityPanel
+              knocks={doorKnocks}
+              clockedMinutes={doorClockedMinutes}
+              hourlyRate={project.hourly_rate != null ? Number(project.hourly_rate) : null}
+            />
+          </div>
+        )}
 
         {/* Invitations */}
         <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">

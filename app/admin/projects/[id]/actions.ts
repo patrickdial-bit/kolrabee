@@ -6,6 +6,7 @@ import { getCurrentUser, normalizeUrl } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+import { sumDurationMinutes } from '@/lib/time-tracking'
 import { geocodeAndStoreProject } from '@/lib/geocode'
 
 function siteUrl() {
@@ -59,7 +60,8 @@ export async function updateProject(projectId: string, formData: FormData) {
   const jobNumber = formData.get('job_number') as string
   const startDate = formData.get('start_date') as string
   const startTime = formData.get('start_time') as string
-  const payoutAmountRaw = formData.get('payout_amount') as string
+  const payoutAmountRaw = formData.get('payout_amount') as string | null
+  const hourlyRateRaw = formData.get('hourly_rate') as string | null
   const estimatedLaborHoursRaw = formData.get('estimated_labor_hours') as string
   const workOrderLink = formData.get('work_order_link') as string
   const companycamLink = formData.get('companycam_link') as string
@@ -74,9 +76,22 @@ export async function updateProject(projectId: string, formData: FormData) {
     return { error: 'Address is required.' }
   }
 
-  const payoutAmount = parseFloat(payoutAmountRaw)
-  if (isNaN(payoutAmount) || payoutAmount < 0) {
-    return { error: 'A valid payout amount is required.' }
+  // The edit form posts payout_amount for standard jobs and hourly_rate for
+  // door-to-door jobs — only validate/update the field that was submitted.
+  let payoutAmount: number | null = null
+  if (payoutAmountRaw !== null) {
+    payoutAmount = parseFloat(payoutAmountRaw)
+    if (isNaN(payoutAmount) || payoutAmount < 0) {
+      return { error: 'A valid payout amount is required.' }
+    }
+  }
+
+  let hourlyRate: number | null = null
+  if (hourlyRateRaw !== null) {
+    hourlyRate = parseFloat(hourlyRateRaw)
+    if (isNaN(hourlyRate) || hourlyRate <= 0) {
+      return { error: 'A valid hourly rate is required for door-to-door jobs.' }
+    }
   }
 
   const estimatedLaborHours = estimatedLaborHoursRaw ? parseFloat(estimatedLaborHoursRaw) : null
@@ -111,13 +126,14 @@ export async function updateProject(projectId: string, formData: FormData) {
     address: address.trim(),
     start_date: newStartDate,
     start_time: newStartTime,
-    payout_amount: payoutAmount,
     estimated_labor_hours: estimatedLaborHours,
     work_order_link: normalizeUrl(workOrderLink),
     companycam_link: normalizeUrl(companycamLink),
     notes: notes?.trim() || null,
     admin_notes: adminNotes?.trim() || null,
   }
+  if (payoutAmount !== null) update.payout_amount = payoutAmount
+  if (hourlyRate !== null) update.hourly_rate = hourlyRate
 
   if (scheduleChanged && subAssigned) {
     update.schedule_changed_at = new Date().toISOString()
@@ -331,12 +347,34 @@ export async function approveCompletion(projectId: string) {
 export async function markPaid(projectId: string) {
   const { tenant } = await getCurrentUser()
   const adminClient = createAdminClient()
+
+  const update: Record<string, unknown> = {
+    status: 'paid',
+    paid_at: new Date().toISOString(),
+  }
+
+  // Door-to-door jobs pay hourly: freeze payout_amount at clocked hours ×
+  // hourly_rate so the paid email and all earnings roll-ups reflect real pay.
+  const { data: payInfo } = await adminClient
+    .from('projects')
+    .select('project_type, hourly_rate')
+    .eq('id', projectId)
+    .eq('tenant_id', tenant.id)
+    .single()
+
+  if (payInfo?.project_type === 'door_to_door' && payInfo.hourly_rate != null) {
+    const { data: entries } = await adminClient
+      .from('time_entries')
+      .select('clock_in, clock_out, duration_minutes')
+      .eq('project_id', projectId)
+      .eq('tenant_id', tenant.id)
+    const totalMinutes = sumDurationMinutes(entries ?? [])
+    update.payout_amount = Math.round((totalMinutes / 60) * Number(payInfo.hourly_rate) * 100) / 100
+  }
+
   const { data: rows, error } = await adminClient
     .from('projects')
-    .update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-    })
+    .update(update)
     .eq('id', projectId)
     .eq('tenant_id', tenant.id)
     .in('status', ['accepted', 'in_progress', 'pending_completion', 'completed'])
