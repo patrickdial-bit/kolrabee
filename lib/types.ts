@@ -477,6 +477,12 @@ export function hasTimeTracking(tenant: Tenant): boolean {
   return tenant.plan === 'growth' || tenant.plan === 'operator'
 }
 
+// Marketing engine (Leads / Prospects / Market Intel) is a separate rollout,
+// enabled per tenant only by the platform owner. Default off.
+export function hasMarketingEngine(tenant: Tenant): boolean {
+  return (tenant as any).marketing_enabled === true
+}
+
 export type ReliabilityStats = {
   totalInvited: number
   totalAccepted: number

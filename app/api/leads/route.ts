@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
   if (sourceToken) {
     const { data: src } = await adminClient
       .from('mk_lead_sources')
-      .select('id, kind, status, tenant:tenant_id (id, name, slug, notification_email, status)')
+      .select('id, kind, status, tenant:tenant_id (id, name, slug, notification_email, status, marketing_enabled)')
       .eq('token', sourceToken)
       .maybeSingle()
     if (!src || src.status !== 'active') {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
   } else {
     const { data } = await adminClient
       .from('tenants')
-      .select('id, name, slug, notification_email, status')
+      .select('id, name, slug, notification_email, status, marketing_enabled')
       .eq('slug', slug!)
       .single()
     tenant = data
@@ -120,6 +120,9 @@ export async function POST(request: NextRequest) {
 
   if (!tenant || tenant.status !== 'active') {
     return NextResponse.json({ error: 'Unknown tenant.' }, { status: 404, headers: CORS_HEADERS })
+  }
+  if ((tenant as any).marketing_enabled !== true) {
+    return NextResponse.json({ error: 'Marketing engine not enabled for this company.' }, { status: 403, headers: CORS_HEADERS })
   }
 
   const address = str(body.address, 300)

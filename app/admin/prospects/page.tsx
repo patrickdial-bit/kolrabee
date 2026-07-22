@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { hasGrowthFeatures } from '@/lib/types'
+import { hasMarketingEngine } from '@/lib/types'
 import AppShell from '@/components/AppShell'
 import ProspectsClient from './ProspectsClient'
 
@@ -29,16 +29,16 @@ export type ProspectRow = {
 export default async function ProspectsPage() {
   const { tenant } = await getCurrentUser()
 
-  if (!hasGrowthFeatures(tenant)) {
+  if (!hasMarketingEngine(tenant)) {
     return (
       <AppShell variant="admin" companyName={tenant.name}>
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Prospector</h1>
           <p className="mt-3 text-gray-600">
-            Homeowner prospecting is available on the <strong>Growth</strong> and <strong>Operator</strong> plans.
+            Homeowner prospecting is part of the Kolrabee Marketing Engine — a separate rollout enabled per company by Kolrabee.
           </p>
           <Link href="/admin/billing" className="mt-6 inline-flex items-center rounded-lg bg-ember px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700">
-            Upgrade to Growth
+            Contact Kolrabee to enable
           </Link>
         </div>
       </AppShell>
