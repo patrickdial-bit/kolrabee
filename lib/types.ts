@@ -55,6 +55,7 @@ export type NotificationPreferences = {
   project_change_order: boolean
   new_message: boolean
   daily_hours_summary: boolean
+  new_lead: boolean
 }
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
@@ -68,6 +69,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
   project_change_order: true,
   new_message: true,
   daily_hours_summary: true,
+  new_lead: true,
 }
 
 export function getNotificationPrefs(user: { notification_preferences: NotificationPreferences | null }): NotificationPreferences {
@@ -125,6 +127,9 @@ export type Project = {
   // the fixed payout_amount; reps log door outcomes against them.
   project_type: 'standard' | 'door_to_door'
   hourly_rate: number | null
+  // Customer-side revenue on the job (what the customer pays the tenant).
+  // Counted as collected by marketing attribution once status is 'paid'.
+  revenue_amount: number | null
   estimated_labor_hours: number | null
   work_order_link: string | null
   // 'imported' = CompanyCam documentation import; kept out of the dispatch
@@ -150,6 +155,94 @@ export type Project = {
   last_backup_at: string | null
   version: number
   created_at: string
+}
+
+// ---------------------------------------------------------------------------
+// Marketing engine (Phase 1) — see docs/MARKETING_ENGINE_V1_SPEC.md
+// ---------------------------------------------------------------------------
+
+export type MkCampaign = {
+  id: string
+  tenant_id: string
+  name: string
+  channel: 'meta' | 'google' | 'other'
+  status: 'draft' | 'active' | 'paused' | 'ended'
+  monthly_budget: number | null
+  spend_to_date: number
+  utm_campaign: string | null
+  external_campaign_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type MkLeadSource =
+  | 'landing_form'
+  | 'meta_lead_form'
+  | 'google'
+  | 'sms'
+  | 'call'
+  | 'chat'
+  | 'referral'
+  | 'manual'
+
+export type MkLeadStatus = 'new' | 'contacted' | 'qualified' | 'booked' | 'lost'
+
+export type MkLead = {
+  id: string
+  tenant_id: string
+  campaign_id: string | null
+  source: MkLeadSource
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  service_requested: string | null
+  message: string | null
+  fbclid: string | null
+  gclid: string | null
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  score: number | null
+  score_reasons: Array<{ label: string; points: number }> | null
+  status: MkLeadStatus
+  project_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type MkLeadEvent = {
+  id: string
+  tenant_id: string
+  lead_id: string
+  event_type: string
+  detail: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export const MK_LEAD_STATUS_LABELS: Record<MkLeadStatus, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  qualified: 'Qualified',
+  booked: 'Booked',
+  lost: 'Lost',
+}
+
+export const MK_LEAD_SOURCE_LABELS: Record<MkLeadSource, string> = {
+  landing_form: 'Landing page',
+  meta_lead_form: 'Meta lead form',
+  google: 'Google',
+  sms: 'SMS',
+  call: 'Phone call',
+  chat: 'Chat',
+  referral: 'Referral',
+  manual: 'Manual',
+}
+
+export function mkLeadName(lead: Pick<MkLead, 'first_name' | 'last_name'>): string {
+  return `${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim() || 'Unknown'
 }
 
 export type DoorKnockOutcome =

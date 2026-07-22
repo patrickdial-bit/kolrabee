@@ -354,6 +354,47 @@ export async function sendMessageNotificationEmail(params: {
   }
 }
 
+/** New marketing lead captured — notify tenant admins immediately. */
+export async function sendLeadNotificationEmail(params: {
+  to: string
+  tenantName: string
+  notificationEmail: string | null
+  leadName: string
+  service: string | null
+  phone: string | null
+  email: string | null
+  sourceLabel: string
+  score: number | null
+  leadUrl: string
+}) {
+  const { to, tenantName, notificationEmail, leadName, service, phone, email, sourceLabel, score, leadUrl } = params
+
+  try {
+    await getResend().emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `New lead: ${leadName}${service ? ` — ${service}` : ''}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">New Lead</h2>
+          <p style="color: #666; margin-top: 0;">${escapeHtml(sourceLabel)}${score !== null ? ` · score <strong>${score}</strong>` : ''}</p>
+          <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="color: #111827; margin: 0 0 4px; font-weight: 600;">${escapeHtml(leadName)}</p>
+            ${service ? `<p style="color: #374151; margin: 0 0 2px;">Service: ${escapeHtml(service)}</p>` : ''}
+            ${phone ? `<p style="color: #374151; margin: 0 0 2px;">Phone: ${escapeHtml(phone)}</p>` : ''}
+            ${email ? `<p style="color: #374151; margin: 0;">Email: ${escapeHtml(email)}</p>` : ''}
+          </div>
+          <p style="color: #666; font-size: 14px;">Speed to lead matters — first responder usually wins the job.</p>
+          <a href="${leadUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">Open Leads</a>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send lead notification email:', err)
+  }
+}
+
 export type DailyHoursJobSection = {
   jobLabel: string
   todayLabel: string

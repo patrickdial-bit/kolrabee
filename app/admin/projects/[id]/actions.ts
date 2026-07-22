@@ -94,6 +94,21 @@ export async function updateProject(projectId: string, formData: FormData) {
     }
   }
 
+  // Customer-side revenue (marketing ROI). undefined = field not on the form;
+  // empty string clears it.
+  const revenueAmountRaw = formData.get('revenue_amount') as string | null
+  let revenueAmount: number | null | undefined = undefined
+  if (revenueAmountRaw !== null) {
+    if (revenueAmountRaw === '') {
+      revenueAmount = null
+    } else {
+      revenueAmount = parseFloat(revenueAmountRaw)
+      if (isNaN(revenueAmount) || revenueAmount < 0) {
+        return { error: 'Customer revenue must be a positive number.' }
+      }
+    }
+  }
+
   const estimatedLaborHours = estimatedLaborHoursRaw ? parseFloat(estimatedLaborHoursRaw) : null
   if (estimatedLaborHours !== null && (isNaN(estimatedLaborHours) || estimatedLaborHours < 0)) {
     return { error: 'Estimated labor hours must be a positive number.' }
@@ -134,6 +149,7 @@ export async function updateProject(projectId: string, formData: FormData) {
   }
   if (payoutAmount !== null) update.payout_amount = payoutAmount
   if (hourlyRate !== null) update.hourly_rate = hourlyRate
+  if (revenueAmount !== undefined) update.revenue_amount = revenueAmount
 
   if (scheduleChanged && subAssigned) {
     update.schedule_changed_at = new Date().toISOString()
