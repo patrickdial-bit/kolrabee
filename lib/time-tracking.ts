@@ -1,4 +1,20 @@
-import { startOfWeek, endOfWeek, addWeeks, startOfDay, endOfDay, addDays, formatISO, format } from 'date-fns'
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  addWeeks,
+  addMonths,
+  addDays,
+  subDays,
+  parseISO,
+  formatISO,
+  format,
+} from 'date-fns'
 import { toZonedTime, fromZonedTime } from 'date-fns-tz'
 
 export type TimeEntry = {
@@ -94,4 +110,158 @@ export function sumDurationMinutes(entries: Pick<TimeEntry, 'clock_in' | 'clock_
 export function isOpenEntryStale(entry: { clock_in: string; clock_out: string | null }, now: Date = new Date()): boolean {
   if (entry.clock_out !== null) return false
   return now.getTime() - new Date(entry.clock_in).getTime() > FORGOT_CLOCK_OUT_MS
+}
+
+// =============================================================================
+// Reporting date ranges
+// =============================================================================
+// weekRange/dayRange cover the fixed windows the sub-facing views need. The
+// admin report also has to answer "show me this job's whole history", so it
+// resolves an arbitrary range (preset or explicit from/to) into UTC bounds the
+// query can push down to Postgres instead of filtering a capped row set.
+
+export type RangePreset =
+  | 'this_week'
+  | 'last_week'
+  | 'this_month'
+  | 'last_month'
+  | 'last_7'
+  | 'last_30'
+  | 'last_90'
+  | 'this_year'
+  | 'all'
+  | 'custom'
+
+export const RANGE_PRESETS: { value: RangePreset; label: string }[] = [
+  { value: 'this_week', label: 'This week' },
+  { value: 'last_week', label: 'Last week' },
+  { value: 'this_month', label: 'This month' },
+  { value: 'last_month', label: 'Last month' },
+  { value: 'last_7', label: 'Last 7 days' },
+  { value: 'last_30', label: 'Last 30 days' },
+  { value: 'last_90', label: 'Last 90 days' },
+  { value: 'this_year', label: 'This year' },
+  { value: 'all', label: 'All time' },
+  { value: 'custom', label: 'Custom range…' },
+]
+
+export type ResolvedRange = {
+  preset: RangePreset
+  /** yyyy-MM-dd, inclusive, in the report timezone. null = unbounded. */
+  fromDay: string | null
+  /** yyyy-MM-dd, inclusive, in the report timezone. null = unbounded. */
+  toDay: string | null
+  /** UTC ISO, inclusive lower bound. null = unbounded. */
+  startUtc: string | null
+  /** UTC ISO, exclusive upper bound. null = unbounded. */
+  endUtc: string | null
+  label: string
+}
+
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+
+export function isDayString(value: unknown): value is string {
+  return typeof value === 'string' && DAY_PATTERN.test(value)
+}
+
+function dayOf(zoned: Date): string {
+  return format(zoned, 'yyyy-MM-dd')
+}
+
+function nextDay(day: string): string {
+  return format(addDays(parseISO(`${day}T00:00:00`), 1), 'yyyy-MM-dd')
+}
+
+function labelDay(day: string, withYear: boolean): string {
+  return format(parseISO(`${day}T00:00:00`), withYear ? 'MMM d, yyyy' : 'MMM d')
+}
+
+function rangeLabel(fromDay: string | null, toDay: string | null): string {
+  if (!fromDay && !toDay) return 'All time'
+  if (fromDay && !toDay) return `Since ${labelDay(fromDay, true)}`
+  if (!fromDay && toDay) return `Through ${labelDay(toDay, true)}`
+  if (fromDay === toDay) return labelDay(fromDay as string, true)
+  const sameYear = (fromDay as string).slice(0, 4) === (toDay as string).slice(0, 4)
+  return `${labelDay(fromDay as string, !sameYear)} – ${labelDay(toDay as string, true)}`
+}
+
+/**
+ * Resolve a preset (or an explicit from/to pair) into UTC query bounds.
+ * Day boundaries are interpreted in `timezone` so "this month" means the
+ * company's month, not the month of whoever happens to open the report.
+ */
+export function resolveRange(
+  presetRaw: string | null | undefined,
+  opts: { from?: string | null; to?: string | null; timezone: string; now?: Date }
+): ResolvedRange {
+  const { timezone } = opts
+  const now = opts.now ?? new Date()
+  const zoned = toZonedTime(now, timezone)
+
+  const preset: RangePreset = RANGE_PRESETS.some((p) => p.value === presetRaw)
+    ? (presetRaw as RangePreset)
+    : 'this_week'
+
+  let fromDay: string | null = null
+  let toDay: string | null = null
+
+  switch (preset) {
+    case 'this_week':
+      fromDay = dayOf(startOfWeek(zoned, { weekStartsOn: 1 }))
+      toDay = dayOf(endOfWeek(zoned, { weekStartsOn: 1 }))
+      break
+    case 'last_week': {
+      const ref = addWeeks(zoned, -1)
+      fromDay = dayOf(startOfWeek(ref, { weekStartsOn: 1 }))
+      toDay = dayOf(endOfWeek(ref, { weekStartsOn: 1 }))
+      break
+    }
+    case 'this_month':
+      fromDay = dayOf(startOfMonth(zoned))
+      toDay = dayOf(endOfMonth(zoned))
+      break
+    case 'last_month': {
+      const ref = addMonths(zoned, -1)
+      fromDay = dayOf(startOfMonth(ref))
+      toDay = dayOf(endOfMonth(ref))
+      break
+    }
+    case 'last_7':
+      fromDay = dayOf(subDays(zoned, 6))
+      toDay = dayOf(zoned)
+      break
+    case 'last_30':
+      fromDay = dayOf(subDays(zoned, 29))
+      toDay = dayOf(zoned)
+      break
+    case 'last_90':
+      fromDay = dayOf(subDays(zoned, 89))
+      toDay = dayOf(zoned)
+      break
+    case 'this_year':
+      fromDay = dayOf(startOfYear(zoned))
+      toDay = dayOf(endOfYear(zoned))
+      break
+    case 'all':
+      break
+    case 'custom': {
+      fromDay = isDayString(opts.from) ? opts.from : null
+      toDay = isDayString(opts.to) ? opts.to : null
+      if (fromDay && toDay && fromDay > toDay) {
+        const swap = fromDay
+        fromDay = toDay
+        toDay = swap
+      }
+      break
+    }
+  }
+
+  return {
+    preset,
+    fromDay,
+    toDay,
+    startUtc: fromDay ? fromZonedTime(`${fromDay}T00:00:00`, timezone).toISOString() : null,
+    endUtc: toDay ? fromZonedTime(`${nextDay(toDay)}T00:00:00`, timezone).toISOString() : null,
+    label: rangeLabel(fromDay, toDay),
+  }
 }
