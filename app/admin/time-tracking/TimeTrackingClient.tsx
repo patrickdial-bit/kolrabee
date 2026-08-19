@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -66,6 +66,17 @@ function projectLabel(p: { customer_name: string; job_number: string | null } | 
   if (!p) return null
   return p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name
 }
+
+// Preset chips: one click for the common case, so the date inputs only have to
+// exist for the genuinely custom case.
+function chipClass(active: boolean): string {
+  return active
+    ? 'rounded-full bg-ember px-3 py-1.5 text-sm font-semibold text-white'
+    : 'rounded-full border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50'
+}
+
+const SELECT_CLASS =
+  'max-w-[15rem] truncate rounded-md border border-gray-300 bg-white px-3 py-2 text-sm'
 
 function isGroupBy(value: string): value is GroupBy {
   return GROUP_OPTIONS.some((o) => o.value === value)
@@ -153,6 +164,9 @@ export default function TimeTrackingClient({
   const [customFrom, setCustomFrom] = useState(range.fromDay ?? '')
   const [customTo, setCustomTo] = useState(range.toDay ?? '')
 
+  const [customOpen, setCustomOpen] = useState(false)
+  const customRef = useRef<HTMLDivElement | null>(null)
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<{ clock_in: string; clock_out: string; notes: string }>({ clock_in: '', clock_out: '', notes: '' })
@@ -165,6 +179,22 @@ export default function TimeTrackingClient({
     setCustomFrom(range.fromDay ?? '')
     setCustomTo(range.toDay ?? '')
   }, [range.fromDay, range.toDay])
+
+  useEffect(() => {
+    if (!customOpen) return
+    function onPointerDown(ev: MouseEvent) {
+      if (customRef.current && !customRef.current.contains(ev.target as Node)) setCustomOpen(false)
+    }
+    function onKeyDown(ev: KeyboardEvent) {
+      if (ev.key === 'Escape') setCustomOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [customOpen])
 
   const subMap = useMemo(() => new Map(subs.map((s) => [s.id, subDisplayName(s)])), [subs])
   const subPersonMap = useMemo(
@@ -344,18 +374,10 @@ export default function TimeTrackingClient({
       params.delete('from')
       params.delete('to')
     }
+    setCustomOpen(false)
     startTransition(() => {
       router.push(`/admin/time-tracking?${params.toString()}`)
     })
-  }
-
-  function onPresetChange(value: string) {
-    const preset = value as RangePreset
-    if (preset === 'custom') {
-      applyRange('custom', customFrom || undefined, customTo || undefined)
-      return
-    }
-    applyRange(preset)
   }
 
   function clearFilters() {
@@ -365,6 +387,25 @@ export default function TimeTrackingClient({
   }
 
   const filtersActive = search.trim() !== '' || subFilter !== 'all' || projectFilter !== 'all'
+
+  const activeChips: { key: string; label: string; clear: () => void }[] = []
+  if (search.trim()) {
+    activeChips.push({ key: 'q', label: `“${search.trim()}”`, clear: () => setSearch('') })
+  }
+  if (subFilter !== 'all') {
+    activeChips.push({
+      key: 'sub',
+      label: subMap.get(subFilter) ?? 'Subcontractor',
+      clear: () => setSubFilter('all'),
+    })
+  }
+  if (projectFilter !== 'all') {
+    activeChips.push({
+      key: 'project',
+      label: projectMap.get(projectFilter) ?? 'Job',
+      clear: () => setProjectFilter('all'),
+    })
+  }
 
   function toggleGroup(key: string) {
     setExpandedGroups((prev) => {
@@ -613,134 +654,191 @@ export default function TimeTrackingClient({
         </div>
       </div>
 
+      {/* Time frame — presets are one click; the date inputs only appear for a
+          genuinely custom window, so there is one control, not three. */}
       <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">Time frame</label>
-            <Tooltip text="Pick a period, or choose Custom range to enter your own dates">
-              <select
-                value={range.preset}
-                onChange={(e) => onPresetChange(e.target.value)}
-                disabled={isPending}
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-              >
-                {RANGE_PRESETS.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </Tooltip>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">From</label>
-            <input
-              type="date"
-              value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-500 mb-1">To</label>
-            <input
-              type="date"
-              value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-            />
-          </div>
-          <Tooltip text="Show hours between these two dates">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Time frame</div>
+        <div className="flex flex-wrap items-center gap-2">
+          {RANGE_PRESETS.filter((preset) => preset.value !== 'custom').map((preset) => (
             <button
-              onClick={() => applyRange('custom', customFrom || undefined, customTo || undefined)}
-              disabled={isPending || (!customFrom && !customTo)}
-              className="rounded-md bg-ember px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
-            >
-              Apply dates
-            </button>
-          </Tooltip>
-          <Tooltip text="Show every hour ever logged, with no date limit">
-            <button
-              onClick={() => applyRange('all')}
+              key={preset.value}
+              onClick={() => applyRange(preset.value)}
               disabled={isPending}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              aria-pressed={range.preset === preset.value}
+              className={`${chipClass(range.preset === preset.value)} disabled:opacity-50`}
             >
-              All history
+              {preset.label}
             </button>
-          </Tooltip>
+          ))}
+
+          <div className="relative" ref={customRef}>
+            <button
+              onClick={() => setCustomOpen((open) => !open)}
+              disabled={isPending}
+              aria-expanded={customOpen}
+              aria-haspopup="dialog"
+              className={`${chipClass(range.preset === 'custom')} inline-flex items-center gap-1 disabled:opacity-50`}
+            >
+              {range.preset === 'custom' ? range.label : 'Custom'}
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+
+            {customOpen && (
+              <div
+                role="dialog"
+                aria-label="Custom date range"
+                className="absolute left-0 z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-lg"
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-semibold uppercase text-gray-500">From</span>
+                    <input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-semibold uppercase text-gray-500">To</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Leave either side empty for an open-ended range.
+                </p>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    onClick={() => setCustomOpen(false)}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => applyRange('custom', customFrom || undefined, customTo || undefined)}
+                    disabled={isPending || (!customFrom && !customTo)}
+                    className="rounded-md bg-ember px-3 py-1.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[240px]">
-          <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35m1.85-4.65a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" />
-          </svg>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search job number, customer, address, painter, or notes…"
-            className="w-full rounded-md border border-gray-300 bg-white pl-9 pr-3 py-2 text-sm"
-          />
+      {/* Search gets its own row — it is the widest-reaching control here. */}
+      <div className="relative mb-3">
+        <svg
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth="2"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35m1.85-4.65a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" />
+        </svg>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search job number, customer, address, painter, or notes…"
+          className="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm"
+        />
+      </div>
+
+      {/* Narrowing the rows (Filter) is a different job from arranging them
+          (View), so they read as two clusters rather than one row of selects. */}
+      <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Filter</span>
+          <Tooltip text="Show hours for just one subcontractor">
+            <select
+              value={subFilter}
+              onChange={(e) => setSubFilter(e.target.value)}
+              aria-label="Filter by subcontractor"
+              className={SELECT_CLASS}
+            >
+              <option value="all">All subcontractors</option>
+              {subs.map((s) => (
+                <option key={s.id} value={s.id}>{subDisplayName(s)}</option>
+              ))}
+            </select>
+          </Tooltip>
+          <Tooltip text="Show hours for just one job">
+            <select
+              value={projectFilter}
+              onChange={(e) => setProjectFilter(e.target.value)}
+              aria-label="Filter by job"
+              className={SELECT_CLASS}
+            >
+              <option value="all">All jobs</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name}</option>
+              ))}
+            </select>
+          </Tooltip>
         </div>
-        <Tooltip text="Show hours for just one subcontractor">
-          <select
-            value={subFilter}
-            onChange={(e) => setSubFilter(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            <option value="all">All subcontractors</option>
-            {subs.map((s) => (
-              <option key={s.id} value={s.id}>{subDisplayName(s)}</option>
-            ))}
-          </select>
-        </Tooltip>
-        <Tooltip text="Show hours for just one job">
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            <option value="all">All jobs</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.job_number ? `#${p.job_number} – ${p.customer_name}` : p.customer_name}</option>
-            ))}
-          </select>
-        </Tooltip>
-        <Tooltip text="Roll the hours up by job, by painter, or list every entry">
-          <select
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            {GROUP_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </Tooltip>
-        {groupBy !== 'none' && (
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        )}
-        {filtersActive && (
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">View</span>
+          <Tooltip text="Roll the hours up by job, by painter, or list every entry">
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+              aria-label="Group by"
+              className={SELECT_CLASS}
+            >
+              {GROUP_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Tooltip>
+          {groupBy !== 'none' && (
+            <Tooltip text="Order the groups">
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                aria-label="Sort groups"
+                className={SELECT_CLASS}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {/* What is actually narrowing the list, and how much it cut. */}
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-gray-500">
+          Showing {summary.entryCount.toLocaleString()} of {entries.length.toLocaleString()} entr
+          {entries.length === 1 ? 'y' : 'ies'} in range
+        </span>
+        {activeChips.map((chip) => (
           <button
-            onClick={clearFilters}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            key={chip.key}
+            onClick={chip.clear}
+            className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-1 pl-2.5 pr-2 text-xs font-medium text-gray-700 hover:bg-gray-200"
           >
-            Clear filters
+            <span className="max-w-[14rem] truncate">{chip.label}</span>
+            <span aria-hidden="true" className="text-gray-500">×</span>
+            <span className="sr-only">Remove filter</span>
+          </button>
+        ))}
+        {filtersActive && (
+          <button onClick={clearFilters} className="text-xs font-medium text-ember hover:underline">
+            Clear all
           </button>
         )}
       </div>
