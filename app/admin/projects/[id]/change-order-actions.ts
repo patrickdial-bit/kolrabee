@@ -5,11 +5,7 @@ import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendChangeOrderEmail } from '@/lib/email'
 import { getNotificationPrefs } from '@/lib/types'
-
-function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL
-    || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
-}
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 // Statuses where adjusting scope/pay is sensible. Paid jobs are settled,
 // cancelled jobs are dead, and imported rows aren't part of the dispatch flow.
@@ -110,7 +106,7 @@ export async function addChangeOrder(projectId: string, formData: FormData) {
           description,
           previousPayout,
           newPayout,
-          projectUrl: `${siteUrl()}/${tenant.slug}/projects/${projectId}`,
+          projectUrl: `${canonicalSiteUrl()}/${tenant.slug}/projects/${projectId}`,
         })
         subNotified = true
       }

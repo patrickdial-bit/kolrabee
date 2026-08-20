@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { createProjectShare, getProjectDownloadUrls, revokeShare } from '@/lib/share-actions'
 import { zipAndDownload } from '@/lib/zip'
 import BackupButton from '@/components/BackupButton'
+import { clientSiteUrl } from '@/lib/site-url'
 
 // Download-all (client-side ZIP) + public share-link controls for a project's
 // photo gallery. Rendered on the per-project documentation lens.
@@ -14,7 +15,7 @@ export default function ProjectShareBar({ projectId, projectName }: { projectId:
   const [shareOpen, setShareOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const shareUrl = share ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${share.token}` : ''
+  const shareUrl = share ? `${clientSiteUrl()}/share/${share.token}` : ''
 
   async function downloadAll() {
     if (zipping) return

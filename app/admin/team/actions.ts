@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUser } from '@/lib/helpers'
 import { sendAdminInviteEmail } from '@/lib/email'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function inviteAdminToJoin(email: string, name: string) {
   const { appUser, tenant } = await getCurrentUser()
@@ -36,7 +37,7 @@ export async function inviteAdminToJoin(email: string, name: string) {
     return { error: 'This email is already registered as a subcontractor on your account.' }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const baseUrl = canonicalSiteUrl()
   const params = new URLSearchParams({ email: normalizedEmail })
   if (name) params.set('name', name)
   const joinUrl = `${baseUrl}/${tenant.slug}/join-admin?${params.toString()}`

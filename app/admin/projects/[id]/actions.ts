@@ -8,11 +8,7 @@ import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } 
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 import { sumDurationMinutes } from '@/lib/time-tracking'
 import { geocodeAndStoreProject } from '@/lib/geocode'
-
-function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL
-    || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
-}
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 async function notifyAssignedSubOfReschedule(args: {
   projectId: string
@@ -50,7 +46,7 @@ async function notifyAssignedSubOfReschedule(args: {
     previousStartTime: args.previousStartTime,
     newStartDate: args.newStartDate,
     newStartTime: args.newStartTime,
-    projectUrl: `${siteUrl()}/${args.tenantSlug}/projects/${args.projectId}`,
+    projectUrl: `${canonicalSiteUrl()}/${args.tenantSlug}/projects/${args.projectId}`,
   })
 }
 
@@ -340,7 +336,7 @@ export async function approveCompletion(projectId: string) {
     if (sub) {
       const prefs = getNotificationPrefs(sub)
       if (prefs.project_completion_approved) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const siteUrl = canonicalSiteUrl()
         sendCompletionApprovedEmail({
           to: sub.email,
           subName: sub.first_name,
@@ -417,7 +413,7 @@ export async function markPaid(projectId: string) {
     if (sub) {
       const prefs = getNotificationPrefs(sub)
       if (prefs.project_updates) {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+        const siteUrl = canonicalSiteUrl()
         sendPaidEmail({
           to: sub.email,
           subName: sub.first_name,

@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isSubCompliant, isTenantActive, getNotificationPrefs, subDisplayName } from '@/lib/types'
 import { sendInviteEmail } from '@/lib/email'
 import type { AppUser, Project } from '@/lib/types'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function getSubcontractors(tenantId: string) {
   const adminClient = createAdminClient()
@@ -107,7 +108,7 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
 
   // Send invitation emails (fire-and-forget — don't block on email failures)
   if (project && subs) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = canonicalSiteUrl()
     const projectUrl = `${siteUrl}/${tenant.slug}/projects/${projectId}`
     const city = extractCity(project.address)
 

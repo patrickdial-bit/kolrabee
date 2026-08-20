@@ -6,6 +6,7 @@ import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAcceptEmail, sendCancelEmail, sendDeclineEmail, sendStatusUpdateEmail, sendCompletionRequestEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function acknowledgeScheduleChange(projectId: string, slug: string) {
   const { appUser, tenant } = await getCurrentSub(slug)
@@ -83,7 +84,7 @@ export async function acceptProject(projectId: string, expectedVersion: number, 
       .eq('role', 'admin')
       .eq('status', 'active')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = canonicalSiteUrl()
     const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
@@ -161,7 +162,7 @@ export async function cancelAcceptedProject(projectId: string, expectedVersion: 
       .eq('role', 'admin')
       .eq('status', 'active')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = canonicalSiteUrl()
     const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
@@ -209,7 +210,7 @@ export async function markInProgress(projectId: string, expectedVersion: number,
 
   // Notify admin(s)
   const project = data[0]
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const siteUrl = canonicalSiteUrl()
   const projectUrl = `${siteUrl}/admin/projects/${projectId}`
   const { data: admins } = await adminClient
     .from('users')
@@ -323,7 +324,7 @@ export async function markCompleted(projectId: string, expectedVersion: number, 
 
   // Notify admin(s)
   const project = data[0]
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+  const siteUrl = canonicalSiteUrl()
   const projectUrl = `${siteUrl}/admin/projects/${projectId}`
   const { data: admins } = await adminClient
     .from('users')
@@ -382,7 +383,7 @@ export async function declineProject(projectId: string, slug: string) {
       .eq('role', 'admin')
       .eq('status', 'active')
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL || 'localhost:3000'}`
+    const siteUrl = canonicalSiteUrl()
     const projectUrl = `${siteUrl}/admin/projects/${projectId}`
     const subName = `${appUser.first_name} ${appUser.last_name}`
     for (const admin of admins ?? []) {
