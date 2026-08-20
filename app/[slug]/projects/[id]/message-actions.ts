@@ -5,6 +5,7 @@ import { getCurrentSub } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMessageNotificationEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function sendSubMessage(projectId: string, body: string, slug: string) {
   if (!body.trim()) {
@@ -66,7 +67,7 @@ export async function sendSubMessage(projectId: string, body: string, slug: stri
           jobNumber: project.job_number,
           customerName: project.customer_name,
           messagePreview: body.trim().slice(0, 200),
-          loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/projects/${projectId}`,
+          loginUrl: `${canonicalSiteUrl()}/admin/projects/${projectId}`,
         })
       )
   )

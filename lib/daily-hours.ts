@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendDailyHoursEmail, type DailyHoursJobSection } from '@/lib/email'
 import { dayRange, formatMinutes, sumDurationMinutes } from '@/lib/time-tracking'
 import { getNotificationPrefs, hasTimeTracking } from '@/lib/types'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 type DigestSummary = {
   tenants: number
@@ -116,7 +117,7 @@ export async function runDailyHoursDigest(): Promise<DigestSummary> {
 
       const jobs = buildJobSections((entries ?? []) as any[], toDateByProject, timezone)
       const totalLabel = formatMinutes(sumDurationMinutes((entries ?? []) as any[]))
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      const siteUrl = canonicalSiteUrl()
 
       for (const admin of recipients) {
         await sendDailyHoursEmail({

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { createPhotoShare, getPhotoDownloadUrl, revokeShare } from '@/lib/share-actions'
 import { downloadUrlAsFile } from '@/lib/zip'
+import { clientSiteUrl } from '@/lib/site-url'
 
 // Download + public share-link controls for a single photo (used in the
 // photo lightbox).
@@ -12,7 +13,7 @@ export default function PhotoActions({ photoId }: { photoId: string }) {
   const [share, setShare] = useState<{ token: string; expiresAt: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const shareUrl = share ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${share.token}` : ''
+  const shareUrl = share ? `${clientSiteUrl()}/share/${share.token}` : ''
 
   async function download() {
     if (downloading) return

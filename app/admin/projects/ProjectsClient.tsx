@@ -15,6 +15,7 @@ import type { PlatformInvite, ProjectInviteSummary } from './page'
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendMessage, getMessages } from '@/app/admin/projects/[id]/message-actions'
 import { cancelSubInvite, editSubInvite } from '@/app/admin/subcontractors/actions'
+import { clientSiteUrl } from '@/lib/site-url'
 
 type SortKey = 'customer_name' | 'start_date' | 'payout_amount'
 type SortDir = 'asc' | 'desc'
@@ -141,12 +142,10 @@ export default function ProjectsClient({
     })
   }
 
-  const subLoginUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/${tenantSlug}/login`
-    : `/${tenantSlug}/login`
+  const subLoginUrl = `${clientSiteUrl()}/${tenantSlug}/login`
 
   const copySubLoginLink = useCallback(() => {
-    navigator.clipboard.writeText(`${window.location.origin}/${tenantSlug}/login`)
+    navigator.clipboard.writeText(`${clientSiteUrl()}/${tenantSlug}/login`)
     setLinkCopied(true)
     setTimeout(() => setLinkCopied(false), 2000)
   }, [tenantSlug])

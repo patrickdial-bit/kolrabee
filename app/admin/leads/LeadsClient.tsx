@@ -16,6 +16,7 @@ import {
   type MkLeadStatus,
 } from '@/lib/types'
 import type { AttributedProject, LeadSourceRow } from './page'
+import { clientSiteUrl } from '@/lib/site-url'
 import {
   addLeadNote,
   convertLeadToProject,
@@ -244,7 +245,7 @@ export default function LeadsClient({ tenantSlug, leads, campaigns, events, proj
     })
   }
 
-  const captureSnippet = `POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/leads
+  const captureSnippet = `POST ${clientSiteUrl()}/api/leads
 Content-Type: application/json
 
 {
@@ -306,7 +307,7 @@ Content-Type: application/json
           ) : (
             <ul className="divide-y divide-gray-100 rounded-md border border-gray-200">
               {sources.map((s) => {
-                const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                const origin = clientSiteUrl()
                 const webhookUrl = `${origin}/api/leads/webhook/${s.token}`
                 const leadCount = leads.filter((l) => (l as any).source_id === s.id).length
                 return (

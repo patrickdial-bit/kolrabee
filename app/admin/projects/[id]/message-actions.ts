@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMessageNotificationEmail } from '@/lib/email'
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function sendMessage(projectId: string, body: string) {
   if (!body.trim()) {
@@ -53,7 +54,7 @@ export async function sendMessage(projectId: string, body: string) {
   if (sub) {
     const prefs = getNotificationPrefs(sub)
     if (prefs.new_message) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+      const siteUrl = canonicalSiteUrl()
       // Await so the serverless function isn't frozen before the email goes out
       await sendMessageNotificationEmail({
         to: sub.email,

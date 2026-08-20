@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { getCurrentUser } from '@/lib/helpers'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function POST() {
   try {
@@ -14,7 +15,7 @@ export async function POST() {
       return NextResponse.json({ error: 'No billing account found' }, { status: 400 })
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const siteUrl = canonicalSiteUrl()
 
     const session = await getStripe().billingPortal.sessions.create({
       customer: tenant.stripe_customer_id,

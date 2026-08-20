@@ -4,6 +4,7 @@ import { sendLeadNotificationEmail } from '@/lib/email'
 import { scoreLead } from '@/lib/marketing'
 import { recordConsent } from '@/lib/compliance'
 import { getNotificationPrefs, MK_LEAD_SOURCE_LABELS, type MkLeadSource } from '@/lib/types'
+import { canonicalSiteUrl } from '@/lib/site-url'
 
 // Public lead-capture endpoint (marketing engine M4). Accepts submissions from
 // landing pages, embedded website forms, or bridge tools (e.g. Zapier relaying
@@ -242,7 +243,7 @@ export async function POST(request: NextRequest) {
     .eq('role', 'admin')
     .eq('status', 'active')
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const siteUrl = canonicalSiteUrl()
   const leadName = nameForMatch || email || phone || 'Unknown'
   await Promise.all(
     (admins ?? [])
