@@ -89,7 +89,7 @@ export default function SubcontractorsClient({ subs }: Props) {
                 </tr>
               ) : (
                 filtered.map((s) => (
-                  <tr key={s.id} className={`hover:bg-gray-50 ${s.status === 'deleted' ? 'opacity-50' : ''}`}>
+                  <tr key={s.id} className={`hover:bg-gray-50 ${s.status !== 'active' ? 'opacity-50' : ''}`}>
                     <td className="px-4 py-3 text-sm text-gray-900">{s.first_name} {s.last_name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{s.company_name || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{s.email}</td>
@@ -105,7 +105,7 @@ export default function SubcontractorsClient({ subs }: Props) {
                     </td>
                     <td className="px-4 py-3 text-sm capitalize text-gray-600">{s.status}</td>
                     <td className="px-4 py-3 text-right">
-                      {s.status === 'active' && (
+                      {s.status !== 'deleted' && (
                         <button
                           onClick={() => startTransition(() => startSubImpersonation(s.id))}
                           disabled={isPending}

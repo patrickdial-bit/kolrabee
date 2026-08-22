@@ -8,11 +8,18 @@ import { sendInviteEmail } from '@/lib/email'
 import type { AppUser, Project } from '@/lib/types'
 
 export async function getSubcontractors(tenantId: string) {
+  const { appUser, tenant } = await getCurrentUser()
+  if (appUser.role !== 'admin' || tenant.id !== tenantId) {
+    return { error: 'Unauthorized', data: [] }
+  }
+
   const adminClient = createAdminClient()
+  // Inactive and deleted subs are off the roster — they never appear here, so
+  // they can't be picked for a job invite.
   const { data, error } = await adminClient
     .from('users')
     .select('*')
-    .eq('tenant_id', tenantId)
+    .eq('tenant_id', tenant.id)
     .eq('role', 'subcontractor')
     .eq('status', 'active')
     .order('first_name', { ascending: true })
@@ -59,7 +66,9 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     return { error: 'Project not found.' }
   }
 
-  // Verify all selected subs are compliant
+  // Re-check every selected sub against the live roster. This is the last gate
+  // before an invite goes out: a sub deactivated after the picker was opened is
+  // missing from this result and the whole send is rejected.
   const { data: subs } = await adminClient
     .from('users')
     .select('*')
@@ -67,6 +76,12 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
     .eq('tenant_id', tenant.id)
     .eq('role', 'subcontractor')
     .eq('status', 'active')
+
+  const activeIds = new Set((subs ?? []).map((s: AppUser) => s.id))
+  const offRoster = subcontractorIds.filter((id) => !activeIds.has(id))
+  if (offRoster.length > 0) {
+    return { error: 'One or more selected subcontractors are no longer active. Refresh the page and try again.' }
+  }
 
   const nonCompliant = (subs ?? []).filter((s: AppUser) => !isSubCompliant(s))
   if (nonCompliant.length > 0) {

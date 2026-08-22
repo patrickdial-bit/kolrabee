@@ -1,3 +1,8 @@
+// 'inactive' takes a subcontractor off the roster without deleting them: their
+// profile, documents and job history are kept, but they are excluded from
+// dispatch lists so they can't be sent a job invite. Reversible at any time.
+export type UserStatus = 'active' | 'inactive' | 'deleted'
+
 export type AppUser = {
   id: string
   supabase_auth_id: string
@@ -7,7 +12,7 @@ export type AppUser = {
   last_name: string
   phone: string | null
   role: 'admin' | 'subcontractor'
-  status: 'active' | 'deleted'
+  status: UserStatus
   company_name: string | null
   crew_size: number | null
   address: string | null
@@ -42,6 +47,17 @@ export type CrewMember = {
 
 export function isCrewLeader(user: Pick<AppUser, 'role' | 'is_crew_leader'>): boolean {
   return user.role === 'subcontractor' && user.is_crew_leader === true
+}
+
+// Only active subs appear in dispatch lists and may be sent job invites.
+export function canReceiveInvites(user: Pick<AppUser, 'role' | 'status'>): boolean {
+  return user.role === 'subcontractor' && user.status === 'active'
+}
+
+export const USER_STATUS_LABELS: Record<UserStatus, string> = {
+  active: 'Active',
+  inactive: 'Inactive',
+  deleted: 'Deleted',
 }
 
 export type NotificationPreferences = {

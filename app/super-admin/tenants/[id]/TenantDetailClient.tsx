@@ -269,7 +269,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {subs.map((u) => (
-                    <tr key={u.id} className={u.status === 'deleted' ? 'opacity-50' : ''}>
+                    <tr key={u.id} className={u.status !== 'active' ? 'opacity-50' : ''}>
                       <td className="px-4 py-2.5 text-sm text-gray-900">{u.first_name} {u.last_name}</td>
                       <td className="px-4 py-2.5 text-sm text-gray-600">{u.company_name || '—'}</td>
                       <td className="px-4 py-2.5 text-sm text-gray-600">{u.email}</td>
@@ -281,7 +281,7 @@ export default function TenantDetailClient({ tenant, users, projects, invites }:
                       </td>
                       <td className="px-4 py-2.5 text-sm capitalize text-gray-600">{u.status}</td>
                       <td className="px-4 py-2.5 text-right">
-                        {u.status === 'active' && (
+                        {u.status !== 'deleted' && (
                           <button
                             onClick={() => startTransition(() => startSubImpersonation(u.id))}
                             disabled={isPending}
