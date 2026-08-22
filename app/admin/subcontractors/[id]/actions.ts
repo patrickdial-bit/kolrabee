@@ -1,1 +1,1 @@
-export { softDeleteSub, reactivateSub } from '../actions'
+export { softDeleteSub, deactivateSub, reactivateSub } from '../actions'
