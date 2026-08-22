@@ -9,9 +9,9 @@ import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { AppUser, Project } from '@/lib/types'
 import StarRating from '@/components/StarRating'
-import { isSubCompliant, subDisplayName, subPersonName } from '@/lib/types'
+import { isSubCompliant, subDisplayName, subPersonName, USER_STATUS_LABELS } from '@/lib/types'
 import type { ReliabilityStats } from '@/lib/types'
-import { softDeleteSub, reactivateSub } from '../actions'
+import { softDeleteSub, deactivateSub, reactivateSub } from '../actions'
 import { getDocumentUrl, uploadDocumentForSub, updateInsuranceForSub } from './doc-actions'
 import { createBrowserClient } from '@supabase/ssr'
 
@@ -131,18 +131,41 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
     }
   }
 
-  function handleStatusToggle() {
-    if (sub.status === 'active' && !confirm(`Remove ${subDisplayName(sub)}? They won't receive new invitations.`)) return
+  const subName = subDisplayName(sub)
+
+  // Deactivate: keeps the record and history, but takes them off the roster so
+  // they never turn up in the job invite picker. Fully reversible.
+  function handleDeactivate() {
+    const inFlight = projects.filter((p) =>
+      ['accepted', 'in_progress', 'pending_completion', 'completed'].includes(p.status),
+    ).length
+    if (
+      inFlight > 0 &&
+      !confirm(`${subName} has ${inFlight} job${inFlight === 1 ? '' : 's'} in progress. Deactivating only stops new job invites — their current jobs carry on as normal. Continue?`)
+    ) return
     startTransition(async () => {
-      if (sub.status === 'active') {
-        const result = await softDeleteSub(sub.id)
-        if (result?.error) toast.error(result.error)
-        else toast.success(`${subDisplayName(sub)} removed.`)
-      } else {
-        const result = await reactivateSub(sub.id)
-        if (result?.error) toast.error(result.error)
-        else toast.success(`${subDisplayName(sub)} reactivated.`)
-      }
+      const result = await deactivateSub(sub.id)
+      if (result?.error) toast.error(result.error)
+      else toast.success(`${subName} deactivated — they won't receive new job invites.`)
+      router.refresh()
+    })
+  }
+
+  function handleReactivate() {
+    startTransition(async () => {
+      const result = await reactivateSub(sub.id)
+      if (result?.error) toast.error(result.error)
+      else toast.success(`${subName} reactivated.`)
+      router.refresh()
+    })
+  }
+
+  function handleDelete() {
+    if (!confirm(`Remove ${subName}? They won't receive new invitations and won't be able to sign in. Use Deactivate instead if you may work with them again.`)) return
+    startTransition(async () => {
+      const result = await softDeleteSub(sub.id)
+      if (result?.error) toast.error(result.error)
+      else toast.success(`${subName} removed.`)
       router.refresh()
     })
   }
@@ -174,10 +197,12 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
                     sub.status === 'active'
                       ? 'bg-green-50 text-green-700 ring-green-600/20'
-                      : 'bg-amber-50 text-amber-700 ring-amber-600/20'
+                      : sub.status === 'inactive'
+                        ? 'bg-gray-100 text-gray-600 ring-gray-500/20'
+                        : 'bg-amber-50 text-amber-700 ring-amber-600/20'
                   }`}
                 >
-                  {sub.status === 'active' ? 'Active' : 'Deleted'}
+                  {USER_STATUS_LABELS[sub.status]}
                 </span>
               </div>
               {sub.company_name && subPersonName(sub) && (
@@ -198,27 +223,46 @@ export default function SubDetailClient({ sub, projects, ytdEarnings, reliabilit
                 </div>
               </dl>
             </div>
-            <div className="mt-4 sm:mt-0">
-              <Tooltip
-                text={sub.status === 'active'
-                  ? 'Deactivate this subcontractor so they stop receiving new invites'
-                  : 'Reactivate this subcontractor so they can receive invites again'}
-                position="left"
-              >
-                <button
-                  onClick={handleStatusToggle}
-                  disabled={isPending}
-                  className={`rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
-                    sub.status === 'active'
-                      ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-                      : 'bg-ember/10 text-ember hover:bg-ember/15'
-                  }`}
-                >
-                  {isPending
-                    ? sub.status === 'active' ? 'Deleting...' : 'Reactivating...'
-                    : sub.status === 'active' ? 'Delete Subcontractor' : 'Reactivate Subcontractor'}
-                </button>
-              </Tooltip>
+            <div className="mt-4 sm:mt-0 sm:text-right">
+              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                {sub.status === 'active' ? (
+                  <Tooltip text="Keep their record and history, but stop sending them job invites" position="left">
+                    <button
+                      onClick={handleDeactivate}
+                      disabled={isPending}
+                      className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:opacity-50"
+                    >
+                      {isPending ? 'Deactivating...' : 'Deactivate'}
+                    </button>
+                  </Tooltip>
+                ) : (
+                  <Tooltip text="Put them back on the roster so they can receive job invites again" position="left">
+                    <button
+                      onClick={handleReactivate}
+                      disabled={isPending}
+                      className="rounded-md bg-ember/10 px-4 py-2 text-sm font-medium text-ember transition-colors hover:bg-ember/15 disabled:opacity-50"
+                    >
+                      {isPending ? 'Reactivating...' : 'Reactivate'}
+                    </button>
+                  </Tooltip>
+                )}
+                {sub.status !== 'deleted' && (
+                  <button
+                    onClick={handleDelete}
+                    disabled={isPending}
+                    className="rounded-md bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 max-w-xs text-xs text-gray-500 sm:ml-auto">
+                {sub.status === 'active'
+                  ? 'Deactivate keeps their record and history but stops job invites.'
+                  : sub.status === 'inactive'
+                    ? 'Inactive — kept on file, but excluded from job invites.'
+                    : 'Deleted — removed from the roster and blocked from signing in.'}
+              </p>
             </div>
           </div>
         </div>

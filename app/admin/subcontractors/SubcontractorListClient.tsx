@@ -8,7 +8,7 @@ import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
 import { formatCurrency, formatInsuranceDate } from '@/lib/utils'
 import { isSubCompliant, subDisplayName, subPersonName } from '@/lib/types'
-import { softDeleteSub, reactivateSub, inviteSubToJoin } from './actions'
+import { softDeleteSub, deactivateSub, reactivateSub, inviteSubToJoin } from './actions'
 import { setTimeClockEnabled } from './time-clock-actions'
 import { getDocumentUrl } from './[id]/doc-actions'
 import type { SubcontractorWithStats } from '@/lib/types'
@@ -29,7 +29,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
   // Optimistic override for time-clock toggles, keyed by sub id.
   const [optimisticClockEnabled, setOptimisticClockEnabled] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('active')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'deleted'>('active')
   const [complianceFilter, setComplianceFilter] = useState<'all' | 'compliant' | 'not_compliant'>('all')
   const [sortKey, setSortKey] = useState<SubSortKey>('company_name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -50,6 +50,15 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
   const [inviteName, setInviteName] = useState('')
   const [inviteError, setInviteError] = useState('')
   const [inviteSuccess, setInviteSuccess] = useState(false)
+
+  const activeCount = useMemo(
+    () => subcontractors.filter((s) => s.status === 'active').length,
+    [subcontractors],
+  )
+  const inactiveCount = useMemo(
+    () => subcontractors.filter((s) => s.status === 'inactive').length,
+    [subcontractors],
+  )
 
   const filtered = useMemo(() => {
     let result = subcontractors
@@ -108,14 +117,38 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
 
   function handleDelete(userId: string) {
     startTransition(async () => {
-      await softDeleteSub(userId)
+      const result = await softDeleteSub(userId)
+      if (result?.error) toast.error(result.error)
       setConfirmDeleteId(null)
     })
   }
 
   function handleReactivate(userId: string) {
     startTransition(async () => {
-      await reactivateSub(userId)
+      const result = await reactivateSub(userId)
+      if (result?.error) toast.error(result.error)
+    })
+  }
+
+  // Roster toggle: an inactive sub keeps their record and history but drops out
+  // of the invite picker, so they can't be sent a job by accident.
+  function handleToggleActive(sub: SubcontractorWithStats) {
+    const name = subDisplayName(sub)
+    if (
+      sub.status === 'active' &&
+      sub.activeJobs > 0 &&
+      !confirm(`${name} has ${sub.activeJobs} job${sub.activeJobs === 1 ? '' : 's'} in progress. Deactivating only stops new job invites — their current jobs carry on as normal. Continue?`)
+    ) return
+    startTransition(async () => {
+      if (sub.status === 'active') {
+        const result = await deactivateSub(sub.id)
+        if (result?.error) toast.error(result.error)
+        else toast.success(`${name} deactivated — they won't receive new job invites.`)
+      } else {
+        const result = await reactivateSub(sub.id)
+        if (result?.error) toast.error(result.error)
+        else toast.success(`${name} reactivated.`)
+      }
     })
   }
 
@@ -181,7 +214,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
     {
       target: '#tour-sub-filters',
       title: 'Search & Filter',
-      content: 'Search by name, email, or company. Filter by status (Active/Deleted) or compliance (Compliant/Not Compliant).',
+      content: 'Search by name, email, or company. Filter by status (Active/Inactive/Deleted) or compliance (Compliant/Not Compliant). Deactivate a sub to keep their record but stop sending them job invites.',
       placement: 'bottom',
     },
     {
@@ -201,7 +234,8 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             <div>
               <h1 className="text-2xl font-bold text-gray-900">All Subcontractors</h1>
               <p className="mt-1 text-sm text-gray-500">
-                {subcontractors.filter(s => s.status === 'active').length} active subcontractor{subcontractors.filter(s => s.status === 'active').length !== 1 ? 's' : ''}
+                {activeCount} active subcontractor{activeCount !== 1 ? 's' : ''}
+                {inactiveCount > 0 && ` · ${inactiveCount} inactive`}
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex items-center gap-3">
@@ -243,6 +277,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
               <option value="deleted">Deleted</option>
             </select>
             <select
@@ -275,7 +310,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
               const insuranceInfo = formatInsuranceDate(sub.insurance_expiration)
               const compliant = isSubCompliant(sub)
               return (
-                <div key={sub.id} className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${sub.status === 'deleted' ? 'opacity-50' : ''}`}>
+                <div key={sub.id} className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${sub.status === 'deleted' ? 'opacity-50' : sub.status === 'inactive' ? 'opacity-70' : ''}`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="min-w-0 flex-1">
                       <Link href={`/admin/subcontractors/${sub.id}`} className="text-sm font-semibold text-gray-900 hover:text-ember">
@@ -283,13 +318,20 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       </Link>
                       {sub.company_name && subPersonName(sub) && <p className="text-xs text-gray-500">{subPersonName(sub)}</p>}
                     </div>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                      compliant
-                        ? 'bg-green-50 text-green-700 ring-green-600/20'
-                        : 'bg-amber-50 text-amber-700 ring-amber-600/20'
-                    }`}>
-                      {compliant ? 'Compliant' : 'Incomplete'}
-                    </span>
+                    <div className="flex flex-shrink-0 items-center gap-1.5">
+                      {sub.status !== 'active' && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/20">
+                          {sub.status === 'inactive' ? 'Inactive' : 'Deleted'}
+                        </span>
+                      )}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                        compliant
+                          ? 'bg-green-50 text-green-700 ring-green-600/20'
+                          : 'bg-amber-50 text-amber-700 ring-amber-600/20'
+                      }`}>
+                        {compliant ? 'Compliant' : 'Incomplete'}
+                      </span>
+                    </div>
                   </div>
                   <div className="space-y-1 text-xs text-gray-500 mb-3">
                     <p>{sub.email}</p>
@@ -308,6 +350,15 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                       className="rounded-md bg-ember/10 px-3 py-1.5 text-xs font-semibold text-ember hover:bg-ember/15">
                       View Details
                     </Link>
+                    {sub.status !== 'deleted' && (
+                      <button
+                        onClick={() => handleToggleActive(sub)}
+                        disabled={isPending}
+                        className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                      >
+                        {sub.status === 'active' ? 'Deactivate' : 'Reactivate'}
+                      </button>
+                    )}
                     {sub.w9_file_url && (
                       <span className="text-xs text-green-600 font-medium">W-9</span>
                     )}
@@ -341,6 +392,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                   {timeTrackingEnabled && (
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Time Clock</th>
                   )}
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Active</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Edit</th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">Delete</th>
                 </tr>
@@ -349,7 +401,7 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                 {filtered.map((sub) => {
                   const insuranceInfo = formatInsuranceDate(sub.insurance_expiration)
                   return (
-                    <tr key={sub.id} className={`hover:bg-gray-50 transition-colors ${sub.status === 'deleted' ? 'opacity-50' : ''}`}>
+                    <tr key={sub.id} className={`hover:bg-gray-50 transition-colors ${sub.status === 'deleted' ? 'opacity-50' : sub.status === 'inactive' ? 'opacity-70' : ''}`}>
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {sub.company_name || '—'}
                       </td>
@@ -447,6 +499,33 @@ export default function SubcontractorListClient({ subcontractors, tenantName, te
                           </td>
                         )
                       })()}
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                        {sub.status === 'deleted' ? (
+                          <span className="text-xs font-medium text-gray-400">Deleted</span>
+                        ) : (
+                          <Tooltip text={sub.status === 'active'
+                            ? 'Deactivate to keep their record but stop sending them job invites.'
+                            : 'Reactivate to put them back on the roster for job invites.'}>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={sub.status === 'active'}
+                              aria-label={`${sub.status === 'active' ? 'Deactivate' : 'Reactivate'} ${subDisplayName(sub)}`}
+                              disabled={isPending}
+                              onClick={() => handleToggleActive(sub)}
+                              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                sub.status === 'active' ? 'bg-forest' : 'bg-gray-300'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                                  sub.status === 'active' ? 'translate-x-5' : 'translate-x-0.5'
+                                }`}
+                              />
+                            </button>
+                          </Tooltip>
+                        )}
+                      </td>
                       <td className="px-4 py-3 whitespace-nowrap text-center">
                         <Tooltip text="Open this subcontractor's profile, documents, and project history">
                           <Link href={`/admin/subcontractors/${sub.id}`} className="text-amber-600 hover:text-amber-800">

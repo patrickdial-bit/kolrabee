@@ -25,10 +25,45 @@ export async function softDeleteSub(userId: string) {
   }
 
   revalidatePath('/admin/subcontractors')
+  revalidatePath(`/admin/subcontractors/${userId}`)
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
 
+// Take a sub off the roster without deleting them: they keep their profile,
+// documents and job history, but drop out of every dispatch list so they can't
+// be sent a job invite. They also stop counting against the plan limit.
+export async function deactivateSub(userId: string) {
+  const { appUser } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+  const { data, error } = await adminClient
+    .from('users')
+    .update({ status: 'inactive' })
+    .eq('id', userId)
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'subcontractor')
+    .eq('status', 'active')
+    .select('id')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  if (!data || data.length === 0) {
+    return { error: 'Subcontractor not found or already inactive.' }
+  }
+
+  revalidatePath('/admin/subcontractors')
+  revalidatePath(`/admin/subcontractors/${userId}`)
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// Puts a sub back on the roster from either 'inactive' or 'deleted'.
 export async function reactivateSub(userId: string) {
   // Verify caller is an admin
   const { appUser, tenant } = await getCurrentUser()
@@ -61,6 +96,7 @@ export async function reactivateSub(userId: string) {
   }
 
   revalidatePath('/admin/subcontractors')
+  revalidatePath(`/admin/subcontractors/${userId}`)
   revalidatePath('/admin/dashboard')
   return { success: true }
 }
@@ -96,6 +132,9 @@ export async function inviteSubToJoin(email: string, name: string) {
   if (existing) {
     if (existing.status === 'active') {
       return { error: 'This email is already registered as a subcontractor.' }
+    }
+    if (existing.status === 'inactive') {
+      return { error: 'This email belongs to an inactive subcontractor. Reactivate them from the list instead.' }
     }
     return { error: 'This email belongs to a deleted subcontractor. Reactivate them from the list instead.' }
   }
