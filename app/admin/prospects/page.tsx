@@ -1,7 +1,9 @@
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasMarketingEngine } from '@/lib/types'
+import { MARKETING_ENGINE_ENABLED } from '@/lib/feature-flags'
 import AppShell from '@/components/AppShell'
 import ProspectsClient from './ProspectsClient'
 
@@ -28,6 +30,10 @@ export type ProspectRow = {
 
 export default async function ProspectsPage() {
   const { tenant } = await getCurrentUser()
+
+  // The Marketing Engine is parked product-wide while the focus is on the
+  // core dispatch job. The route stays in the tree but is not reachable.
+  if (!MARKETING_ENGINE_ENABLED) notFound()
 
   if (!hasMarketingEngine(tenant)) {
     return (

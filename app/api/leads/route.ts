@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendLeadNotificationEmail } from '@/lib/email'
 import { scoreLead } from '@/lib/marketing'
+import { MARKETING_ENGINE_ENABLED } from '@/lib/feature-flags'
 import { recordConsent } from '@/lib/compliance'
 import { getNotificationPrefs, MK_LEAD_SOURCE_LABELS, type MkLeadSource } from '@/lib/types'
 import { canonicalSiteUrl } from '@/lib/site-url'
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
   if (!tenant || tenant.status !== 'active') {
     return NextResponse.json({ error: 'Unknown tenant.' }, { status: 404, headers: CORS_HEADERS })
   }
-  if ((tenant as any).marketing_enabled !== true) {
+  if (!MARKETING_ENGINE_ENABLED || (tenant as any).marketing_enabled !== true) {
     return NextResponse.json({ error: 'Marketing engine not enabled for this company.' }, { status: 403, headers: CORS_HEADERS })
   }
 
