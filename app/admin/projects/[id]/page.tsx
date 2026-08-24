@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder, DoorKnock } from '@/lib/types'
+import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder, DoorKnock, ProfitThresholds, ProjectEstimate, ProjectLedgerEntry } from '@/lib/types'
 import { subDisplayName } from '@/lib/types'
 import { sumDurationMinutes } from '@/lib/time-tracking'
 import { getProjectPhotos } from '@/lib/photo-actions'
@@ -129,6 +129,24 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   // Jobsite photos with signed thumbnail URLs for the gallery.
   const photos = await getProjectPhotos(project.id)
 
+  // Profit margin guardrails — pre-quote estimate, post-job ledger, and the
+  // tenant's thresholds (falls back to the documented defaults if a tenant
+  // somehow has no row, e.g. created before the seeding migration ran).
+  const [{ data: marginEstimate }, { data: marginLedger }, { data: marginThresholds }] = await Promise.all([
+    adminClient.from('project_estimates').select('*').eq('project_id', project.id).maybeSingle(),
+    adminClient.from('project_ledger_entries').select('*').eq('project_id', project.id).maybeSingle(),
+    adminClient.from('profit_thresholds').select('*').eq('tenant_id', tenant.id).maybeSingle(),
+  ])
+  const thresholds = (marginThresholds as ProfitThresholds | null) ?? {
+    id: '',
+    tenant_id: tenant.id,
+    labor_max_pct: 30,
+    materials_max_pct: 14,
+    min_profit_margin_pct: 50,
+    created_at: '',
+    updated_at: '',
+  }
+
   const invitationsWithNames = (invitations ?? []).map((inv: any) => ({
     id: inv.id,
     project_id: inv.project_id,
@@ -159,6 +177,9 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       driveConnected={integration.connected}
       doorKnocks={doorKnocks}
       doorClockedMinutes={doorClockedMinutes}
+      marginEstimate={marginEstimate as ProjectEstimate | null}
+      marginLedger={marginLedger as ProjectLedgerEntry | null}
+      marginThresholds={thresholds}
     />
   )
 }
