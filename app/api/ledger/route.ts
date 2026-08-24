@@ -55,6 +55,17 @@ export async function POST(req: Request) {
     return new Response('Missing required fields', { status: 400 })
   }
 
+  // Fetch estimate to get total_price
+  const { data: estimate, error: estimateError } = await adminClient
+    .from('project_estimates')
+    .select('total_price')
+    .eq('project_id', projectId)
+    .single()
+
+  if (estimateError || !estimate) {
+    return new Response('Estimate not found for this project', { status: 404 })
+  }
+
   const adminClient = createAdminClient()
 
   // Verify project belongs to tenant
@@ -75,6 +86,7 @@ export async function POST(req: Request) {
     .upsert(
       {
         project_id: projectId,
+        total_price: estimate.total_price,
         actual_material_cost: actualMaterialCost,
         actual_crew_hours: actualCrewHours,
         actual_crew_pay: actualCrewPay,

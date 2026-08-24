@@ -61,6 +61,9 @@ CREATE TABLE project_ledger_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
 
+  -- Reference to estimate for total price (denormalized for generated column calculation)
+  total_price NUMERIC NOT NULL,
+
   -- Actual costs
   actual_material_cost NUMERIC NOT NULL DEFAULT 0,
   actual_crew_hours NUMERIC NOT NULL,
@@ -73,15 +76,12 @@ CREATE TABLE project_ledger_entries (
   ) STORED,
 
   actual_gross_profit NUMERIC GENERATED ALWAYS AS (
-    (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)
-    - (actual_material_cost + actual_crew_pay + COALESCE(referral_fee, 0))
+    total_price - (actual_material_cost + actual_crew_pay + COALESCE(referral_fee, 0))
   ) STORED,
 
   actual_margin_pct NUMERIC GENERATED ALWAYS AS (
-    CASE WHEN (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id) > 0
-      THEN (((SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)
-             - (actual_material_cost + actual_crew_pay + COALESCE(referral_fee, 0)))
-            / (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)) * 100
+    CASE WHEN total_price > 0
+      THEN ((total_price - (actual_material_cost + actual_crew_pay + COALESCE(referral_fee, 0))) / total_price) * 100
       ELSE 0
     END
   ) STORED,
