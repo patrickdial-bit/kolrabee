@@ -92,6 +92,7 @@ export async function POST(req: Request) {
         actual_crew_pay: actualCrewPay,
         referral_fee: referralFee || null,
         notes: notes || null,
+        created_by: appUser.id,
       },
       { onConflict: 'project_id' }
     )

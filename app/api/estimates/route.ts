@@ -91,6 +91,7 @@ export async function POST(req: Request) {
         crew_rate_per_hour: crewRatePerHour,
         material_cost_estimate: materialCostEstimate || 0,
         referral_fee: referralFee || null,
+        created_by: appUser.id,
         updated_by: appUser.id,
       },
       { onConflict: 'project_id' }
