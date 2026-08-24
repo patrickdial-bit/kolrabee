@@ -205,48 +205,73 @@ WHERE accepted_by = :sub_id AND status = 'paid'
 Displayed prominently on the sub's dashboard. This is motivational and was a specific feature request during Bubble development.
 ---
 ## FEATURE STATUS TRACKER
-### Built (shipped beyond original MVP spec)
-| Feature | Status | Notes |
-|---|---|---|
-| Stripe billing | **Built** | Full checkout, portal, webhooks, 4 plan tiers (free/trial/starter/pro) |
-| Super admin panel | **Built** | Platform stats, tenant management, impersonation, tenant detail |
-| W-9 / COI uploads | **Built** | Subs upload from profile, admins view/download, compliance gating |
-| Spanish / i18n | **Built** | Full English + Spanish on sub-facing pages, localStorage toggle |
-| Guided tours + tooltips | **Built** | First-visit tours on dashboard/new project/sub list, toggle in nav |
-| Notification preferences | **Built** | Per-user JSONB toggles for email notifications |
-| Work order link | **Built** | Extra link field on projects (in addition to CompanyCam link) |
-| Plan limit enforcement | **Built** | max_projects and max_subcontractors enforced per plan |
 
-### Partially Built
-| Feature | Status | What's missing |
-|---|---|---|
-| Multi-company workspaces | **Partial** | DB supports multiple tenants per owner. No user-facing workspace switcher, no "create workspace" flow for existing admins. Pricing page advertises up to 5 for Operator plan. |
-| Multiple admin users per tenant | **Partial** | DB allows multiple admins. Pricing page shows "2 included, $10/mo each extra." No enforcement of admin count limits, no billing UI for extra admins. |
+_Last verified against `main` on 2026-08-24._
 
-### Not Yet Built
-| Feature | Description | Priority |
-|---|---|---|
-| Job file attachments | Upload photos, PDFs, scope docs directly to a job. Storage bucket exists but no project-level upload UI or DB fields. | Next |
-| Daily progress reports + photos | Sub submits daily report with photos/notes. Was in Bubble app. | V2 — after 5+ paying customers |
-| Activity / audit log | Track who did what and when. | V2 |
-| In-app notification bell | Real-time notifications beyond email. | V2 |
-| Custom branding per tenant | Logo, colors per company. | V3 |
-| Data export / GDPR | User data export and deletion requests. | V2 |
-| Account deletion flow (self-serve) | Users request their own account deletion. | V2 |
-| Report locking | Lock daily reports after review. | V2 — requires daily reports |
-| Custom email templates | Per-tenant email branding. | V3 |
-| Multi-company sub login | Sub works for multiple companies, single login. | V3 |
-| Native mobile app | iOS/Android app vs responsive web. | V3 |
-| Offline support | Work without connectivity. Requires native app. | V3 |
-| Push notifications | Mobile push. Requires native app. | V3 |
-| CSV export | Export project/sub/payment data. | V2 |
-| Consolidated owner dashboard | Single view across all workspaces for Operator plan. | V2 — requires multi-workspace |
+### Built (shipped beyond the original MVP spec)
+
+| Feature | Notes |
+|---|---|
+| Stripe billing | Checkout, portal, webhooks, 4 plan tiers (free/trial/growth/operator) |
+| Super admin panel | Platform stats, tenant management, impersonation, tenant detail |
+| W-9 / COI uploads | Subs upload from profile, admins view/download, compliance gating |
+| Spanish / i18n | Full English + Spanish on sub-facing pages, localStorage toggle |
+| Guided tours + tooltips | First-visit tours and per-screen tooltips, toggle in nav |
+| Notification preferences | Per-user JSONB toggles for email notifications |
+| Plan limit enforcement | `max_projects` and `max_subcontractors` enforced per plan |
+| **Job file attachments** | `project_attachments`, max 3 per job, admin + sub views |
+| **Time tracking** | Clock in/out, crew clock, daily hours digest, stale-entry guardrails, CSV export |
+| **Photo module** | Galleries, tags, CompanyCam import, public share links, EXIF |
+| **Job messaging** | Per-job chat for admin and sub, with email notifications |
+| **Change orders** | Added against a job, with notification |
+| **Job map** | Geocoded job locations with stage filters, admin and sub views |
+| **Crew members** | Crew leaders manage a roster and clock their crew in |
+| **Sub ratings** | Star ratings and reliability stats |
+| **Cloud backup** | Google Drive integration plus a nightly cron |
+| **Knowledge base / Help** | In-app help pages |
+| **Structured addresses** | Street/city/state/zip on create and edit; city-only stays city-only pre-acceptance |
+| **Sub deactivation** | `inactive` status keeps history but stops dispatch |
+
+### Parked
+
+| Feature | Status |
+|---|---|
+| Marketing Engine (Leads / Prospects / Market Intel) | Built, then parked product-wide behind `NEXT_PUBLIC_MARKETING_ENGINE` (default off) plus the per-tenant `marketing_enabled` flag. Focus is the core dispatch job. |
+| Bid board | ~3,700 lines on `feature/bid-board-v1`, never merged. Bidding is a different product from dispatch. |
+| Ads Agent | AI ad-creative add-on on `claude/brave-cori-MyzGc`. PR closed. |
+
+### Partially built
+
+| Feature | What's missing |
+|---|---|
+| Multi-company workspaces | DB supports multiple tenants per owner. No workspace switcher, no "create workspace" flow. Pricing advertises up to 5 for Operator. |
+| Multiple admin users per tenant | DB allows multiple admins. No enforcement of admin count limits, no billing UI for extra admins. |
+
+### Not yet built
+
+| Feature | Priority |
+|---|---|
+| Activity / audit log | V2 |
+| In-app notification bell | V2 |
+| CSV export beyond time tracking (projects, subs, payments) | V2 |
+| Daily progress reports + photos | V2 |
+| Data export / GDPR | V2 |
+| Self-serve account deletion | V2 |
+| Consolidated owner dashboard | V2 — requires multi-workspace |
+| Custom branding per tenant | V3 |
+| Custom email templates | V3 |
+| Multi-company sub login | V3 |
+| Native mobile app / offline / push | V3 |
+
 ---
+
 ## V2 TRIGGER: When To Build More
-Add job file attachments when: customers ask to stop linking Google Drive
+
 Add daily reports when: 3+ customers ask for it
 Add multi-workspace switcher when: first Operator plan subscriber signs up
 Add admin count enforcement when: Stripe billing is live and plans are enforced
 Add branding when: a customer specifically asks to white-label it
 Add native mobile when: subs complain the responsive web isn't good enough
+Un-park the bid board when: bidding, not dispatch, is the job to be done
+
 **Don't build features because they'd be cool. Build them because a customer is asking for them or you physically can't operate without them.**

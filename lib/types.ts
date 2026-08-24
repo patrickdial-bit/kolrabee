@@ -1,3 +1,5 @@
+import { MARKETING_ENGINE_ENABLED } from '@/lib/feature-flags'
+
 // 'inactive' takes a subcontractor off the roster without deleting them: their
 // profile, documents and job history are kept, but they are excluded from
 // dispatch lists so they can't be sent a job invite. Reversible at any time.
@@ -495,8 +497,12 @@ export function hasTimeTracking(tenant: Tenant): boolean {
 
 // Marketing engine (Leads / Prospects / Market Intel) is a separate rollout,
 // enabled per tenant only by the platform owner. Default off.
+//
+// It is also parked product-wide behind MARKETING_ENGINE_ENABLED while the
+// focus is on the core dispatch job, so a tenant row left with the flag set
+// does not resurrect the module on its own.
 export function hasMarketingEngine(tenant: Tenant): boolean {
-  return (tenant as any).marketing_enabled === true
+  return MARKETING_ENGINE_ENABLED && (tenant as any).marketing_enabled === true
 }
 
 export type ReliabilityStats = {

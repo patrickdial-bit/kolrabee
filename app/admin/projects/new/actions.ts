@@ -7,10 +7,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isTenantActive } from '@/lib/types'
 import { getIntegrationStatus, ensureProjectFolder } from '@/lib/integrations/backup'
 import { geocodeAndStoreProject } from '@/lib/geocode'
+import { readAddressFromForm } from '@/lib/address'
 
 export async function createProject(formData: FormData) {
   const customerName = formData.get('customer_name') as string
-  const address = formData.get('address') as string
   const jobNumber = formData.get('job_number') as string
   const startDate = formData.get('start_date') as string
   const startTime = formData.get('start_time') as string
@@ -27,9 +27,11 @@ export async function createProject(formData: FormData) {
     return { error: 'Customer name is required.' }
   }
 
-  if (!address?.trim()) {
-    return { error: 'Address is required.' }
+  const addressResult = readAddressFromForm(formData)
+  if ('error' in addressResult) {
+    return { error: addressResult.error }
   }
+  const address = addressResult.address
 
   // Door-to-door jobs are paid hourly: the fixed payout starts at 0 and is
   // computed from clocked hours × hourly_rate when the job is marked paid.

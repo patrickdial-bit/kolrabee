@@ -28,6 +28,8 @@ interface MessageWithSender {
 interface SubProjectDetailClientProps {
   slug: string
   tenantName: string
+  /** tenants.service_area — shown instead of the address when a job has no identifiable city. */
+  serviceArea: string | null
   subName: string
   project: Project
   invitation: ProjectInvitation | null
@@ -79,6 +81,7 @@ const statusLabels: Record<string, string> = {
 export default function SubProjectDetailClient({
   slug,
   tenantName,
+  serviceArea,
   subName,
   project,
   invitation,
@@ -326,7 +329,7 @@ export default function SubProjectDetailClient({
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('project.location')}</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {showFullDetails ? project.address : extractCity(project.address)}
+                  {showFullDetails ? project.address : extractCity(project.address, serviceArea)}
                 </dd>
               </div>
 

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import KolrabeeLogo from '@/components/KolrabeeLogo'
 import SideNav, { type SideNavGroup } from '@/components/SideNav'
 import { useI18n } from '@/lib/i18n'
+import { MARKETING_ENGINE_ENABLED } from '@/lib/feature-flags'
 
 // Fire-and-forget: ask the current screen's GuidedTour (if any) to replay.
 function startTour(tourKey: string) {
@@ -76,9 +77,14 @@ export default function AppShell(props: AppShellProps) {
         items: [
           { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', active: pathname.startsWith('/admin/dashboard') },
           { href: '/admin/projects', label: 'Projects', icon: 'projects', active: pathname.startsWith('/admin/projects') },
-          { href: '/admin/leads', label: 'Leads', icon: 'leads', active: pathname.startsWith('/admin/leads') },
-          { href: '/admin/prospects', label: 'Prospects', icon: 'import', active: pathname.startsWith('/admin/prospects') },
-          { href: '/admin/market', label: 'Market Intel', icon: 'tags', active: pathname.startsWith('/admin/market') },
+          // Marketing Engine — parked. See lib/feature-flags.ts.
+          ...(MARKETING_ENGINE_ENABLED
+            ? ([
+                { href: '/admin/leads', label: 'Leads', icon: 'leads' as const, active: pathname.startsWith('/admin/leads') },
+                { href: '/admin/prospects', label: 'Prospects', icon: 'import' as const, active: pathname.startsWith('/admin/prospects') },
+                { href: '/admin/market', label: 'Market Intel', icon: 'tags' as const, active: pathname.startsWith('/admin/market') },
+              ])
+            : []),
           { href: '/admin/map', label: 'Map', icon: 'map', active: pathname.startsWith('/admin/map') },
           { href: '/admin/subcontractors', label: 'Subcontractors', icon: 'subcontractors', active: pathname.startsWith('/admin/subcontractors') },
           { href: '/admin/team', label: 'Team', icon: 'team', active: pathname.startsWith('/admin/team') },
