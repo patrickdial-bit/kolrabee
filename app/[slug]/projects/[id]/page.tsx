@@ -205,6 +205,7 @@ export default async function SubProjectDetailPage({
     <SubProjectDetailClient
       slug={slug}
       tenantName={tenant.name}
+      serviceArea={tenant.service_area}
       subName={`${appUser.first_name} ${appUser.last_name}`}
       project={project as Project}
       invitation={invitation as ProjectInvitation | null}

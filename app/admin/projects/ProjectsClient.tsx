@@ -9,13 +9,34 @@ import StatusTabs from '@/components/StatusTabs'
 import InviteSubsModal from '@/app/admin/projects/[id]/InviteSubsModal'
 import GuidedTour, { type TourStep } from '@/components/GuidedTour'
 import Tooltip from '@/components/Tooltip'
-import { formatCurrency, formatDateTime } from '@/lib/utils'
+import { formatCurrency, formatDateTime, hasResolvableCity } from '@/lib/utils'
 import type { Project } from '@/lib/types'
 import type { PlatformInvite, ProjectInviteSummary } from './page'
 import ChatDrawer from '@/components/ChatDrawer'
 import { sendMessage, getMessages } from '@/app/admin/projects/[id]/message-actions'
 import { cancelSubInvite, editSubInvite } from '@/app/admin/subcontractors/actions'
 import { clientSiteUrl } from '@/lib/site-url'
+
+// A job address with no identifiable city can't be shown to a sub before they
+// accept — they'd see the company's service area instead of the real location,
+// and the job geocodes poorly on the map. Flag those so an admin can complete
+// them; editing the job now asks for street/city/state/zip separately.
+function AddressLine({ address }: { address: string }) {
+  const incomplete = !hasResolvableCity(address)
+  return (
+    <p className="truncate text-xs text-gray-500">
+      {address}
+      {incomplete && (
+        <span
+          title="No city on this address — subs see the service area instead, and it won't map accurately. Edit the job to complete it."
+          className="ml-1.5 inline-flex items-center rounded px-1.5 py-0.5 align-middle text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-300"
+        >
+          Incomplete address
+        </span>
+      )}
+    </p>
+  )
+}
 
 type SortKey = 'customer_name' | 'start_date' | 'payout_amount'
 type SortDir = 'asc' | 'desc'
@@ -581,7 +602,7 @@ export default function ProjectsClient({
                             {project.customer_name}
                             {project.job_number && <span className="ml-1 font-normal text-gray-400">#{project.job_number}</span>}
                           </Link>
-                          <p className="truncate text-xs text-gray-500">{project.address}</p>
+                          <AddressLine address={project.address} />
                         </div>
                         <span className="text-sm font-bold text-gray-900">{formatCurrency(project.payout_amount)}</span>
                       </div>
@@ -632,7 +653,7 @@ export default function ProjectsClient({
                               {project.customer_name}
                               {project.job_number && <span className="ml-1 text-gray-400">#{project.job_number}</span>}
                             </Link>
-                            <p className="truncate text-xs text-gray-500">{project.address}</p>
+                            <AddressLine address={project.address} />
                           </td>
                           {/* Status */}
                           <td className="px-4 py-3 whitespace-nowrap">

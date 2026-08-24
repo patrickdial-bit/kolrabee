@@ -237,14 +237,10 @@ export function normalizeUrl(url: string | null | undefined): string | null {
   return `https://${trimmed}`
 }
 
-// Extract city from full address
-export function extractCity(address: string): string {
-  const parts = address.split(',').map(p => p.trim())
-  if (parts.length >= 2) {
-    return parts[1].replace(/\s+\w{2}\s+\d{5}(-\d{4})?$/, '').trim()
-  }
-  return address
-}
+// Re-exported so server code keeps one import site. The implementation lives
+// in lib/utils.ts (client-safe) — there must only ever be one, or a fix here
+// silently misses the sub-facing UI.
+export { extractCity } from '@/lib/utils'
 
 // Format currency
 export function formatCurrency(amount: number): string {

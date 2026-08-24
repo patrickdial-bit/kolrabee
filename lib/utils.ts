@@ -1,11 +1,38 @@
 // Client-safe utility functions (no server imports)
 
-export function extractCity(address: string): string {
-  const parts = address.split(',').map(p => p.trim())
-  if (parts.length >= 2) {
-    return parts[1].replace(/\s+\w{2}\s+\d{5}(-\d{4})?$/, '').trim()
-  }
-  return address
+import { parseAddress } from '@/lib/address'
+
+/** Shown when a job's address has no city we can identify. */
+export const CITY_UNKNOWN = 'Location shared after you accept'
+
+/**
+ * Can we name the city for this address without guessing?
+ *
+ * Jobs are often entered as a bare street ("175 Loveman Ave") — lib/geocode.ts
+ * says as much. Those have no city to show, and the admin should complete them.
+ */
+export function hasResolvableCity(address: string | null | undefined): boolean {
+  return parseAddress(address).city.trim().length > 0
+}
+
+/**
+ * The city to show a subcontractor who has NOT yet accepted the job.
+ *
+ * SPEC.md: a sub sees the city only until they accept, so they can't go
+ * straight to the customer. This fails CLOSED — if the stored address has no
+ * city we can identify, it returns the company's service area, or a neutral
+ * placeholder, rather than falling back to the raw address. The old version
+ * split on commas and returned the whole string when there was no comma, which
+ * leaked the full street address for every bare-street job.
+ *
+ * Pass `serviceArea` (tenants.service_area, e.g. "Columbus, OH") so the sub
+ * still gets a rough location instead of nothing.
+ */
+export function extractCity(address: string, serviceArea?: string | null): string {
+  const city = parseAddress(address).city.trim()
+  if (city) return city
+  const area = serviceArea?.trim()
+  return area || CITY_UNKNOWN
 }
 
 export function formatCurrency(amount: number): string {

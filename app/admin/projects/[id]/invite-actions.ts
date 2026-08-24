@@ -125,7 +125,8 @@ export async function sendInvitations(projectId: string, subcontractorIds: strin
   if (project && subs) {
     const siteUrl = canonicalSiteUrl()
     const projectUrl = `${siteUrl}/${tenant.slug}/projects/${projectId}`
-    const city = extractCity(project.address)
+    // Invitations go out before the sub accepts, so this must stay city-level.
+    const city = extractCity(project.address, tenant.service_area)
 
     for (const sub of subs.filter((s: AppUser) => subcontractorIds.includes(s.id))) {
       const prefs = getNotificationPrefs(sub)

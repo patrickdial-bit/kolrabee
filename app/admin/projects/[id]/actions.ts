@@ -8,6 +8,7 @@ import { sendPaidEmail, sendCompletionApprovedEmail, sendScheduleChangedEmail } 
 import { getNotificationPrefs, hasGrowthFeatures } from '@/lib/types'
 import { sumDurationMinutes } from '@/lib/time-tracking'
 import { geocodeAndStoreProject } from '@/lib/geocode'
+import { readAddressFromForm } from '@/lib/address'
 import { canonicalSiteUrl } from '@/lib/site-url'
 
 async function notifyAssignedSubOfReschedule(args: {
@@ -52,7 +53,6 @@ async function notifyAssignedSubOfReschedule(args: {
 
 export async function updateProject(projectId: string, formData: FormData) {
   const customerName = formData.get('customer_name') as string
-  const address = formData.get('address') as string
   const jobNumber = formData.get('job_number') as string
   const startDate = formData.get('start_date') as string
   const startTime = formData.get('start_time') as string
@@ -68,9 +68,11 @@ export async function updateProject(projectId: string, formData: FormData) {
     return { error: 'Customer name is required.' }
   }
 
-  if (!address?.trim()) {
-    return { error: 'Address is required.' }
+  const addressResult = readAddressFromForm(formData)
+  if ('error' in addressResult) {
+    return { error: addressResult.error }
   }
+  const address = addressResult.address
 
   // The edit form posts payout_amount for standard jobs and hourly_rate for
   // door-to-door jobs — only validate/update the field that was submitted.
