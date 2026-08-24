@@ -60,7 +60,15 @@ export async function POST(req: Request) {
     referralFee,
   } = body
 
-  if (!projectId || !totalPrice || estimatedHours === undefined || !crewCount || !crewRatePerHour) {
+  if (
+    !projectId ||
+    totalPrice === undefined ||
+    totalPrice === null ||
+    estimatedHours === undefined ||
+    !crewCount ||
+    crewRatePerHour === undefined ||
+    crewRatePerHour === null
+  ) {
     return new Response('Missing required fields', { status: 400 })
   }
 
@@ -83,6 +91,7 @@ export async function POST(req: Request) {
     .from('project_estimates')
     .upsert(
       {
+        tenant_id: tenant.id,
         project_id: projectId,
         paintscout_quote_id: paintscoutQuoteId,
         total_price: totalPrice,

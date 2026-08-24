@@ -51,7 +51,15 @@ export async function POST(req: Request) {
   const body = await req.json()
   const { projectId, actualMaterialCost, actualCrewHours, actualCrewPay, referralFee, notes } = body
 
-  if (!projectId || actualMaterialCost === undefined || !actualCrewHours || !actualCrewPay) {
+  if (
+    !projectId ||
+    actualMaterialCost === undefined ||
+    actualMaterialCost === null ||
+    actualCrewHours === undefined ||
+    actualCrewHours === null ||
+    actualCrewPay === undefined ||
+    actualCrewPay === null
+  ) {
     return new Response('Missing required fields', { status: 400 })
   }
 
@@ -85,6 +93,7 @@ export async function POST(req: Request) {
     .from('project_ledger_entries')
     .upsert(
       {
+        tenant_id: tenant.id,
         project_id: projectId,
         total_price: estimate.total_price,
         actual_material_cost: actualMaterialCost,

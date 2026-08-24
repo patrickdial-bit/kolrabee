@@ -15,6 +15,7 @@ CREATE TABLE profit_thresholds (
 -- Pre-estimate guardrails (estimator workflow)
 CREATE TABLE project_estimates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   project_id UUID NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
   paintscout_quote_id TEXT,
   total_price NUMERIC NOT NULL,
@@ -59,7 +60,10 @@ CREATE TABLE project_estimates (
 -- Post-job ledger entry
 CREATE TABLE project_ledger_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  -- UNIQUE (not just indexed): the API upserts onConflict: 'project_id',
+  -- which requires a unique constraint on this column to resolve conflicts.
+  project_id UUID NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
 
   -- Reference to estimate for total price (denormalized for generated column calculation)
   total_price NUMERIC NOT NULL,
@@ -96,6 +100,7 @@ CREATE TABLE project_ledger_entries (
 -- Audit trail for margin checks (estimating + final)
 CREATE TABLE margin_checks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   check_type TEXT NOT NULL CHECK (check_type IN ('estimate', 'final')),
 
@@ -117,9 +122,12 @@ CREATE TABLE margin_checks (
 
 -- Indexes
 CREATE INDEX idx_project_estimates_project_id ON project_estimates(project_id);
+CREATE INDEX idx_project_estimates_tenant_id ON project_estimates(tenant_id);
 CREATE INDEX idx_project_estimates_status ON project_estimates(status);
 CREATE INDEX idx_project_ledger_entries_project_id ON project_ledger_entries(project_id);
+CREATE INDEX idx_project_ledger_entries_tenant_id ON project_ledger_entries(tenant_id);
 CREATE INDEX idx_margin_checks_project_id ON margin_checks(project_id);
+CREATE INDEX idx_margin_checks_tenant_id ON margin_checks(tenant_id);
 CREATE INDEX idx_margin_checks_check_type ON margin_checks(check_type);
 CREATE INDEX idx_profit_thresholds_tenant_id ON profit_thresholds(tenant_id);
 
@@ -127,3 +135,31 @@ CREATE INDEX idx_profit_thresholds_tenant_id ON profit_thresholds(tenant_id);
 INSERT INTO profit_thresholds (tenant_id, labor_max_pct, materials_max_pct, min_profit_margin_pct)
 SELECT id, 30, 14, 50 FROM tenants
 ON CONFLICT (tenant_id) DO NOTHING;
+
+-- Row level security. Profitability data is admin-only — subcontractors never
+-- see cost/margin figures, unlike change orders which they can read for their
+-- own jobs.
+ALTER TABLE profit_thresholds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_estimates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE project_ledger_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE margin_checks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Admins can manage profit thresholds"
+  ON profit_thresholds FOR ALL
+  USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
+  WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
+
+CREATE POLICY "Admins can manage project estimates"
+  ON project_estimates FOR ALL
+  USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
+  WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
+
+CREATE POLICY "Admins can manage project ledger entries"
+  ON project_ledger_entries FOR ALL
+  USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
+  WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
+
+CREATE POLICY "Admins can manage margin checks"
+  ON margin_checks FOR ALL
+  USING (tenant_id = auth_tenant_id() AND auth_role() = 'admin')
+  WITH CHECK (tenant_id = auth_tenant_id() AND auth_role() = 'admin');
