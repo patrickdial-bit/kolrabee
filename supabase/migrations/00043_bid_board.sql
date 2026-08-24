@@ -1,4 +1,10 @@
 -- Subcontractor Bid Board (V1) — build step 1: schema + constraints + RLS.
+--
+-- Renumbered 00040 -> 00043 (and step 2, 00041 -> 00044). While this branch sat
+-- unmerged, main shipped 00042; `supabase db push` applies files in lexical
+-- order against a recorded high-water mark, so merging as 00040/00041 would
+-- have left two migrations sorting behind an already-applied one. Do not
+-- renumber these back.
 -- Spec: docs/bid-board-spec.md sections 2, 3, 9.
 --
 -- Naming note: the bid-board spec says `org_id`; this codebase's tenant column
