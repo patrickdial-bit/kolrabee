@@ -22,7 +22,9 @@ import ProjectPhotos from '@/components/ProjectPhotos'
 import BackupButton from '@/components/BackupButton'
 import BackupToDriveButton from '@/components/BackupToDriveButton'
 import DoorActivityPanel from '@/components/DoorActivityPanel'
-import type { SubRating, ProjectAttachment, PhotoWithUrl, DoorKnock } from '@/lib/types'
+import MarginCalculator from '@/components/MarginCalculator'
+import LedgerEntryForm from '@/components/LedgerEntryForm'
+import type { SubRating, ProjectAttachment, PhotoWithUrl, DoorKnock, ProjectEstimate, ProjectLedgerEntry, ProfitThresholds } from '@/lib/types'
 
 interface InvitationWithName {
   id: string
@@ -72,6 +74,9 @@ interface ProjectDetailClientProps {
   driveConnected: boolean
   doorKnocks: DoorKnock[]
   doorClockedMinutes: number
+  marginEstimate: ProjectEstimate | null
+  marginLedger: ProjectLedgerEntry | null
+  marginThresholds: ProfitThresholds
 }
 
 const statusColors: Record<string, string> = {
@@ -106,6 +111,9 @@ export default function ProjectDetailClient({
   driveConnected,
   doorKnocks,
   doorClockedMinutes,
+  marginEstimate,
+  marginLedger,
+  marginThresholds,
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -727,6 +735,36 @@ export default function ProjectDetailClient({
           ) : (
             <p className="text-sm text-gray-500">No change orders yet. Add one when scope or pay changes after the job is posted.</p>
           )}
+        </div>
+
+        {/* Profit Margin Estimate — pre-quote guardrail check */}
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Profit Margin Estimate</h2>
+            <p className="text-sm text-gray-500">Check labor, materials, and profit against your guardrails before quoting.</p>
+          </div>
+          <MarginCalculator
+            projectId={project.id}
+            projectValue={project.payout_amount}
+            estimate={marginEstimate}
+            thresholds={marginThresholds}
+            onSave={() => { toast.success('Estimate saved.'); router.refresh() }}
+          />
+        </div>
+
+        {/* Job Cost Ledger — post-job actual costs and variance */}
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Job Cost Ledger</h2>
+            <p className="text-sm text-gray-500">Record actual costs once the job's done to see the real margin.</p>
+          </div>
+          <LedgerEntryForm
+            projectId={project.id}
+            estimate={marginEstimate}
+            ledgerEntry={marginLedger}
+            thresholds={marginThresholds}
+            onSave={() => { toast.success('Actual costs saved.'); router.refresh() }}
+          />
         </div>
 
         {/* Door-to-door activity — rep canvassing stats, pins, and knock log */}

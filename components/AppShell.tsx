@@ -77,6 +77,7 @@ export default function AppShell(props: AppShellProps) {
         items: [
           { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', active: pathname.startsWith('/admin/dashboard') },
           { href: '/admin/projects', label: 'Projects', icon: 'projects', active: pathname.startsWith('/admin/projects') },
+          { href: '/admin/margins', label: 'Margins', icon: 'margins', active: pathname.startsWith('/admin/margins') },
           // Marketing Engine — parked. See lib/feature-flags.ts.
           ...(MARKETING_ENGINE_ENABLED
             ? ([
