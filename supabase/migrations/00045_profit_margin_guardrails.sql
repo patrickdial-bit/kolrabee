@@ -40,7 +40,10 @@ CREATE TABLE project_estimates (
   ) STORED,
 
   projected_profit_pct NUMERIC GENERATED ALWAYS AS (
-    100 - material_pct - labor_pct
+    CASE WHEN total_price > 0
+      THEN 100 - ((material_cost_estimate + (estimated_hours * crew_rate_per_hour * crew_count)) / total_price) * 100
+      ELSE 0
+    END
   ) STORED,
 
   -- Guardrail status
@@ -71,12 +74,14 @@ CREATE TABLE project_ledger_entries (
 
   actual_gross_profit NUMERIC GENERATED ALWAYS AS (
     (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)
-    - total_cogs
+    - (actual_material_cost + actual_crew_pay + COALESCE(referral_fee, 0))
   ) STORED,
 
   actual_margin_pct NUMERIC GENERATED ALWAYS AS (
     CASE WHEN (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id) > 0
-      THEN (actual_gross_profit / (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)) * 100
+      THEN (((SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)
+             - (actual_material_cost + actual_crew_pay + COALESCE(referral_fee, 0)))
+            / (SELECT total_price FROM project_estimates WHERE project_id = project_ledger_entries.project_id)) * 100
       ELSE 0
     END
   ) STORED,
