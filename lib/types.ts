@@ -545,3 +545,96 @@ export function isSubCompliant(sub: AppUser): boolean {
   const insuranceNotExpired = hasInsurance && new Date(sub.insurance_expiration!) >= new Date()
   return hasW9 && hasCoi && insuranceNotExpired
 }
+
+// Profit margin guardrails for estimating and post-job tracking
+
+export type ProfitThresholds = {
+  id: string
+  tenant_id: string
+  labor_max_pct: number
+  materials_max_pct: number
+  min_profit_margin_pct: number
+  created_at: string
+  updated_at: string
+}
+
+export type ProjectEstimate = {
+  id: string
+  project_id: string
+  paintscout_quote_id: string | null
+  total_price: number
+  estimated_hours: number
+  crew_count: number
+  crew_rate_per_hour: number
+  material_cost_estimate: number
+  referral_fee: number | null
+  material_pct: number
+  labor_pct: number
+  projected_profit_pct: number
+  status: 'estimating' | 'approved' | 'rejected'
+  approval_reason: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  updated_by: string
+}
+
+export type ProjectLedgerEntry = {
+  id: string
+  project_id: string
+  total_price: number
+  actual_material_cost: number
+  actual_crew_hours: number
+  actual_crew_pay: number
+  referral_fee: number | null
+  total_cogs: number
+  actual_gross_profit: number
+  actual_margin_pct: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+}
+
+export type MarginCheck = {
+  id: string
+  project_id: string
+  check_type: 'estimate' | 'final'
+  labor_pct: number
+  materials_pct: number
+  profit_margin_pct: number
+  labor_threshold: number
+  materials_threshold: number
+  profit_threshold: number
+  status: 'pass' | 'warning' | 'fail'
+  checked_at: string
+  checked_by: string
+}
+
+// Margin check status determination. A guardrail that's off target but within
+// a small tolerance band is a "warning" (flag for review); past that band
+// it's a hard "fail". The tolerance is a starting point — tune it if it
+// doesn't match how much slack the business wants to allow.
+const LABOR_WARNING_TOLERANCE_PCT = 3
+const MATERIALS_WARNING_TOLERANCE_PCT = 2
+const PROFIT_WARNING_TOLERANCE_PCT = 5
+
+export function getMarginStatus(
+  material_pct: number,
+  labor_pct: number,
+  profit_pct: number,
+  thresholds: Pick<ProfitThresholds, 'labor_max_pct' | 'materials_max_pct' | 'min_profit_margin_pct'>
+): 'pass' | 'warning' | 'fail' {
+  const laborOk = labor_pct <= thresholds.labor_max_pct
+  const materialsOk = material_pct < thresholds.materials_max_pct
+  const profitOk = profit_pct >= thresholds.min_profit_margin_pct
+
+  if (laborOk && materialsOk && profitOk) return 'pass'
+
+  const laborWithinTolerance = labor_pct <= thresholds.labor_max_pct + LABOR_WARNING_TOLERANCE_PCT
+  const materialsWithinTolerance = material_pct < thresholds.materials_max_pct + MATERIALS_WARNING_TOLERANCE_PCT
+  const profitWithinTolerance = profit_pct >= thresholds.min_profit_margin_pct - PROFIT_WARNING_TOLERANCE_PCT
+
+  if (laborWithinTolerance && materialsWithinTolerance && profitWithinTolerance) return 'warning'
+  return 'fail'
+}
