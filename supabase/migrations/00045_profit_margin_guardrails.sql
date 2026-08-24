@@ -34,7 +34,7 @@ CREATE TABLE project_estimates (
 
   labor_pct NUMERIC GENERATED ALWAYS AS (
     CASE WHEN total_price > 0
-      THEN ((estimated_hours * crew_rate_per_hour) / total_price) * 100
+      THEN ((estimated_hours * crew_rate_per_hour * crew_count) / total_price) * 100
       ELSE 0
     END
   ) STORED,
