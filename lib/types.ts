@@ -13,7 +13,7 @@ export type AppUser = {
   first_name: string
   last_name: string
   phone: string | null
-  role: 'admin' | 'subcontractor'
+  role: 'admin' | 'subcontractor' | 'estimator'
   status: UserStatus
   company_name: string | null
   crew_size: number | null
@@ -560,7 +560,11 @@ export type ProfitThresholds = {
 
 export type ProjectEstimate = {
   id: string
-  project_id: string
+  // Null while the quote is pre-sale; set when the admin links it to the
+  // project created after the customer signs.
+  project_id: string | null
+  customer_name: string | null
+  customer_address: string | null
   paintscout_quote_id: string | null
   total_price: number
   estimated_hours: number

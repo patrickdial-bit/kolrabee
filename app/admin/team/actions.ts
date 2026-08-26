@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUser } from '@/lib/helpers'
-import { sendAdminInviteEmail } from '@/lib/email'
+import { sendAdminInviteEmail, sendEstimatorInviteEmail } from '@/lib/email'
 import { canonicalSiteUrl } from '@/lib/site-url'
 
 export async function inviteAdminToJoin(email: string, name: string) {
@@ -153,6 +153,145 @@ export async function revokeAdminInvite(inviteId: string) {
     .eq('id', inviteId)
     .eq('tenant_id', appUser.tenant_id)
     .eq('role', 'admin')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/team')
+  return { success: true }
+}
+
+// ---------------------------------------------------------------------------
+// Estimators — limited logins that can only create and view their own quotes.
+// Same invite mechanics as admins, different role and join page.
+// ---------------------------------------------------------------------------
+
+export async function inviteEstimatorToJoin(email: string, name: string) {
+  const { appUser, tenant } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const normalizedEmail = email.toLowerCase().trim()
+  if (!normalizedEmail) {
+    return { error: 'Email is required.' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { data: existing } = await adminClient
+    .from('users')
+    .select('id, role, status')
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('email', normalizedEmail)
+    .maybeSingle()
+
+  if (existing) {
+    if (existing.role === 'estimator') {
+      return existing.status === 'active'
+        ? { error: 'This email is already registered as an estimator.' }
+        : { error: 'This email belongs to a removed estimator. Reactivate them from the list instead.' }
+    }
+    return { error: `This email is already registered as ${existing.role === 'admin' ? 'an admin' : 'a subcontractor'} on your account.` }
+  }
+
+  const baseUrl = canonicalSiteUrl()
+  const params = new URLSearchParams({ email: normalizedEmail })
+  if (name) params.set('name', name)
+  const joinUrl = `${baseUrl}/${tenant.slug}/join-estimator?${params.toString()}`
+
+  const { error: inviteError } = await adminClient
+    .from('platform_invites')
+    .upsert(
+      {
+        tenant_id: appUser.tenant_id,
+        email: normalizedEmail,
+        name: name || null,
+        role: 'estimator',
+        status: 'pending',
+        invited_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 30 * 86400000).toISOString(),
+      },
+      { onConflict: 'tenant_id,email' }
+    )
+
+  if (inviteError) {
+    return { error: inviteError.message }
+  }
+
+  await sendEstimatorInviteEmail({
+    to: normalizedEmail,
+    name,
+    tenantName: tenant.name,
+    notificationEmail: tenant.notification_email ?? null,
+    joinUrl,
+  })
+
+  revalidatePath('/admin/team')
+  return { success: true }
+}
+
+export async function removeEstimator(userId: string) {
+  const { appUser } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { error } = await adminClient
+    .from('users')
+    .update({ status: 'deleted' })
+    .eq('id', userId)
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'estimator')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/team')
+  return { success: true }
+}
+
+export async function reactivateEstimator(userId: string) {
+  const { appUser } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { error } = await adminClient
+    .from('users')
+    .update({ status: 'active' })
+    .eq('id', userId)
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'estimator')
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin/team')
+  return { success: true }
+}
+
+export async function revokeEstimatorInvite(inviteId: string) {
+  const { appUser } = await getCurrentUser()
+  if (appUser.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const adminClient = createAdminClient()
+
+  const { error } = await adminClient
+    .from('platform_invites')
+    .delete()
+    .eq('id', inviteId)
+    .eq('tenant_id', appUser.tenant_id)
+    .eq('role', 'estimator')
 
   if (error) {
     return { error: error.message }

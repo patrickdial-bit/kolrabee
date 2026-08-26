@@ -128,6 +128,37 @@ export async function sendPlatformInviteEmail(params: {
 }
 
 /** Email 0b: Invite someone to join the platform as an admin */
+export async function sendEstimatorInviteEmail(params: {
+  to: string
+  name: string
+  tenantName: string
+  notificationEmail: string | null
+  joinUrl: string
+}) {
+  const { to, name, tenantName, notificationEmail, joinUrl } = params
+  const greeting = name ? `Hi ${name},` : 'Hi,'
+
+  try {
+    await getResend().emails.send({
+      from: getFrom(tenantName, notificationEmail),
+      replyTo: notificationEmail || undefined,
+      to,
+      subject: `${tenantName} has invited you to quote jobs on Kolrabee`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px;">
+          <h2 style="color: #1a1a1a; margin-bottom: 4px;">You're Invited to Join as an Estimator</h2>
+          <p style="color: #666; margin-top: 0;">${greeting} <strong>${tenantName}</strong> has invited you to create quotes on their Kolrabee account.</p>
+          <p style="color: #666;">As an estimator, you'll run each bid through the profit guardrails before the contract goes to the customer.</p>
+          <a href="${joinUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0;">Create Your Estimator Account</a>
+          <p style="color: #999; font-size: 13px; margin-top: 24px;">This invitation link will expire in 30 days. If you weren't expecting this, you can safely ignore this email.</p>
+        </div>
+      `,
+    })
+  } catch (err) {
+    console.error('Failed to send estimator invite email:', err)
+  }
+}
+
 export async function sendAdminInviteEmail(params: {
   to: string
   name: string

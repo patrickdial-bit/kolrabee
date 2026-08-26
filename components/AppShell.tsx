@@ -27,6 +27,8 @@ import { logout as subLogout } from '@/app/[slug]/dashboard/actions'
 type AdminProps = {
   variant: 'admin'
   companyName?: string
+  // Estimators share the admin shell chrome but only ever see Quotes.
+  role?: 'admin' | 'estimator'
 }
 
 type SubProps = {
@@ -68,7 +70,25 @@ export default function AppShell(props: AppShellProps) {
 
   let footer: React.ReactNode = null
 
-  if (props.variant === 'admin') {
+  if (props.variant === 'admin' && props.role === 'estimator') {
+    homeHref = '/admin/quotes'
+    title = props.companyName
+    groups = [
+      {
+        items: [
+          { href: '/admin/quotes', label: 'Quotes', icon: 'quotes', active: pathname.startsWith('/admin/quotes') },
+        ],
+      },
+    ]
+    footer = (
+      <form action={adminLogout}>
+        <button type="submit" className={footerRow}>
+          <LogoutIcon />
+          <span className={footerLabel}>Log out</span>
+        </button>
+      </form>
+    )
+  } else if (props.variant === 'admin') {
     homeHref = '/admin/dashboard'
     title = props.companyName
     showSearch = true
@@ -77,6 +97,7 @@ export default function AppShell(props: AppShellProps) {
         items: [
           { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard', active: pathname.startsWith('/admin/dashboard') },
           { href: '/admin/projects', label: 'Projects', icon: 'projects', active: pathname.startsWith('/admin/projects') },
+          { href: '/admin/quotes', label: 'Quotes', icon: 'quotes', active: pathname.startsWith('/admin/quotes') },
           { href: '/admin/margins', label: 'Margins', icon: 'margins', active: pathname.startsWith('/admin/margins') },
           // Marketing Engine — parked. See lib/feature-flags.ts.
           ...(MARKETING_ENGINE_ENABLED
