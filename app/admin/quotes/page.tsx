@@ -1,18 +1,8 @@
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProfitThresholds, ProjectEstimate } from '@/lib/types'
-import { getMarginStatus } from '@/lib/types'
+import { getMarginStatus, DEFAULT_PROFIT_THRESHOLDS } from '@/lib/types'
 import QuotesClient, { type QuoteRow } from './QuotesClient'
-
-const DEFAULT_THRESHOLDS: ProfitThresholds = {
-  id: '',
-  tenant_id: '',
-  labor_max_pct: 30,
-  materials_max_pct: 14,
-  min_profit_margin_pct: 50,
-  created_at: '',
-  updated_at: '',
-}
 
 export default async function QuotesPage() {
   const { appUser, tenant } = await getCurrentUser({ roles: ['admin', 'estimator'] })
@@ -34,7 +24,7 @@ export default async function QuotesPage() {
     adminClient.from('profit_thresholds').select('*').eq('tenant_id', tenant.id).maybeSingle(),
   ])
 
-  const thresholds = (thresholdsRow as ProfitThresholds | null) ?? DEFAULT_THRESHOLDS
+  const thresholds = (thresholdsRow as ProfitThresholds | null) ?? DEFAULT_PROFIT_THRESHOLDS
   const rows = (estimates ?? []) as ProjectEstimate[]
 
   // Resolve display names: creators (admin view shows who quoted) and, for

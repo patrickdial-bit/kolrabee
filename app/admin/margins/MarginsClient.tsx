@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import { formatDate } from '@/lib/utils'
-import type { ProfitThresholds } from '@/lib/types'
+import type { ThresholdRanges } from '@/lib/types'
+import { formatThresholdRange } from '@/lib/types'
+import ThresholdSettings from './ThresholdSettings'
 
 export type MarginRow = {
   projectId: string
@@ -23,7 +25,7 @@ export type MarginRow = {
 
 interface MarginsClientProps {
   rows: MarginRow[]
-  thresholds: Pick<ProfitThresholds, 'labor_max_pct' | 'materials_max_pct' | 'min_profit_margin_pct'>
+  thresholds: ThresholdRanges
   tenantName: string
 }
 
@@ -73,9 +75,11 @@ export default function MarginsClient({ rows, thresholds, tenantName }: MarginsC
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Margins</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Guardrails: painter labor ≤{thresholds.labor_max_pct}%, materials &lt;{thresholds.materials_max_pct}%, gross profit ≥{thresholds.min_profit_margin_pct}%.
+            Guardrails: painter labor {formatThresholdRange(thresholds.labor_min_pct, thresholds.labor_max_pct)}, materials {formatThresholdRange(thresholds.materials_min_pct, thresholds.materials_max_pct)}, gross profit {formatThresholdRange(thresholds.min_profit_margin_pct, thresholds.profit_max_pct)}.
           </p>
         </div>
+
+        <ThresholdSettings thresholds={thresholds} />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">

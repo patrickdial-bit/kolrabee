@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import type { ProfitThresholds } from '@/lib/types'
+import type { ThresholdRanges } from '@/lib/types'
+import { formatThresholdRange } from '@/lib/types'
 
 export type QuoteRow = {
   id: string
@@ -22,7 +23,7 @@ export type QuoteRow = {
 
 interface QuotesClientProps {
   rows: QuoteRow[]
-  thresholds: Pick<ProfitThresholds, 'labor_max_pct' | 'materials_max_pct' | 'min_profit_margin_pct'>
+  thresholds: ThresholdRanges
   tenantName: string
   role: 'admin' | 'estimator'
 }
@@ -41,7 +42,7 @@ export default function QuotesClient({ rows, thresholds, tenantName, role }: Quo
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Quotes</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Run the guardrails before the contract goes out — labor ≤{thresholds.labor_max_pct}%, materials &lt;{thresholds.materials_max_pct}%, profit ≥{thresholds.min_profit_margin_pct}%.
+              Run the guardrails before the contract goes out — labor {formatThresholdRange(thresholds.labor_min_pct, thresholds.labor_max_pct)}, materials {formatThresholdRange(thresholds.materials_min_pct, thresholds.materials_max_pct)}, profit {formatThresholdRange(thresholds.min_profit_margin_pct, thresholds.profit_max_pct)}.
             </p>
           </div>
           <div className="mt-4 sm:mt-0">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ProjectEstimate, ProfitThresholds, getMarginStatus } from '@/lib/types'
+import { ProjectEstimate, ProfitThresholds, getMarginStatus, formatThresholdRange } from '@/lib/types'
 
 interface MarginCalculatorProps {
   // Omit projectId to run in standalone quote mode: the estimate is saved
@@ -83,8 +83,8 @@ export default function MarginCalculator({
     }
   }
 
-  const StatusBadge = ({ status, label, value, threshold, inverted }: any) => {
-    const isOk = inverted ? value < threshold : value <= threshold
+  const StatusBadge = ({ label, value, floor, ceiling }: { label: string; value: number; floor: number; ceiling: number }) => {
+    const isOk = value >= floor && value <= ceiling
     const bgColor = isOk ? 'bg-green-50' : 'bg-red-50'
     const textColor = isOk ? 'text-green-700' : 'text-red-700'
     const dotColor = isOk ? 'bg-green-400' : 'bg-red-400'
@@ -99,7 +99,7 @@ export default function MarginCalculator({
           </div>
         </div>
         <div className={`text-xs ${textColor} mt-1`}>
-          {inverted ? `< ${threshold}%` : `≤ ${threshold}%`}
+          {formatThresholdRange(floor, ceiling)}
         </div>
       </div>
     )
@@ -205,20 +205,20 @@ export default function MarginCalculator({
           <StatusBadge
             label="Painter Labor"
             value={laborPct}
-            threshold={thresholds.labor_max_pct}
-            inverted={false}
+            floor={thresholds.labor_min_pct}
+            ceiling={thresholds.labor_max_pct}
           />
           <StatusBadge
             label="Materials"
             value={materialPct}
-            threshold={thresholds.materials_max_pct}
-            inverted={true}
+            floor={thresholds.materials_min_pct}
+            ceiling={thresholds.materials_max_pct}
           />
           <StatusBadge
             label="Gross Profit Margin"
             value={profitPct}
-            threshold={thresholds.min_profit_margin_pct}
-            inverted={false}
+            floor={thresholds.min_profit_margin_pct}
+            ceiling={thresholds.profit_max_pct}
           />
         </div>
       </div>
