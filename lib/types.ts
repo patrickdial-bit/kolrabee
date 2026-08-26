@@ -546,16 +546,53 @@ export function isSubCompliant(sub: AppUser): boolean {
   return hasW9 && hasCoi && insuranceNotExpired
 }
 
-// Profit margin guardrails for estimating and post-job tracking
+// Profit margin guardrails for estimating and post-job tracking.
+// Each metric is a RANGE — floor and ceiling — set by the admin. The
+// historical column names (labor_max_pct, materials_max_pct,
+// min_profit_margin_pct) survive as one side of their range.
 
 export type ProfitThresholds = {
   id: string
   tenant_id: string
+  labor_min_pct: number
   labor_max_pct: number
+  materials_min_pct: number
   materials_max_pct: number
   min_profit_margin_pct: number
+  profit_max_pct: number
   created_at: string
   updated_at: string
+}
+
+// The metric bounds getMarginStatus and the UI need — everything but the
+// row's identity columns.
+export type ThresholdRanges = Pick<
+  ProfitThresholds,
+  'labor_min_pct' | 'labor_max_pct' | 'materials_min_pct' | 'materials_max_pct' | 'min_profit_margin_pct' | 'profit_max_pct'
+>
+
+// Fallback when a tenant somehow has no profit_thresholds row (created
+// before the seeding migration ran). Matches the migration defaults.
+export const DEFAULT_PROFIT_THRESHOLDS: ProfitThresholds = {
+  id: '',
+  tenant_id: '',
+  labor_min_pct: 0,
+  labor_max_pct: 30,
+  materials_min_pct: 0,
+  materials_max_pct: 14,
+  min_profit_margin_pct: 50,
+  profit_max_pct: 100,
+  created_at: '',
+  updated_at: '',
+}
+
+// Human-readable range label: hides a trivial bound (floor 0 → "≤ 30%",
+// ceiling 100 → "≥ 50%"), shows both otherwise ("20–30%").
+export function formatThresholdRange(floor: number, ceiling: number): string {
+  if (floor <= 0 && ceiling >= 100) return 'any'
+  if (floor <= 0) return `≤ ${ceiling}%`
+  if (ceiling >= 100) return `≥ ${floor}%`
+  return `${floor}–${ceiling}%`
 }
 
 export type ProjectEstimate = {
@@ -615,30 +652,33 @@ export type MarginCheck = {
   checked_by: string
 }
 
-// Margin check status determination. A guardrail that's off target but within
-// a small tolerance band is a "warning" (flag for review); past that band
-// it's a hard "fail". The tolerance is a starting point — tune it if it
-// doesn't match how much slack the business wants to allow.
+// Margin check status determination. Each metric must land inside its
+// admin-set [floor, ceiling] range. A value just outside the range (within
+// the tolerance band) is a "warning" — flag for review; past the band it's
+// a hard "fail". The tolerance is a starting point — tune it if it doesn't
+// match how much slack the business wants to allow.
 const LABOR_WARNING_TOLERANCE_PCT = 3
 const MATERIALS_WARNING_TOLERANCE_PCT = 2
 const PROFIT_WARNING_TOLERANCE_PCT = 5
+
+function rangeStatus(value: number, floor: number, ceiling: number, tolerance: number): 'pass' | 'warning' | 'fail' {
+  if (value >= floor && value <= ceiling) return 'pass'
+  if (value >= floor - tolerance && value <= ceiling + tolerance) return 'warning'
+  return 'fail'
+}
 
 export function getMarginStatus(
   material_pct: number,
   labor_pct: number,
   profit_pct: number,
-  thresholds: Pick<ProfitThresholds, 'labor_max_pct' | 'materials_max_pct' | 'min_profit_margin_pct'>
+  thresholds: ThresholdRanges
 ): 'pass' | 'warning' | 'fail' {
-  const laborOk = labor_pct <= thresholds.labor_max_pct
-  const materialsOk = material_pct < thresholds.materials_max_pct
-  const profitOk = profit_pct >= thresholds.min_profit_margin_pct
-
-  if (laborOk && materialsOk && profitOk) return 'pass'
-
-  const laborWithinTolerance = labor_pct <= thresholds.labor_max_pct + LABOR_WARNING_TOLERANCE_PCT
-  const materialsWithinTolerance = material_pct < thresholds.materials_max_pct + MATERIALS_WARNING_TOLERANCE_PCT
-  const profitWithinTolerance = profit_pct >= thresholds.min_profit_margin_pct - PROFIT_WARNING_TOLERANCE_PCT
-
-  if (laborWithinTolerance && materialsWithinTolerance && profitWithinTolerance) return 'warning'
-  return 'fail'
+  const statuses = [
+    rangeStatus(labor_pct, thresholds.labor_min_pct, thresholds.labor_max_pct, LABOR_WARNING_TOLERANCE_PCT),
+    rangeStatus(material_pct, thresholds.materials_min_pct, thresholds.materials_max_pct, MATERIALS_WARNING_TOLERANCE_PCT),
+    rangeStatus(profit_pct, thresholds.min_profit_margin_pct, thresholds.profit_max_pct, PROFIT_WARNING_TOLERANCE_PCT),
+  ]
+  if (statuses.includes('fail')) return 'fail'
+  if (statuses.includes('warning')) return 'warning'
+  return 'pass'
 }

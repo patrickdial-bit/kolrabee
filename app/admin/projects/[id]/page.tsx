@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { getCurrentUser, type Project, type ProjectInvitation } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SubRating, ProjectAttachment, JobMessage, ChangeOrder, DoorKnock, ProfitThresholds, ProjectEstimate, ProjectLedgerEntry } from '@/lib/types'
-import { subDisplayName } from '@/lib/types'
+import { subDisplayName, DEFAULT_PROFIT_THRESHOLDS } from '@/lib/types'
 import { sumDurationMinutes } from '@/lib/time-tracking'
 import { getProjectPhotos } from '@/lib/photo-actions'
 import { getIntegrationStatus } from '@/lib/integrations/backup'
@@ -137,15 +137,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     adminClient.from('project_ledger_entries').select('*').eq('project_id', project.id).maybeSingle(),
     adminClient.from('profit_thresholds').select('*').eq('tenant_id', tenant.id).maybeSingle(),
   ])
-  const thresholds = (marginThresholds as ProfitThresholds | null) ?? {
-    id: '',
-    tenant_id: tenant.id,
-    labor_max_pct: 30,
-    materials_max_pct: 14,
-    min_profit_margin_pct: 50,
-    created_at: '',
-    updated_at: '',
-  }
+  const thresholds = (marginThresholds as ProfitThresholds | null) ?? { ...DEFAULT_PROFIT_THRESHOLDS, tenant_id: tenant.id }
 
   // Open (pre-sale) quotes that can be attached to this project, so the
   // estimator's numbers carry over instead of being re-keyed. Only offered

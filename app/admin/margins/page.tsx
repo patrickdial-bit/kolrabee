@@ -1,14 +1,8 @@
 import { getCurrentUser } from '@/lib/helpers'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Project, ProfitThresholds, ProjectEstimate, ProjectLedgerEntry } from '@/lib/types'
-import { getMarginStatus } from '@/lib/types'
+import { getMarginStatus, DEFAULT_PROFIT_THRESHOLDS } from '@/lib/types'
 import MarginsClient, { type MarginRow } from './MarginsClient'
-
-const DEFAULT_THRESHOLDS: Pick<ProfitThresholds, 'labor_max_pct' | 'materials_max_pct' | 'min_profit_margin_pct'> = {
-  labor_max_pct: 30,
-  materials_max_pct: 14,
-  min_profit_margin_pct: 50,
-}
 
 export default async function MarginsPage() {
   const { tenant } = await getCurrentUser()
@@ -35,7 +29,7 @@ export default async function MarginsPage() {
     adminClient.from('profit_thresholds').select('*').eq('tenant_id', tenant.id).maybeSingle(),
   ])
 
-  const thresholds = (thresholdsRow as ProfitThresholds | null) ?? DEFAULT_THRESHOLDS
+  const thresholds = (thresholdsRow as ProfitThresholds | null) ?? DEFAULT_PROFIT_THRESHOLDS
 
   const estimateByProject = new Map((estimates ?? []).map((e: any) => [e.project_id, e as ProjectEstimate]))
   const ledgerByProject = new Map((ledgerEntries ?? []).map((l: any) => [l.project_id, l as ProjectLedgerEntry]))
