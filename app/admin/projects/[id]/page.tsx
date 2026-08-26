@@ -147,6 +147,20 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     updated_at: '',
   }
 
+  // Open (pre-sale) quotes that can be attached to this project, so the
+  // estimator's numbers carry over instead of being re-keyed. Only offered
+  // while the project has no estimate.
+  let unlinkedQuotes: { id: string; customer_name: string | null; paintscout_quote_id: string | null; total_price: number; created_at: string }[] = []
+  if (!marginEstimate) {
+    const { data: openQuotes } = await adminClient
+      .from('project_estimates')
+      .select('id, customer_name, paintscout_quote_id, total_price, created_at')
+      .eq('tenant_id', tenant.id)
+      .is('project_id', null)
+      .order('created_at', { ascending: false })
+    unlinkedQuotes = (openQuotes ?? []) as typeof unlinkedQuotes
+  }
+
   const invitationsWithNames = (invitations ?? []).map((inv: any) => ({
     id: inv.id,
     project_id: inv.project_id,
@@ -180,6 +194,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
       marginEstimate={marginEstimate as ProjectEstimate | null}
       marginLedger={marginLedger as ProjectLedgerEntry | null}
       marginThresholds={thresholds}
+      unlinkedQuotes={unlinkedQuotes}
     />
   )
 }

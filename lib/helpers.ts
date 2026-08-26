@@ -40,7 +40,7 @@ export async function getImpersonation(): Promise<{
 // no usable context. Used by the photo module + CompanyCam import so they work
 // under impersonation.
 export async function resolveActingContext(): Promise<
-  { tenantId: string; user: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string } } | null
+  { tenantId: string; user: { id: string; role: 'admin' | 'subcontractor' | 'estimator'; first_name: string; last_name: string } } | null
 > {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
@@ -72,8 +72,12 @@ export async function resolveActingContext(): Promise<
   return { tenantId: (appUser as any).tenant_id, user: appUser as any }
 }
 
-// Get the current authenticated user and their app user record
-export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant; impersonating?: boolean }> {
+// Get the current authenticated user and their app user record.
+// Admin-only by default; pass { roles: ['admin', 'estimator'] } for the few
+// surfaces estimators may reach (quotes). Subcontractors never pass here.
+export async function getCurrentUser(options?: {
+  roles?: Array<'admin' | 'estimator'>
+}): Promise<{ authUser: any; appUser: AppUser; tenant: Tenant; impersonating?: boolean }> {
   const supabase = await createClient()
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
@@ -141,8 +145,14 @@ export async function getCurrentUser(): Promise<{ authUser: any; appUser: AppUse
     redirect('/admin/login?error=suspended')
   }
 
-  // Ensure only admins can access admin routes
-  if (appUser.role !== 'admin') {
+  // Ensure only allowed roles can access this route. An estimator landing on
+  // an admin-only page is signed in and legitimate — send them to their home
+  // (quotes) instead of bouncing them to login, which would loop.
+  const allowedRoles = options?.roles ?? ['admin']
+  if (!allowedRoles.includes(appUser.role as 'admin' | 'estimator')) {
+    if (appUser.role === 'estimator') {
+      redirect('/admin/quotes')
+    }
     redirect('/admin/login')
   }
 

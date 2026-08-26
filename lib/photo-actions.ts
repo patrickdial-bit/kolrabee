@@ -14,10 +14,12 @@ const MAX_TAGS = 12
 // "Viewing as" a tenant acts as that tenant's admin. Works for an admin viewing
 // a project and a crew member (subcontractor) viewing their assigned job.
 async function resolveSessionUser(): Promise<
-  { appUser: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string }; tenantId: string } | null
+  { appUser: { id: string; role: 'admin' | 'subcontractor' | 'estimator'; first_name: string; last_name: string }; tenantId: string } | null
 > {
   const ctx = await resolveActingContext()
   if (!ctx) return null
+  // Estimators have no photo access — their surface is quotes only.
+  if (ctx.user.role === 'estimator') return null
   return { appUser: ctx.user, tenantId: ctx.tenantId }
 }
 

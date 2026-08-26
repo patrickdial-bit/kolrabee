@@ -17,7 +17,7 @@ const PROJECTS_PER_PAGE = 50
 const PHOTOS_PER_CHUNK = 6 // bounded so one processChunk call stays well under serverless timeout
 
 type Session = {
-  appUser: { id: string; role: 'admin' | 'subcontractor'; first_name: string; last_name: string }
+  appUser: { id: string; role: 'admin' | 'subcontractor' | 'estimator'; first_name: string; last_name: string }
   tenantId: string
 }
 

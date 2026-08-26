@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { ProjectEstimate, ProfitThresholds, getMarginStatus } from '@/lib/types'
 
 interface MarginCalculatorProps {
-  projectId: string
+  // Omit projectId to run in standalone quote mode: the estimate is saved
+  // against a customer name instead of a project (pre-contract workflow).
+  projectId?: string
   projectValue?: number
   estimate?: ProjectEstimate | null
   thresholds: ProfitThresholds
@@ -18,7 +20,11 @@ export default function MarginCalculator({
   thresholds,
   onSave,
 }: MarginCalculatorProps) {
+  const quoteMode = !projectId
+
   const [formData, setFormData] = useState({
+    customerName: estimate?.customer_name || '',
+    customerAddress: estimate?.customer_address || '',
     paintscoutQuoteId: estimate?.paintscout_quote_id || '',
     totalPrice: estimate?.total_price || projectValue,
     estimatedHours: estimate?.estimated_hours || 0,
@@ -40,15 +46,26 @@ export default function MarginCalculator({
   const marginStatus = getMarginStatus(materialPct, laborPct, profitPct, thresholds)
 
   const handleSave = async () => {
+    if (quoteMode && !formData.customerName.trim()) {
+      setError('Customer name is required.')
+      return
+    }
     setLoading(true)
     setError(null)
 
     try {
+      // Project mode upserts by project; quote mode updates by estimate id
+      // when editing an existing quote, otherwise creates a new one.
+      const target = projectId
+        ? { projectId }
+        : estimate?.id
+          ? { estimateId: estimate.id }
+          : {}
       const res = await fetch('/api/estimates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          projectId,
+          ...target,
           ...formData,
         }),
       })
@@ -90,6 +107,31 @@ export default function MarginCalculator({
 
   return (
     <div className="space-y-6">
+      {quoteMode && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+            <input
+              type="text"
+              value={formData.customerName}
+              onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+              placeholder="e.g., Sarah Johnson"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Address</label>
+            <input
+              type="text"
+              value={formData.customerAddress}
+              onChange={(e) => setFormData({ ...formData, customerAddress: e.target.value })}
+              placeholder="e.g., 175 Loveman Ave, Columbus, OH"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Total Price</label>
@@ -219,7 +261,7 @@ export default function MarginCalculator({
         disabled={loading}
         className="w-full bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 disabled:opacity-50"
       >
-        {loading ? 'Saving...' : 'Save Estimate'}
+        {loading ? 'Saving...' : quoteMode ? 'Save Quote' : 'Save Estimate'}
       </button>
     </div>
   )

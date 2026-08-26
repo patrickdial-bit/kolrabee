@@ -13,6 +13,7 @@ import { submitRating } from './rating-actions'
 import { addAttachment, removeAttachment, getAttachmentUrl } from './attachment-actions'
 import { sendMessage, getMessages } from './message-actions'
 import { addChangeOrder, deleteChangeOrder } from './change-order-actions'
+import { linkQuoteToProject } from './quote-actions'
 import InviteSubsModal from './InviteSubsModal'
 import AddressFields from '@/components/AddressFields'
 import { parseAddress } from '@/lib/address'
@@ -77,6 +78,7 @@ interface ProjectDetailClientProps {
   marginEstimate: ProjectEstimate | null
   marginLedger: ProjectLedgerEntry | null
   marginThresholds: ProfitThresholds
+  unlinkedQuotes: { id: string; customer_name: string | null; paintscout_quote_id: string | null; total_price: number; created_at: string }[]
 }
 
 const statusColors: Record<string, string> = {
@@ -114,6 +116,7 @@ export default function ProjectDetailClient({
   marginEstimate,
   marginLedger,
   marginThresholds,
+  unlinkedQuotes,
 }: ProjectDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -137,6 +140,22 @@ export default function ProjectDetailClient({
   // Change order modal state
   const [showChangeOrderModal, setShowChangeOrderModal] = useState(false)
   const [changeOrderError, setChangeOrderError] = useState<string | null>(null)
+  // Quote linking (attach an estimator's pre-sale quote to this project)
+  const [selectedQuoteId, setSelectedQuoteId] = useState('')
+
+  const handleLinkQuote = () => {
+    if (!selectedQuoteId) return
+    startTransition(async () => {
+      const result = await linkQuoteToProject(project.id, selectedQuoteId)
+      if (result?.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Quote linked — its numbers are now this project\'s estimate.')
+        setSelectedQuoteId('')
+        router.refresh()
+      }
+    })
+  }
 
   const hasAssignedSub = !!project.accepted_by
   const canReschedule = !['paid', 'cancelled'].includes(project.status)
@@ -743,6 +762,41 @@ export default function ProjectDetailClient({
             <h2 className="text-lg font-semibold text-gray-900">Profit Margin Estimate</h2>
             <p className="text-sm text-gray-500">Check labor, materials, and profit against your guardrails before quoting.</p>
           </div>
+
+          {/* If an estimator already quoted this customer pre-contract, attach
+              that quote instead of re-keying the numbers. */}
+          {!marginEstimate && unlinkedQuotes.length > 0 && (
+            <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-semibold text-blue-900 mb-2">Link an existing quote</p>
+              <p className="text-xs text-blue-800 mb-3">
+                Pick the estimator's quote for this customer and its numbers carry over as this project's estimate.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={selectedQuoteId}
+                  onChange={(e) => setSelectedQuoteId(e.target.value)}
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white"
+                >
+                  <option value="">Select a quote...</option>
+                  {unlinkedQuotes.map((q) => (
+                    <option key={q.id} value={q.id}>
+                      {q.customer_name ?? 'Unknown'}
+                      {q.paintscout_quote_id ? ` · #${q.paintscout_quote_id}` : ''} · {formatCurrency(Number(q.total_price))} · {formatDate(q.created_at)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleLinkQuote}
+                  disabled={isPending || !selectedQuoteId}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {isPending ? 'Linking...' : 'Link Quote'}
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-blue-700">Or enter the estimate manually below.</p>
+            </div>
+          )}
+
           <MarginCalculator
             projectId={project.id}
             projectValue={project.payout_amount}

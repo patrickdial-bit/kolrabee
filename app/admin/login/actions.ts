@@ -56,6 +56,11 @@ export async function loginAction(
     return { error: 'This account has been deactivated.' }
   }
 
+  // Estimators share this login but land on their own surface (quotes only).
+  if (appUser.role === 'estimator') {
+    redirect('/admin/quotes')
+  }
+
   if (appUser.role !== 'admin') {
     await supabase.auth.signOut()
     return { error: 'Access denied. This portal is for admin users only.' }
